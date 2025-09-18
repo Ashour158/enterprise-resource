@@ -8,9 +8,11 @@ import { SystemHealthMonitor } from '@/components/SystemHealthMonitor'
 import { RealTimeSyncPanel } from '@/components/RealTimeSyncPanel'
 import { ModuleSyncStatus } from '@/components/ModuleSyncStatus'
 import { RealTimeDataFeed } from '@/components/RealTimeDataFeed'
+import { ConflictResolutionManager } from '@/components/ConflictResolutionManager'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Toaster } from '@/components/ui/sonner'
 import { 
   mockCompanies, 
@@ -21,12 +23,13 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
   const [selectedCompany, setSelectedCompany] = useKV('selected-company', mockCompanies[0].id)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [activeView, setActiveView] = useState('dashboard')
   
   const currentCompany = mockCompanies.find(c => c.id === selectedCompany) || mockCompanies[0]
   const activeModules = mockModules.filter(m => m.status === 'active')
@@ -146,128 +149,148 @@ function App() {
       )}
 
       <main className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Welcome back, {mockUser.name}. Here's what's happening with {currentCompany.name}.
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="flex items-center gap-2">
-              <WifiHigh size={12} className={isConnected ? 'text-green-500' : 'text-red-500'} />
-              {isConnected ? 'Connected' : 'Offline'}
-            </Badge>
-            <Badge variant="outline" className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-              {activeModules.length} Active Modules
-            </Badge>
-            <Badge variant="outline">
-              {totalNotifications} Notifications
-            </Badge>
-            {safeConflicts.length > 0 && (
-              <Badge variant="destructive">
-                {safeConflicts.length} Conflicts
+        <Tabs value={activeView} onValueChange={setActiveView} className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">
+                {activeView === 'dashboard' ? 'Dashboard' : 'Advanced Conflict Resolution'}
+              </h1>
+              <p className="text-muted-foreground">
+                {activeView === 'dashboard' 
+                  ? `Welcome back, ${mockUser.name}. Here's what's happening with ${currentCompany.name}.`
+                  : 'Intelligent workflows and AI-powered resolution for data synchronization conflicts'
+                }
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <TabsList>
+                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="conflicts" className="flex items-center gap-2">
+                  <Brain size={16} />
+                  Conflict Resolution
+                </TabsTrigger>
+              </TabsList>
+              <Badge variant="outline" className="flex items-center gap-2">
+                <WifiHigh size={12} className={isConnected ? 'text-green-500' : 'text-red-500'} />
+                {isConnected ? 'Connected' : 'Offline'}
               </Badge>
-            )}
+              <Badge variant="outline" className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full" />
+                {activeModules.length} Active Modules
+              </Badge>
+              <Badge variant="outline">
+                {totalNotifications} Notifications
+              </Badge>
+              {safeConflicts.length > 0 && (
+                <Badge variant="destructive">
+                  {safeConflicts.length} Conflicts
+                </Badge>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {getQuickStats().map((stat, index) => (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                  </div>
-                  <div className={stat.color}>
-                    {stat.icon}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>ERP Modules</CardTitle>
-                <CardDescription>
-                  Access and monitor your integrated business modules
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Array.isArray(mockModules) && mockModules.length > 0 ? (
-                    mockModules.map((module) => (
-                      <ModuleCard 
-                        key={module.id} 
-                        module={module} 
-                        onSelect={handleModuleSelect}
-                      />
-                    ))
-                  ) : (
-                    <div className="col-span-2 text-center text-muted-foreground py-8">
-                      <Package size={24} className="mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No modules available</p>
+          <TabsContent value="dashboard" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {getQuickStats().map((stat, index) => (
+                <Card key={index}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+                        <p className="text-2xl font-bold">{stat.value}</p>
+                      </div>
+                      <div className={stat.color}>
+                        {stat.icon}
+                      </div>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-            {/* Module Sync Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Module Sync Status</CardTitle>
-                <CardDescription>
-                  Real-time synchronization status for each module
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {Array.isArray(mockModules) && mockModules.length > 0 ? (
-                  mockModules.map((module) => (
-                    <ModuleSyncStatus
-                      key={module.id}
-                      module={module}
-                      isOnline={isConnected}
-                      lastSyncTime={lastSyncTime}
-                      pendingChanges={Math.floor(Math.random() * 3)} // Simulated pending changes
-                      onSync={triggerSync}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Package size={24} className="mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No modules to sync</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>ERP Modules</CardTitle>
+                    <CardDescription>
+                      Access and monitor your integrated business modules
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Array.isArray(mockModules) && mockModules.length > 0 ? (
+                        mockModules.map((module) => (
+                          <ModuleCard 
+                            key={module.id} 
+                            module={module} 
+                            onSelect={handleModuleSelect}
+                          />
+                        ))
+                      ) : (
+                        <div className="col-span-2 text-center text-muted-foreground py-8">
+                          <Package size={24} className="mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No modules available</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
 
-          <div className="space-y-6">
-            <RealTimeSyncPanel
-              syncStatus={syncStatus}
-              syncProgress={syncProgress}
-              conflicts={safeConflicts}
-              modules={mockModules}
-              onTriggerSync={triggerSync}
-              onResolveConflict={resolveConflict}
-              onUpdateSyncConfig={updateSyncConfig}
-            />
-            <RealTimeDataFeed companyId={currentCompany.id} />
-            <AIInsightsPanel 
-              insights={mockAIInsights}
-              onActionClick={handleAIActionClick}
-            />
-            <SystemHealthMonitor health={mockSystemHealth} />
-          </div>
-        </div>
+                {/* Module Sync Status */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Module Sync Status</CardTitle>
+                    <CardDescription>
+                      Real-time synchronization status for each module
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {Array.isArray(mockModules) && mockModules.length > 0 ? (
+                      mockModules.map((module) => (
+                        <ModuleSyncStatus
+                          key={module.id}
+                          module={module}
+                          isOnline={isConnected}
+                          lastSyncTime={lastSyncTime}
+                          pendingChanges={Math.floor(Math.random() * 3)} // Simulated pending changes
+                          onSync={triggerSync}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center text-muted-foreground py-8">
+                        <Package size={24} className="mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No modules to sync</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-6">
+                <RealTimeSyncPanel
+                  syncStatus={syncStatus}
+                  syncProgress={syncProgress}
+                  conflicts={safeConflicts}
+                  modules={mockModules}
+                  onTriggerSync={triggerSync}
+                  onResolveConflict={resolveConflict}
+                  onUpdateSyncConfig={updateSyncConfig}
+                />
+                <RealTimeDataFeed companyId={currentCompany.id} />
+                <AIInsightsPanel 
+                  insights={mockAIInsights}
+                  onActionClick={handleAIActionClick}
+                />
+                <SystemHealthMonitor health={mockSystemHealth} />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="conflicts" className="space-y-6">
+            <ConflictResolutionManager companyId={currentCompany.id} />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   )

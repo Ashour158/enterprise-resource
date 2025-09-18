@@ -113,4 +113,82 @@ export interface SyncConflict {
   clientValue: any
   timestamp: string
   resolved: boolean
+  priority: 'critical' | 'high' | 'medium' | 'low'
+  conflictType: 'data_mismatch' | 'concurrent_edit' | 'version_conflict' | 'permission_conflict'
+  affectedUsers: string[]
+  businessImpact: 'revenue' | 'compliance' | 'operations' | 'reporting' | 'none'
+  autoResolutionSuggestion?: ConflictResolutionStrategy
+  metadata?: {
+    lastModified: string
+    modifiedBy: string
+    version: number
+    dependencies: string[]
+    validationErrors?: string[]
+  }
+}
+
+export interface ConflictResolutionStrategy {
+  strategy: 'server_wins' | 'client_wins' | 'merge' | 'manual' | 'ai_assisted' | 'workflow_approval'
+  confidence: number
+  reasoning: string
+  mergeRules?: MergeRule[]
+  approvalWorkflow?: ApprovalWorkflow
+}
+
+export interface MergeRule {
+  field: string
+  rule: 'latest_timestamp' | 'highest_value' | 'combine_arrays' | 'custom_logic'
+  customLogic?: string
+}
+
+export interface ApprovalWorkflow {
+  id: string
+  requiredApprovers: string[]
+  approvalSteps: ApprovalStep[]
+  escalationRules: EscalationRule[]
+  timeout: number // hours
+}
+
+export interface ApprovalStep {
+  id: string
+  approverRole: string
+  description: string
+  status: 'pending' | 'approved' | 'rejected' | 'skipped'
+  timestamp?: string
+  comments?: string
+}
+
+export interface EscalationRule {
+  condition: 'timeout' | 'rejection' | 'business_critical'
+  escalateTo: string
+  action: 'notify' | 'auto_approve' | 'require_additional_approval'
+}
+
+export interface ConflictResolutionWorkflow {
+  id: string
+  name: string
+  description: string
+  triggers: ConflictTrigger[]
+  steps: WorkflowStep[]
+  isActive: boolean
+  priority: number
+}
+
+export interface ConflictTrigger {
+  field: 'module' | 'entity' | 'priority' | 'businessImpact' | 'conflictType'
+  operator: 'equals' | 'contains' | 'greater_than' | 'less_than'
+  value: any
+}
+
+export interface WorkflowStep {
+  id: string
+  type: 'auto_resolution' | 'ai_analysis' | 'human_review' | 'escalation' | 'notification'
+  config: any
+  conditions?: WorkflowCondition[]
+}
+
+export interface WorkflowCondition {
+  field: string
+  operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains'
+  value: any
 }

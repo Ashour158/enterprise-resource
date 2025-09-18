@@ -177,7 +177,11 @@ export function useRealTimeSync(companyId: string): UseRealTimeSyncReturn {
           serverValue: Math.floor(Math.random() * 1000),
           clientValue: Math.floor(Math.random() * 1000),
           timestamp: new Date().toISOString(),
-          resolved: false
+          resolved: false,
+          priority: ['critical', 'high', 'medium', 'low'][Math.floor(Math.random() * 4)] as 'critical' | 'high' | 'medium' | 'low',
+          conflictType: ['data_mismatch', 'concurrent_edit', 'version_conflict'][Math.floor(Math.random() * 3)] as 'data_mismatch' | 'concurrent_edit' | 'version_conflict',
+          affectedUsers: [`user-${Math.floor(Math.random() * 100)}`],
+          businessImpact: ['revenue', 'compliance', 'operations', 'reporting'][Math.floor(Math.random() * 4)] as 'revenue' | 'compliance' | 'operations' | 'reporting'
         }
 
         setConflicts((prev) => [...(prev || []), newConflict])
