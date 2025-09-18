@@ -311,6 +311,8 @@ export const mockSystemHealth: SystemHealth = {
     { name: 'Database', status: 'online', responseTime: 12, uptime: 99.9 },
     { name: 'API Gateway', status: 'online', responseTime: 45, uptime: 99.8 },
     { name: 'Authentication', status: 'online', responseTime: 23, uptime: 100 },
+    { name: 'Real-time Sync', status: 'online', responseTime: 8, uptime: 99.7 },
+    { name: 'WebSocket Server', status: 'online', responseTime: 15, uptime: 99.9 },
     { name: 'File Storage', status: 'degraded', responseTime: 156, uptime: 98.2 },
     { name: 'Email Service', status: 'online', responseTime: 89, uptime: 99.5 }
   ],
@@ -320,3 +322,43 @@ export const mockSystemHealth: SystemHealth = {
     failed: 539
   }
 }
+
+// Mock data for real-time sync demonstrations
+export const mockSyncEvents = [
+  {
+    id: 'sync-1',
+    type: 'data_update' as const,
+    module: 'finance',
+    entity: 'invoice',
+    operation: 'create' as const,
+    data: { invoiceId: 'INV-2024-001', amount: 5000 },
+    timestamp: new Date().toISOString(),
+    companyId: 'acme-corp',
+    userId: 'user-1'
+  },
+  {
+    id: 'sync-2',
+    type: 'data_update' as const,
+    module: 'inventory',
+    entity: 'stock',
+    operation: 'update' as const,
+    data: { productId: 'PROD-123', quantity: 150 },
+    timestamp: new Date().toISOString(),
+    companyId: 'acme-corp',
+    userId: 'user-2'
+  }
+]
+
+export const mockSyncConflicts = [
+  {
+    id: 'conflict-1',
+    module: 'finance',
+    entity: 'invoice',
+    entityId: 'INV-2024-001',
+    field: 'amount',
+    serverValue: 5000,
+    clientValue: 5200,
+    timestamp: new Date().toISOString(),
+    resolved: false
+  }
+]

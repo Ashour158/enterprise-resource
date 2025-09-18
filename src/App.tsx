@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
+import { useRealTimeSync } from '@/hooks/useRealTimeSync'
 import { Header } from '@/components/Header'
 import { ModuleCard } from '@/components/ModuleCard'
 import { AIInsightsPanel } from '@/components/AIInsightsPanel'
 import { SystemHealthMonitor } from '@/components/SystemHealthMonitor'
+import { RealTimeSyncPanel } from '@/components/RealTimeSyncPanel'
+import { ModuleSyncStatus } from '@/components/ModuleSyncStatus'
+import { RealTimeDataFeed } from '@/components/RealTimeDataFeed'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,7 +21,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -27,6 +31,18 @@ function App() {
   const currentCompany = mockCompanies.find(c => c.id === selectedCompany) || mockCompanies[0]
   const activeModules = mockModules.filter(m => m.status === 'active')
   const totalNotifications = mockModules.reduce((sum, m) => sum + m.notifications, 0)
+
+  // Initialize real-time sync
+  const {
+    syncStatus,
+    isConnected,
+    lastSyncTime,
+    syncProgress,
+    conflicts,
+    triggerSync,
+    resolveConflict,
+    updateSyncConfig
+  } = useRealTimeSync(currentCompany.id)
 
   const handleCompanyChange = (companyId: string) => {
     setSelectedCompany(companyId)
@@ -128,12 +144,21 @@ function App() {
           </div>
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="flex items-center gap-2">
+              <WifiHigh size={12} className={isConnected ? 'text-green-500' : 'text-red-500'} />
+              {isConnected ? 'Connected' : 'Offline'}
+            </Badge>
+            <Badge variant="outline" className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full" />
               {activeModules.length} Active Modules
             </Badge>
             <Badge variant="outline">
               {totalNotifications} Notifications
             </Badge>
+            {conflicts.length > 0 && (
+              <Badge variant="destructive">
+                {conflicts.length} Conflicts
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -176,9 +201,41 @@ function App() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Module Sync Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Module Sync Status</CardTitle>
+                <CardDescription>
+                  Real-time synchronization status for each module
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {mockModules.map((module) => (
+                  <ModuleSyncStatus
+                    key={module.id}
+                    module={module}
+                    isOnline={isConnected}
+                    lastSyncTime={lastSyncTime}
+                    pendingChanges={Math.floor(Math.random() * 3)} // Simulated pending changes
+                    onSync={triggerSync}
+                  />
+                ))}
+              </CardContent>
+            </Card>
           </div>
 
           <div className="space-y-6">
+            <RealTimeSyncPanel
+              syncStatus={syncStatus}
+              syncProgress={syncProgress}
+              conflicts={conflicts}
+              modules={mockModules}
+              onTriggerSync={triggerSync}
+              onResolveConflict={resolveConflict}
+              onUpdateSyncConfig={updateSyncConfig}
+            />
+            <RealTimeDataFeed companyId={currentCompany.id} />
             <AIInsightsPanel 
               insights={mockAIInsights}
               onActionClick={handleAIActionClick}
