@@ -14,9 +14,12 @@ interface SyncConfigurationProps {
   onUpdateConfig: (config: ModuleSyncConfig) => void
 }
 
-export function SyncConfiguration({ modules, onUpdateConfig }: SyncConfigurationProps) {
+export function SyncConfiguration({ modules = [], onUpdateConfig }: SyncConfigurationProps) {
   const [open, setOpen] = useState(false)
   const [selectedModule, setSelectedModule] = useState<string>('')
+
+  // Ensure safe array
+  const safeModules = Array.isArray(modules) ? modules : []
 
   const defaultConfig: Omit<ModuleSyncConfig, 'moduleId'> = {
     autoSync: true,
@@ -76,7 +79,7 @@ export function SyncConfiguration({ modules, onUpdateConfig }: SyncConfiguration
                 <SelectValue placeholder="Select a module" />
               </SelectTrigger>
               <SelectContent>
-                {modules.map((module) => (
+                {safeModules.map((module) => (
                   <SelectItem key={module.id} value={module.id}>
                     {module.name}
                   </SelectItem>

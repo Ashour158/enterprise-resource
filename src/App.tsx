@@ -32,7 +32,7 @@ function App() {
   const activeModules = mockModules.filter(m => m.status === 'active')
   const totalNotifications = mockModules.reduce((sum, m) => sum + m.notifications, 0)
 
-  // Initialize real-time sync
+  // Initialize real-time sync with proper null safety
   const {
     syncStatus,
     isConnected,
@@ -43,6 +43,9 @@ function App() {
     resolveConflict,
     updateSyncConfig
   } = useRealTimeSync(currentCompany.id)
+
+  // Ensure conflicts is always an array
+  const safeConflicts = Array.isArray(conflicts) ? conflicts : []
 
   const handleCompanyChange = (companyId: string) => {
     setSelectedCompany(companyId)
@@ -64,10 +67,11 @@ function App() {
   }
 
   const getQuickStats = () => {
-    const revenue = mockModules.find(m => m.id === 'finance')?.quickStats[0]?.value || '$0'
-    const employees = mockModules.find(m => m.id === 'hr')?.quickStats[0]?.value || '0'
-    const inventory = mockModules.find(m => m.id === 'inventory')?.quickStats[0]?.value || '0'
-    const leads = mockModules.find(m => m.id === 'sales')?.quickStats[0]?.value || '0'
+    const safeModules = Array.isArray(mockModules) ? mockModules : []
+    const revenue = safeModules.find(m => m.id === 'finance')?.quickStats?.[0]?.value || '$0'
+    const employees = safeModules.find(m => m.id === 'hr')?.quickStats?.[0]?.value || '0'
+    const inventory = safeModules.find(m => m.id === 'inventory')?.quickStats?.[0]?.value || '0'
+    const leads = safeModules.find(m => m.id === 'sales')?.quickStats?.[0]?.value || '0'
     
     return [
       { label: 'Revenue YTD', value: revenue, icon: <CreditCard size={20} />, color: 'text-green-600' },
@@ -106,30 +110,37 @@ function App() {
             </Button>
           </div>
           <div className="p-2">
-            {mockNotifications.map((notification) => (
-              <div 
-                key={notification.id} 
-                className="p-3 hover:bg-muted/50 rounded-lg cursor-pointer border-l-2 border-l-primary/20"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm">{notification.title}</h4>
-                    <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="outline" className="text-xs">
-                        {notification.module}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(notification.timestamp).toLocaleTimeString()}
-                      </span>
+            {Array.isArray(mockNotifications) && mockNotifications.length > 0 ? (
+              mockNotifications.map((notification) => (
+                <div 
+                  key={notification.id} 
+                  className="p-3 hover:bg-muted/50 rounded-lg cursor-pointer border-l-2 border-l-primary/20"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-sm">{notification.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline" className="text-xs">
+                          {notification.module}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(notification.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
                     </div>
+                    {!notification.isRead && (
+                      <div className="w-2 h-2 bg-primary rounded-full mt-1" />
+                    )}
                   </div>
-                  {!notification.isRead && (
-                    <div className="w-2 h-2 bg-primary rounded-full mt-1" />
-                  )}
                 </div>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                <Bell size={24} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No notifications</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
@@ -154,9 +165,9 @@ function App() {
             <Badge variant="outline">
               {totalNotifications} Notifications
             </Badge>
-            {conflicts.length > 0 && (
+            {safeConflicts.length > 0 && (
               <Badge variant="destructive">
-                {conflicts.length} Conflicts
+                {safeConflicts.length} Conflicts
               </Badge>
             )}
           </div>
@@ -191,13 +202,20 @@ function App() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {mockModules.map((module) => (
-                    <ModuleCard 
-                      key={module.id} 
-                      module={module} 
-                      onSelect={handleModuleSelect}
-                    />
-                  ))}
+                  {Array.isArray(mockModules) && mockModules.length > 0 ? (
+                    mockModules.map((module) => (
+                      <ModuleCard 
+                        key={module.id} 
+                        module={module} 
+                        onSelect={handleModuleSelect}
+                      />
+                    ))
+                  ) : (
+                    <div className="col-span-2 text-center text-muted-foreground py-8">
+                      <Package size={24} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No modules available</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -211,16 +229,23 @@ function App() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                {mockModules.map((module) => (
-                  <ModuleSyncStatus
-                    key={module.id}
-                    module={module}
-                    isOnline={isConnected}
-                    lastSyncTime={lastSyncTime}
-                    pendingChanges={Math.floor(Math.random() * 3)} // Simulated pending changes
-                    onSync={triggerSync}
-                  />
-                ))}
+                {Array.isArray(mockModules) && mockModules.length > 0 ? (
+                  mockModules.map((module) => (
+                    <ModuleSyncStatus
+                      key={module.id}
+                      module={module}
+                      isOnline={isConnected}
+                      lastSyncTime={lastSyncTime}
+                      pendingChanges={Math.floor(Math.random() * 3)} // Simulated pending changes
+                      onSync={triggerSync}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Package size={24} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No modules to sync</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -229,7 +254,7 @@ function App() {
             <RealTimeSyncPanel
               syncStatus={syncStatus}
               syncProgress={syncProgress}
-              conflicts={conflicts}
+              conflicts={safeConflicts}
               modules={mockModules}
               onTriggerSync={triggerSync}
               onResolveConflict={resolveConflict}

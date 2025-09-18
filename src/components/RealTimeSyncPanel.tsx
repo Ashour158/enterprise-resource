@@ -32,13 +32,17 @@ interface RealTimeSyncPanelProps {
 export function RealTimeSyncPanel({ 
   syncStatus, 
   syncProgress, 
-  conflicts, 
-  modules,
+  conflicts = [], // Default to empty array
+  modules = [], // Default to empty array
   onTriggerSync, 
   onResolveConflict,
   onUpdateSyncConfig 
 }: RealTimeSyncPanelProps) {
   const [showConflicts, setShowConflicts] = useState(false)
+  
+  // Ensure safe arrays
+  const safeConflicts = Array.isArray(conflicts) ? conflicts : []
+  const safeModules = Array.isArray(modules) ? modules : []
 
   const getConnectionIcon = () => {
     if (!syncStatus.isConnected) return <WifiSlash size={16} className="text-red-500" />
@@ -142,16 +146,16 @@ export function RealTimeSyncPanel({
           </Button>
           
           <SyncConfiguration 
-            modules={modules}
+            modules={safeModules}
             onUpdateConfig={onUpdateSyncConfig}
           />
           
-          {conflicts.length > 0 && (
+          {safeConflicts.length > 0 && (
             <Dialog open={showConflicts} onOpenChange={setShowConflicts}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                   <Warning size={14} className="mr-2" />
-                  {conflicts.length}
+                  {safeConflicts.length}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
@@ -162,7 +166,7 @@ export function RealTimeSyncPanel({
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {conflicts.map((conflict) => (
+                  {safeConflicts.map((conflict) => (
                     <ConflictItem 
                       key={conflict.id}
                       conflict={conflict}

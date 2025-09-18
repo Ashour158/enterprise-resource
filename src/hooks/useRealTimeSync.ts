@@ -15,14 +15,15 @@ interface UseRealTimeSyncReturn {
 }
 
 export function useRealTimeSync(companyId: string): UseRealTimeSyncReturn {
-  const defaultSyncStatus: SyncStatus = {
+  // Use static default to avoid re-creating object on every render
+  const defaultSyncStatus = useRef<SyncStatus>({
     isConnected: false,
     lastSync: new Date().toISOString(),
     syncInProgress: false,
     connectionQuality: 'offline',
     pendingUpdates: 0,
     conflictCount: 0
-  }
+  }).current
 
   const [syncStatus, setSyncStatus] = useKV<SyncStatus>('sync-status', defaultSyncStatus)
   const [conflicts, setConflicts] = useKV<SyncConflict[]>('sync-conflicts', [])
@@ -38,7 +39,8 @@ export function useRealTimeSync(companyId: string): UseRealTimeSyncReturn {
     // In a real implementation, this would connect to your WebSocket server
     // For demo purposes, we'll simulate the connection
     setSyncStatus((prev) => ({
-      ...(prev || defaultSyncStatus),
+      ...defaultSyncStatus,
+      ...prev,
       isConnected: true,
       connectionQuality: 'excellent'
     }))
@@ -60,7 +62,8 @@ export function useRealTimeSync(companyId: string): UseRealTimeSyncReturn {
 
       // Simulate processing updates
       setSyncStatus((prev) => ({
-        ...(prev || defaultSyncStatus),
+        ...defaultSyncStatus,
+        ...prev,
         lastSync: new Date().toISOString(),
         pendingUpdates: Math.max(0, (prev?.pendingUpdates || 0) - 1)
       }))
@@ -80,7 +83,8 @@ export function useRealTimeSync(companyId: string): UseRealTimeSyncReturn {
     }
 
     setSyncStatus((prev) => ({
-      ...(prev || defaultSyncStatus),
+      ...defaultSyncStatus,
+      ...prev,
       isConnected: false,
       connectionQuality: 'offline'
     }))
@@ -88,7 +92,8 @@ export function useRealTimeSync(companyId: string): UseRealTimeSyncReturn {
 
   const triggerSync = useCallback((moduleId?: string) => {
     setSyncStatus((prev) => ({ 
-      ...(prev || defaultSyncStatus),
+      ...defaultSyncStatus,
+      ...prev,
       syncInProgress: true 
     }))
     setSyncProgress(0)
@@ -99,7 +104,8 @@ export function useRealTimeSync(companyId: string): UseRealTimeSyncReturn {
         if (prev >= 100) {
           clearInterval(progressInterval)
           setSyncStatus((prevStatus) => ({
-            ...(prevStatus || defaultSyncStatus),
+            ...defaultSyncStatus,
+            ...prevStatus,
             syncInProgress: false,
             lastSync: new Date().toISOString(),
             pendingUpdates: 0
@@ -125,7 +131,8 @@ export function useRealTimeSync(companyId: string): UseRealTimeSyncReturn {
     ))
     
     setSyncStatus((prev) => ({
-      ...(prev || defaultSyncStatus),
+      ...defaultSyncStatus,
+      ...prev,
       conflictCount: Math.max(0, (prev?.conflictCount || 0) - 1)
     }))
 
@@ -175,7 +182,8 @@ export function useRealTimeSync(companyId: string): UseRealTimeSyncReturn {
 
         setConflicts((prev) => [...(prev || []), newConflict])
         setSyncStatus((prev) => ({
-          ...(prev || defaultSyncStatus),
+          ...defaultSyncStatus,
+          ...prev,
           conflictCount: (prev?.conflictCount || 0) + 1
         }))
       }

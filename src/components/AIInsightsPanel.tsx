@@ -10,7 +10,10 @@ interface AIInsightsPanelProps {
   onActionClick: (insight: AIInsight, action: string) => void
 }
 
-export function AIInsightsPanel({ insights, onActionClick }: AIInsightsPanelProps) {
+export function AIInsightsPanel({ insights = [], onActionClick }: AIInsightsPanelProps) {
+  // Ensure safe array
+  const safeInsights = Array.isArray(insights) ? insights : []
+  
   const getInsightIcon = (type: string) => {
     switch (type) {
       case 'prediction': return <TrendUp size={16} className="text-blue-600" />
@@ -42,7 +45,13 @@ export function AIInsightsPanel({ insights, onActionClick }: AIInsightsPanelProp
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {insights.map((insight) => (
+        {safeInsights.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            <Brain size={24} className="mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No AI insights available</p>
+          </div>
+        ) : (
+          safeInsights.map((insight) => (
           <div 
             key={insight.id} 
             className="p-4 border border-border/50 rounded-lg bg-card/50 hover:bg-card transition-colors"
@@ -93,7 +102,8 @@ export function AIInsightsPanel({ insights, onActionClick }: AIInsightsPanelProp
               </div>
             )}
           </div>
-        ))}
+        ))
+        )}
       </CardContent>
     </Card>
   )

@@ -33,13 +33,17 @@ interface HeaderProps {
 export function Header({ 
   user, 
   currentCompany, 
-  companies, 
-  notifications,
+  companies = [], 
+  notifications = [],
   onCompanyChange,
   onNotificationClick 
 }: HeaderProps) {
   const [isCompanyMenuOpen, setIsCompanyMenuOpen] = useState(false)
-  const unreadCount = notifications.filter(n => !n.isRead).length
+  
+  // Ensure safe arrays
+  const safeCompanies = Array.isArray(companies) ? companies : []
+  const safeNotifications = Array.isArray(notifications) ? notifications : []
+  const unreadCount = safeNotifications.filter(n => !n.isRead).length
 
   return (
     <header className="border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -75,7 +79,7 @@ export function Header({
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuLabel>Switch Company</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {companies.map((company) => (
+              {safeCompanies.map((company) => (
                 <DropdownMenuItem 
                   key={company.id}
                   onClick={() => onCompanyChange(company.id)}
