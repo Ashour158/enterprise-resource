@@ -7,6 +7,7 @@ import { SystemHealthMonitor } from '@/components/SystemHealthMonitor'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Toaster } from '@/components/ui/sonner'
 import { 
   mockCompanies, 
   mockUser, 
@@ -62,6 +63,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Toaster />
       <Header 
         user={mockUser}
         currentCompany={currentCompany}
