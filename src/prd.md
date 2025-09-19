@@ -1,137 +1,200 @@
-# Advanced Data Visualization Dashboard - PRD
+# Advanced Multi-Company ERP System - PRD
 
 ## Core Purpose & Success
 
-**Mission Statement**: Provide enterprise-grade data visualization and analytics capabilities for multi-company ERP systems with real-time insights, AI-powered analytics, and customizable reporting.
+**Mission Statement**: Deliver a comprehensive enterprise-grade ERP system supporting multi-company operations with advanced role-based permissions, real-time data synchronization, AI-powered insights, and complete database schema-driven user management.
 
 **Success Indicators**: 
-- Reduced time to insights by 70% through interactive dashboards
-- 95% user adoption rate for data-driven decision making
-- Real-time data accuracy with <2 second latency
-- Seamless multi-company data isolation and comparison
+- 100% data isolation between companies with zero security incidents
+- Complete multi-company user management supporting same email across companies
+- Advanced role hierarchy with company-specific permission isolation  
+- Real-time synchronization with intelligent conflict resolution workflows
+- Comprehensive audit trails and session management with device fingerprinting
+- 95% user adoption rate with seamless company switching experience
 
-**Experience Qualities**: Intelligent, Responsive, Insightful
+**Experience Qualities**: Enterprise-Secure, Multi-Tenant-Intelligent, Database-Schema-Driven
 
 ## Project Classification & Approach
 
-**Complexity Level**: Complex Application (advanced functionality, multi-company architecture, real-time data processing)
+**Complexity Level**: Complex Enterprise Application (advanced multi-company architecture, database schema enforcement, real-time processing, AI integration)
 
-**Primary User Activity**: Analyzing and interpreting complex business data across multiple modules and companies
+**Primary User Activity**: Multi-company operations management with advanced security, role-based access control, and comprehensive audit capabilities
 
 ## Thought Process for Feature Selection
 
-**Core Problem Analysis**: ERP systems generate massive amounts of data across modules, but users struggle to extract actionable insights quickly and safely across multiple companies.
+**Core Problem Analysis**: Enterprise organizations require ERP systems that support multiple companies under one umbrella while maintaining strict data isolation, advanced permission management, and seamless user experience across company boundaries.
 
-**User Context**: Executives, managers, and analysts need to monitor KPIs, identify trends, compare performance across companies, and make data-driven decisions in real-time.
+**User Context**: Global users need to access multiple companies with different roles and permissions, administrators need granular control over user access and roles, and executives need comprehensive oversight with proper security.
 
-**Critical Path**: Login → Select Company Context → Choose Dashboard Type → Configure Visualizations → Analyze Data → Export/Share Insights
+**Critical Path**: Global User Registration → Company Invitation → Multi-Company Profile Creation → Role Assignment → Company Context Switching → Secure Operations
 
 **Key Moments**: 
-1. Real-time data loading and synchronization
-2. Interactive chart exploration and drilling down
-3. AI-powered insight discovery and recommendations
+1. Seamless company switching without re-authentication
+2. Advanced role-based permission enforcement with database-level isolation
+3. Real-time session monitoring with security alerts
+4. Comprehensive audit trails for compliance
 
 ## Essential Features
 
-### Real-Time Data Visualization
-- **What**: Live updating charts and metrics with WebSocket integration
-- **Why**: Business decisions require current data, not stale reports
-- **Success**: Data updates within 2 seconds of source changes
+### Multi-Company User Architecture
+- **What**: Complete database schema implementation with global users, company-specific profiles, role assignments, and session management
+- **Why**: Enable enterprise-grade multi-tenancy with proper data isolation and security
+- **Success**: Zero data leakage incidents, support for unlimited companies per user
 
-### Multi-Company Data Isolation
-- **What**: Secure data visualization with proper company context switching
-- **Why**: Ensure data privacy and enable cross-company comparisons
-- **Success**: Zero data leakage incidents, clear company context indicators
+### Advanced Role-Based Permission Management  
+- **What**: Hierarchical role system with company isolation, permission matrices, and inheritance
+- **Why**: Provide granular control over user access while maintaining security boundaries
+- **Success**: 100% permission enforcement, comprehensive role management capabilities
 
-### Interactive Chart Library
-- **What**: Comprehensive chart types with drill-down capabilities
-- **Why**: Different data requires different visualization approaches
-- **Success**: Support for 15+ chart types with smooth interactions
+### Enhanced Session Management
+- **What**: Device fingerprinting, location tracking, session monitoring, and security alerts
+- **Why**: Ensure secure access with comprehensive audit trails for compliance
+- **Success**: Complete session visibility, proactive security monitoring
 
-### AI-Powered Analytics
-- **What**: Automated insight generation and anomaly detection
-- **Why**: Surface hidden patterns and accelerate decision-making
-- **Success**: 80% of generated insights rated as valuable by users
+### Real-Time Data Synchronization with Conflict Resolution
+- **What**: Advanced conflict detection and AI-powered resolution workflows
+- **Why**: Maintain data consistency across real-time operations while handling complex scenarios
+- **Success**: 99.9% sync reliability, intelligent conflict resolution
 
-### Customizable Dashboards
-- **What**: Drag-and-drop dashboard builder with saved configurations
-- **Why**: Different roles need different views of the same data
-- **Success**: Average of 3 custom dashboards per user
+### AI-Powered User Profile Management
+- **What**: Intelligent avatar uploads, preference management, and behavior analysis
+- **Why**: Enhance user experience while providing insights into usage patterns
+- **Success**: Personalized experiences, automated preference suggestions
 
 ## Design Direction
 
 ### Visual Tone & Identity
-**Emotional Response**: Professional confidence, analytical clarity, data-driven precision
-**Design Personality**: Clean, sophisticated, enterprise-grade with subtle data-focused aesthetics
-**Visual Metaphors**: Grid systems, layered information architecture, progressive disclosure
-**Simplicity Spectrum**: Clean interface with rich functionality - minimal cognitive load
+**Emotional Response**: Enterprise confidence, security-focused professionalism, multi-tenant clarity
+**Design Personality**: Clean, sophisticated, security-conscious with clear company context indicators
+**Visual Metaphors**: Organizational hierarchies, secure vaults, connected enterprises
+**Simplicity Spectrum**: Professional interface with enterprise-grade functionality
 
 ### Color Strategy
-**Color Scheme Type**: Professional data palette with semantic color coding
-**Primary Color**: Deep blue (oklch(0.45 0.15 240)) - trust and reliability
+**Color Scheme Type**: Professional enterprise palette with semantic role and company coding
+**Primary Color**: Deep enterprise blue (oklch(0.45 0.15 240)) - trust and corporate stability
 **Secondary Colors**: 
-- Success green (oklch(0.60 0.20 130)) for positive metrics
-- Warning amber (oklch(0.70 0.15 60)) for attention items
-- Error red (oklch(0.60 0.22 25)) for negative indicators
-**Accent Color**: Bright orange (oklch(0.70 0.20 50)) for interactive elements and highlights
-**Color Psychology**: Blues convey trust and stability, green indicates positive performance, red signals issues requiring attention
-**Color Accessibility**: All color combinations meet WCAG AA standards (4.5:1 contrast ratio)
-**Foreground/Background Pairings**:
-- Primary text on background: oklch(0.25 0.10 240) on oklch(1 0 0) - 16.4:1 ratio
-- Card text on card background: oklch(0.25 0.10 240) on oklch(0.98 0 0) - 15.1:1 ratio
-- Primary button text: oklch(1 0 0) on oklch(0.45 0.15 240) - 9.7:1 ratio
+- Success green (oklch(0.60 0.20 130)) for active users and successful operations
+- Warning amber (oklch(0.70 0.15 60)) for pending actions and security alerts
+- Error red (oklch(0.60 0.22 25)) for access violations and critical issues
+**Accent Color**: Corporate orange (oklch(0.70 0.20 50)) for company switching and role indicators
+**Color Psychology**: Blues convey enterprise trust, green indicates secure operations, red signals security concerns
+**Color Accessibility**: WCAG AA compliance across all company contexts and role indicators
 
 ### Typography System
-**Font Pairing Strategy**: Inter for UI text, JetBrains Mono for data/numbers
-**Typographic Hierarchy**: Bold headers (700), medium labels (500), regular body (400)
-**Font Personality**: Clean, legible, professional with excellent number distinction
-**Readability Focus**: Generous line height (1.5), optimal reading width, clear size relationships
-**Typography Consistency**: Consistent scale (1.25 ratio), aligned baseline grid
-**Which fonts**: Inter (primary), JetBrains Mono (data/code)
-**Legibility Check**: Excellent legibility tested across devices and zoom levels
-
-### Visual Hierarchy & Layout
-**Attention Direction**: Progressive disclosure from overview to detail, guided visual flow
-**White Space Philosophy**: Generous spacing to reduce cognitive load and highlight data
-**Grid System**: 12-column responsive grid with consistent gutters
-**Responsive Approach**: Mobile-first with adaptive chart scaling and layout reflow
-**Content Density**: Balanced information density with breathing room
-
-### Animations
-**Purposeful Meaning**: Smooth transitions convey data relationships and state changes
-**Hierarchy of Movement**: Subtle chart animations (300ms), state transitions (200ms), micro-interactions (150ms)
-**Contextual Appropriateness**: Professional, subtle animations that enhance rather than distract
+**Font Pairing Strategy**: Inter for enterprise UI, JetBrains Mono for technical data and audit logs
+**Typographic Hierarchy**: Bold for role titles, medium for user names, regular for details
+**Font Personality**: Professional, authoritative, clear hierarchy indication
+**Typography Consistency**: Consistent treatment across company contexts
 
 ### UI Elements & Component Selection
-**Component Usage**: Cards for data groupings, Tabs for view switching, Dialogs for drill-down details
-**Component Customization**: Custom chart containers with consistent spacing and borders
-**Component States**: Clear loading states, error handling, and empty data scenarios
-**Icon Selection**: Phosphor icons for consistency with existing ERP system
-**Component Hierarchy**: Primary actions (solid buttons), secondary (outline), tertiary (ghost)
-**Spacing System**: 4px base unit with consistent padding and margins
-**Mobile Adaptation**: Responsive charts with touch-optimized interactions
+**Component Usage**: Advanced Tables for user management, Role Cards for permission visualization, Session Monitors for security
+**Component Customization**: Company-specific theming, role-based styling, security-focused indicators
+**Company Context Indicators**: Clear visual separation between companies, role badges, permission indicators
+**Security Elements**: Session status indicators, security alerts, audit trail displays
 
-### Visual Consistency Framework
-**Design System Approach**: Component-based design extending existing ERP patterns
-**Style Guide Elements**: Consistent color usage, typography scale, spacing rhythm
-**Visual Rhythm**: Regular patterns in layout, consistent visual weight distribution
-**Brand Alignment**: Professional enterprise aesthetic matching ERP system identity
+## Database Schema Implementation
 
-### Accessibility & Readability
-**Contrast Goal**: WCAG AA compliance minimum, AAA preferred for critical data elements
+### Companies Table
+- **Purpose**: Store company information with subscription and security settings
+- **Key Features**: Multi-tenant isolation, security configuration, company-specific settings
 
-## Edge Cases & Problem Scenarios
+### Global Users Table  
+- **Purpose**: Central authentication and personal information storage
+- **Key Features**: Email uniqueness across system, MFA support, security settings
 
-**Potential Obstacles**: Large datasets causing performance issues, real-time sync failures, complex multi-company permission scenarios
-**Edge Case Handling**: Progressive loading, graceful degradation, clear error states with recovery options
-**Technical Constraints**: WebSocket connection limits, browser memory for large datasets, mobile performance
+### Company User Profiles Table
+- **Purpose**: Company-specific user information and employment details
+- **Key Features**: Employee IDs, department hierarchy, manager relationships, employment types
+
+### System Roles Table
+- **Purpose**: Company-specific role definitions with hierarchical levels
+- **Key Features**: Role levels 1-5, permission inheritance, system vs custom roles
+
+### Company User Roles Table
+- **Purpose**: Role assignments with audit trails and expiration
+- **Key Features**: Assignment tracking, role expiration, audit compliance
+
+### Enhanced User Sessions Table
+- **Purpose**: Comprehensive session management with security context
+- **Key Features**: Device fingerprinting, location data, company context, security monitoring
+
+## Security & Compliance Framework
+
+### Data Isolation
+- **Company-Level Isolation**: Strict data boundaries between companies
+- **Role-Based Access**: Granular permission enforcement at database level
+- **Session Security**: Device tracking, location monitoring, anomaly detection
+
+### Audit & Compliance
+- **Comprehensive Logging**: All user actions, role changes, company switches
+- **Compliance Standards**: GDPR, HIPAA, SOX compliance features
+- **Security Monitoring**: Real-time alerts, session analysis, access pattern monitoring
 
 ## Implementation Considerations
 
-**Scalability Needs**: Support for 10M+ data points, 50+ concurrent users per company
-**Testing Focus**: Performance testing with large datasets, real-time sync reliability, cross-company data isolation
-**Critical Questions**: How to balance real-time updates with performance? How to ensure data security across companies?
+### Scalability Architecture
+- **Multi-Tenant Design**: Support for unlimited companies and users
+- **Performance Optimization**: Efficient company context switching, role caching
+- **Database Optimization**: Proper indexing for multi-company queries
+
+### Integration Capabilities
+- **API Framework**: RESTful APIs with company context headers
+- **Real-Time Updates**: WebSocket support for live user management
+- **AI Integration**: Machine learning for user behavior analysis and security
+
+## Advanced Features
+
+### Intelligent User Management
+- **AI-Powered Role Suggestions**: Machine learning for optimal role assignments
+- **Behavioral Analysis**: User pattern recognition for security and optimization
+- **Automated Compliance**: Smart audit trail generation and compliance reporting
+
+### Enterprise Security Features
+- **Advanced MFA**: Multiple authentication methods, hardware key support
+- **Risk Assessment**: Real-time security scoring based on user behavior
+- **Incident Response**: Automated security incident detection and response
+
+## Edge Cases & Problem Scenarios
+
+### Complex Permission Scenarios
+- **Cross-Company Operations**: Users with roles in multiple related companies
+- **Temporary Access**: Time-limited role assignments and access grants
+- **Emergency Access**: Break-glass procedures for critical situations
+
+### Data Synchronization Challenges
+- **Company Mergers**: Handling user account consolidation across companies
+- **Role Conflicts**: Resolving permission conflicts during company switches
+- **Audit Compliance**: Maintaining audit trails during complex operations
+
+## Testing & Validation
+
+### Security Testing
+- **Penetration Testing**: Regular security assessments for multi-company isolation
+- **Compliance Audits**: Regular compliance validation for enterprise standards
+- **User Acceptance**: Role-based testing with actual enterprise users
+
+### Performance Testing
+- **Scalability Testing**: Load testing with multiple companies and users
+- **Real-Time Performance**: WebSocket connection testing under load
+- **Database Performance**: Multi-company query optimization validation
+
+## Success Metrics
+
+### Security Metrics
+- Zero data leakage incidents between companies
+- 100% audit trail completeness
+- Sub-second company context switching
+
+### User Experience Metrics  
+- 95% user satisfaction with multi-company operations
+- Reduced support tickets for role and permission issues
+- Increased user productivity across company boundaries
+
+### Technical Metrics
+- 99.9% system uptime across all company tenants
+- Real-time synchronization with <2 second latency
+- Comprehensive security monitoring with proactive alerts
 
 ## Reflection
 
-This dashboard approach uniquely serves enterprise ERP needs by combining real-time capabilities with enterprise security requirements. The focus on multi-company architecture and AI-powered insights differentiates it from generic dashboard solutions. Success depends on seamless integration with existing ERP modules and maintaining performance at scale.
+This advanced multi-company ERP system uniquely addresses enterprise needs by implementing a complete database schema-driven approach to user management while maintaining the highest security standards. The success depends on seamless integration of complex role hierarchies with intuitive user experiences, ensuring that enterprise security never compromises operational efficiency. The implementation provides a solid foundation for unlimited scaling while maintaining strict data isolation and comprehensive audit capabilities.

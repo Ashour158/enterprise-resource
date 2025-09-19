@@ -56,63 +56,41 @@ export interface GlobalUser {
   updated_at: string
 }
 
-// Company-specific user profile
+// Company-specific user profile (aligned with database schema)
 export interface CompanyUserProfile {
   id: string
   global_user_id: string
   company_id: string
-  employee_id?: string
+  employee_id?: string // company-specific employee ID
   department?: string
-  job_title?: string
-  role: string
-  permissions: string[]
-  status: 'active' | 'inactive' | 'suspended'
+  position?: string // job title/position
+  manager_id?: string // references another company_user_profile
   hire_date?: string
-  manager_id?: string
-  cost_center?: string
-  settings: Record<string, any>
-  last_activity?: string
-  created_at: string
-  updated_at: string
-}
-
-// Company user profile with role assignments
-export interface CompanyUserProfiles {
-  id: string
-  global_user_id: string
-  company_id: string
-  employee_id?: string
-  department_id?: string
-  job_title?: string
-  role_id: string
-  manager_id?: string
-  cost_center?: string
-  hire_date?: string
-  employment_type: 'full_time' | 'part_time' | 'contractor' | 'intern'
-  salary_band?: string
+  employment_type: 'full_time' | 'part_time' | 'contract' | 'consultant'
+  work_location?: string
   status: 'active' | 'inactive' | 'suspended' | 'terminated'
-  permissions: string[]
-  settings: Record<string, any>
-  last_activity?: string
+  company_specific_settings: Record<string, any>
+  last_company_login?: string
   created_at: string
   updated_at: string
 }
 
-// Combined user interface for UI usage
+// Combined user interface for UI usage (with role data populated from relationships)
 export interface User {
   id: string
   email: string
   name: string
   avatar?: string
-  role: string
-  permissions: string[]
+  role: string // populated from current company context
+  permissions: string[] // populated from current company context
   companyId: string
   employee_id?: string
   department?: string
-  job_title?: string
+  position?: string // job title from company profile
   is_owner?: boolean
   company_profiles: CompanyUserProfile[]
   global_profile: GlobalUser
+  current_roles?: SystemRole[] // roles in current company
 }
 
 // Multi-company session context
@@ -296,8 +274,7 @@ export interface WorkflowCondition {
   value: any
 }
 
-// Database Schema Interfaces for Multi-Company Architecture
-
+// Legacy Role interface for backward compatibility
 export interface Role {
   id: string
   company_id: string
@@ -313,6 +290,57 @@ export interface Role {
   created_by: string
   created_at: string
   updated_at: string
+}
+
+// System roles table (company-specific)
+export interface SystemRole {
+  id: string
+  company_id: string
+  role_name: string
+  role_level: number // 1=SuperAdmin, 2=Admin, 3=Manager, 4=User, 5=Viewer
+  description?: string
+  is_system_role: boolean
+  permissions: Record<string, any>
+  created_at: string
+}
+
+// Role permissions table
+export interface RolePermissions {
+  id: string
+  role_id: string
+  module_name: string
+  permission_type: 'create' | 'read' | 'update' | 'delete' | 'approve' | 'admin'
+  resource_type?: string
+  conditions: Record<string, any>
+  created_at: string
+}
+
+// Company-specific role assignments
+export interface CompanyUserRole {
+  id: string
+  company_user_profile_id: string
+  role_id: string
+  assigned_by: string
+  assigned_at: string
+  expires_at?: string
+  is_active: boolean
+}
+
+// Enhanced sessions table with company context
+export interface UserSession {
+  id: string
+  global_user_id: string
+  company_id: string // Current active company
+  company_user_profile_id: string
+  session_token: string
+  refresh_token?: string
+  expires_at: string
+  ip_address?: string
+  user_agent?: string
+  device_fingerprint?: string
+  location_data: Record<string, any>
+  is_active: boolean
+  created_at: string
 }
 
 export interface Permission {
@@ -443,13 +471,15 @@ export interface Department {
 export interface UserSession {
   id: string
   global_user_id: string
-  company_id: string
-  jwt_token: string
+  company_id: string // Current active company
+  company_user_profile_id: string
+  session_token: string
   refresh_token?: string
   expires_at: string
-  last_activity: string
   ip_address?: string
   user_agent?: string
+  device_fingerprint?: string
+  location_data: Record<string, any>
   is_active: boolean
   created_at: string
 }

@@ -14,6 +14,7 @@ import { ConflictResolutionManager } from '@/components/ConflictResolutionManage
 import { PermissionDashboard } from '@/components/PermissionDashboard'
 import { UserProfileManager } from '@/components/UserProfileManager'
 import { CompanyDashboard } from '@/components/CompanyDashboard'
+import { AdvancedUserManagement } from '@/components/AdvancedUserManagement'
 import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -196,6 +197,7 @@ function App() {
                  activeView === 'conflicts' ? 'Advanced Conflict Resolution' :
                  activeView === 'permissions' ? 'Permission Management' :
                  activeView === 'profile' ? 'User Profile' :
+                 activeView === 'user-management' ? 'Advanced User Management' :
                  'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
@@ -209,6 +211,8 @@ function App() {
                   ? 'Advanced role-based access control with company isolation and security monitoring'
                   : activeView === 'profile'
                   ? 'Manage your personal information, preferences, and security settings'
+                  : activeView === 'user-management'
+                  ? 'Advanced role-based user management with company isolation and database schema control'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -235,6 +239,10 @@ function App() {
                 <TabsTrigger value="companies" className="flex items-center gap-2">
                   <Buildings size={16} />
                   Companies
+                </TabsTrigger>
+                <TabsTrigger value="user-management" className="flex items-center gap-2">
+                  <Users size={16} />
+                  User Management
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -388,6 +396,10 @@ function App() {
 
           <TabsContent value="companies" className="space-y-6">
             <CompanyDashboard />
+          </TabsContent>
+
+          <TabsContent value="user-management" className="space-y-6">
+            <AdvancedUserManagement companyId={currentCompany.id} />
           </TabsContent>
         </Tabs>
       </main>

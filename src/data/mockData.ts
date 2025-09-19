@@ -1,4 +1,4 @@
-import { ERPModule, Company, User, GlobalUser, CompanyUserProfile, CompanyAccess, SessionContext, Notification, AIInsight, SystemHealth } from '@/types/erp'
+import { ERPModule, Company, User, GlobalUser, CompanyUserProfile, CompanyAccess, SessionContext, Notification, AIInsight, SystemHealth, SystemRole, CompanyUserRole, UserSession } from '@/types/erp'
 
 export const mockCompanies: Company[] = [
   {
@@ -122,17 +122,16 @@ export const mockCompanyProfiles: CompanyUserProfile[] = [
     company_id: 'acme-corp',
     employee_id: 'EMP-001',
     department: 'Information Technology',
-    job_title: 'System Administrator',
-    role: 'admin',
-    permissions: ['all'],
+    position: 'System Administrator',
+    employment_type: 'full_time',
     status: 'active',
     hire_date: '2023-01-15',
-    cost_center: 'IT-001',
-    settings: {
+    work_location: 'New York Office',
+    company_specific_settings: {
       default_module: 'dashboard',
       notification_frequency: 'immediate'
     },
-    last_activity: '2024-01-15T11:30:00Z',
+    last_company_login: '2024-01-15T11:30:00Z',
     created_at: '2023-01-15T10:00:00Z',
     updated_at: '2024-01-15T11:30:00Z'
   },
@@ -142,17 +141,16 @@ export const mockCompanyProfiles: CompanyUserProfile[] = [
     company_id: 'tech-solutions',
     employee_id: 'TS-042',
     department: 'Operations',
-    job_title: 'Operations Manager',
-    role: 'manager',
-    permissions: ['finance', 'inventory', 'hr', 'reporting'],
+    position: 'Operations Manager',
+    employment_type: 'full_time',
     status: 'active',
     hire_date: '2023-06-20',
-    cost_center: 'OPS-001',
-    settings: {
+    work_location: 'San Francisco Office',
+    company_specific_settings: {
       default_module: 'finance',
       notification_frequency: 'daily'
     },
-    last_activity: '2024-01-14T16:45:00Z',
+    last_company_login: '2024-01-14T16:45:00Z',
     created_at: '2023-06-20T14:00:00Z',
     updated_at: '2024-01-14T16:45:00Z'
   }
@@ -202,7 +200,7 @@ export const mockUser: User = {
   companyId: 'acme-corp',
   employee_id: 'EMP-001',
   department: 'Information Technology',
-  job_title: 'System Administrator',
+  position: 'System Administrator',
   is_owner: true,
   company_profiles: mockCompanyProfiles,
   global_profile: mockGlobalUser
@@ -537,5 +535,122 @@ export const mockSyncConflicts = [
     clientValue: 5200,
     timestamp: new Date().toISOString(),
     resolved: false
+  }
+]
+
+// Mock System Roles
+export const mockSystemRoles: SystemRole[] = [
+  {
+    id: 'role-super-admin',
+    company_id: 'acme-corp',
+    role_name: 'Super Administrator',
+    role_level: 1,
+    description: 'Full system access with all permissions',
+    is_system_role: true,
+    permissions: {
+      modules: ['*'],
+      actions: ['*'],
+      scope: 'global'
+    },
+    created_at: '2023-01-15T10:00:00Z'
+  },
+  {
+    id: 'role-admin',
+    company_id: 'acme-corp',
+    role_name: 'Administrator',
+    role_level: 2,
+    description: 'Company-wide administrative access',
+    is_system_role: true,
+    permissions: {
+      modules: ['finance', 'hr', 'inventory', 'sales', 'reporting'],
+      actions: ['create', 'read', 'update', 'delete', 'approve'],
+      scope: 'company'
+    },
+    created_at: '2023-01-15T10:00:00Z'
+  },
+  {
+    id: 'role-manager',
+    company_id: 'acme-corp',
+    role_name: 'Manager',
+    role_level: 3,
+    description: 'Department management with approval rights',
+    is_system_role: true,
+    permissions: {
+      modules: ['finance', 'hr', 'inventory', 'sales'],
+      actions: ['read', 'update', 'approve'],
+      scope: 'department'
+    },
+    created_at: '2023-01-15T10:00:00Z'
+  },
+  {
+    id: 'role-user',
+    company_id: 'acme-corp',
+    role_name: 'User',
+    role_level: 4,
+    description: 'Standard user access',
+    is_system_role: true,
+    permissions: {
+      modules: ['finance', 'inventory', 'sales'],
+      actions: ['read', 'update'],
+      scope: 'own'
+    },
+    created_at: '2023-01-15T10:00:00Z'
+  },
+  {
+    id: 'role-viewer',
+    company_id: 'acme-corp',
+    role_name: 'Viewer',
+    role_level: 5,
+    description: 'Read-only access',
+    is_system_role: true,
+    permissions: {
+      modules: ['reporting'],
+      actions: ['read'],
+      scope: 'own'
+    },
+    created_at: '2023-01-15T10:00:00Z'
+  }
+]
+
+// Mock Company User Roles
+export const mockCompanyUserRoles: CompanyUserRole[] = [
+  {
+    id: 'user-role-1',
+    company_user_profile_id: 'profile-1',
+    role_id: 'role-admin',
+    assigned_by: 'system',
+    assigned_at: '2023-01-15T10:00:00Z',
+    is_active: true
+  },
+  {
+    id: 'user-role-2',
+    company_user_profile_id: 'profile-2',
+    role_id: 'role-manager',
+    assigned_by: 'profile-1',
+    assigned_at: '2023-06-20T10:00:00Z',
+    is_active: true
+  }
+]
+
+// Mock User Sessions
+export const mockUserSessions: UserSession[] = [
+  {
+    id: 'session-1',
+    global_user_id: 'global-user-1',
+    company_id: 'acme-corp',
+    company_user_profile_id: 'profile-1',
+    session_token: 'jwt-token-example',
+    refresh_token: 'refresh-token-example',
+    expires_at: '2024-01-16T10:00:00Z',
+    ip_address: '192.168.1.100',
+    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    device_fingerprint: 'device-123',
+    location_data: {
+      country: 'US',
+      city: 'New York',
+      timezone: 'America/New_York'
+    },
+    is_active: true,
+    created_at: '2024-01-15T10:00:00Z'
   }
 ]
