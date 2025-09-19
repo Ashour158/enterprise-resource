@@ -30,6 +30,14 @@
 - **Dynamic Permission Assignment**: Role-based and individual permission overrides
 - **Permission Inheritance**: Hierarchical permission cascading with explicit overrides
 
+### Advanced Permission Inheritance & Role Hierarchies
+- **Role Hierarchy Definition**: Multi-level organizational structure with parent-child relationships
+- **Permission Inheritance Flows**: Automated cascading of permissions from parent to child roles
+- **Inheritance Conflict Resolution**: Intelligent detection and resolution of permission contradictions
+- **Permission Delegation**: Temporary permission grants with time limits and revocation capabilities
+- **Effective Permissions Calculation**: Real-time computation of cumulative permissions from all sources
+- **Inheritance Validation**: Automated detection of circular dependencies and excessive inheritance depth
+
 ### Security & Audit Framework
 - **Real-time Permission Validation**: Every action verified against current permissions
 - **Audit Trail System**: Comprehensive logging of all permission changes and access attempts

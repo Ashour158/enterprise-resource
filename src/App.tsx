@@ -17,6 +17,7 @@ import { UserProfileManager } from '@/components/UserProfileManager'
 import { CompanyDashboard } from '@/components/CompanyDashboard'
 import { CompanyInvitationManager } from '@/components/CompanyInvitationManager'
 import { AdvancedUserManagement } from '@/components/AdvancedUserManagement'
+import { PermissionInheritanceManager } from '@/components/PermissionInheritanceManager'
 import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -32,7 +33,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -198,6 +199,7 @@ function App() {
                  activeView === 'visualization' ? 'Data Visualization' :
                  activeView === 'conflicts' ? 'Advanced Conflict Resolution' :
                  activeView === 'permissions' ? 'RBAC Management' :
+                 activeView === 'inheritance' ? 'Permission Inheritance' :
                  activeView === 'profile' ? 'User Profile' :
                  activeView === 'user-management' ? 'Advanced User Management' :
                  activeView === 'invitations' ? 'Company Invitations' :
@@ -212,6 +214,8 @@ function App() {
                   ? 'Intelligent workflows and AI-powered resolution for data synchronization conflicts'
                   : activeView === 'permissions'
                   ? 'Advanced role-based access control with company isolation and security monitoring'
+                  : activeView === 'inheritance'
+                  ? 'Role hierarchies, permission inheritance flows, and delegation management'
                   : activeView === 'profile'
                   ? 'Manage your personal information, preferences, and security settings'
                   : activeView === 'user-management'
@@ -236,6 +240,10 @@ function App() {
                 <TabsTrigger value="permissions" className="flex items-center gap-2">
                   <Shield size={16} />
                   RBAC Management
+                </TabsTrigger>
+                <TabsTrigger value="inheritance" className="flex items-center gap-2">
+                  <TreeStructure size={16} />
+                  Inheritance
                 </TabsTrigger>
                 <TabsTrigger value="profile" className="flex items-center gap-2">
                   <User size={16} />
@@ -397,6 +405,10 @@ function App() {
               companyId={currentCompany.id}
               userId={mockUser.id}
             />
+          </TabsContent>
+
+          <TabsContent value="inheritance" className="space-y-6">
+            <PermissionInheritanceManager companyId={currentCompany.id} />
           </TabsContent>
 
           <TabsContent value="profile" className="space-y-6">

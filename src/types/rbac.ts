@@ -25,6 +25,10 @@ export interface Role {
   isSystemRole: boolean
   permissions: Permission[]
   inheritedPermissions?: Permission[]
+  parentRoleId?: string
+  childRoleIds?: string[]
+  inheritanceChain?: string[]
+  effectivePermissions?: Permission[]
   userCount: number
   isActive: boolean
   createdAt: string
@@ -111,4 +115,105 @@ export interface RoleTemplate {
   defaultPermissions: Permission[]
   isGlobal: boolean
   category: string
+}
+
+export interface PermissionInheritance {
+  roleId: string
+  parentRoleId: string
+  inheritanceType: 'full' | 'partial' | 'additive' | 'restrictive'
+  excludedPermissions?: string[]
+  additionalPermissions?: Permission[]
+  conditions?: Record<string, any>
+  priority: number
+  isActive: boolean
+  createdAt: string
+}
+
+export interface RoleHierarchy {
+  id: string
+  companyId: string
+  name: string
+  description: string
+  levels: RoleHierarchyLevel[]
+  inheritanceRules: InheritanceRule[]
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface RoleHierarchyLevel {
+  level: number
+  name: string
+  description: string
+  roles: string[]
+  canInheritFrom: number[]
+  canDelegateTo: number[]
+  defaultPermissions: Permission[]
+}
+
+export interface InheritanceRule {
+  id: string
+  fromLevel: number
+  toLevel: number
+  inheritanceType: 'full' | 'partial' | 'conditional'
+  conditions?: Record<string, any>
+  excludedPermissions?: string[]
+  priority: number
+  isActive: boolean
+}
+
+export interface EffectivePermission extends Permission {
+  source: 'direct' | 'inherited' | 'role_hierarchy' | 'delegation'
+  sourceRoleId?: string
+  inheritanceChain?: string[]
+  priority: number
+  overriddenBy?: string[]
+  conflicts?: PermissionConflict[]
+}
+
+export interface PermissionConflict {
+  id: string
+  permissionId: string
+  conflictType: 'duplicate' | 'contradiction' | 'escalation'
+  conflictingPermissions: string[]
+  resolution: 'allow' | 'deny' | 'highest_priority' | 'manual'
+  resolvedBy?: string
+  resolvedAt?: string
+  notes?: string
+}
+
+export interface PermissionDelegation {
+  id: string
+  delegatorRoleId: string
+  delegateeRoleId: string
+  delegatedPermissions: string[]
+  conditions: Record<string, any>
+  timeLimit?: string
+  maxDelegationDepth: number
+  isRevocable: boolean
+  status: 'active' | 'expired' | 'revoked'
+  createdAt: string
+  expiresAt?: string
+  revokedAt?: string
+  revokedBy?: string
+}
+
+export interface PermissionInheritanceTree {
+  roleId: string
+  roleName: string
+  level: number
+  directPermissions: Permission[]
+  inheritedPermissions: InheritedPermissionNode[]
+  effectivePermissions: EffectivePermission[]
+  children: PermissionInheritanceTree[]
+  conflicts: PermissionConflict[]
+}
+
+export interface InheritedPermissionNode {
+  permission: Permission
+  sourceRoleId: string
+  sourceRoleName: string
+  inheritancePath: string[]
+  inheritanceType: string
+  priority: number
 }
