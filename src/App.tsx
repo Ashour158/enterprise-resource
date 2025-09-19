@@ -20,6 +20,7 @@ import { AdvancedUserManagement } from '@/components/AdvancedUserManagement'
 import { PermissionInheritanceManager } from '@/components/PermissionInheritanceManager'
 import { SecurityDashboard } from '@/components/SecurityDashboard'
 import { BiometricAuthenticationSystem } from '@/components/BiometricAuthenticationSystem'
+import { APIManagementDashboard } from '@/components/APIManagementDashboard'
 import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -35,7 +36,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -272,9 +273,9 @@ function App() {
                   <Mail size={16} />
                   Invitations
                 </TabsTrigger>
-                <TabsTrigger value="biometric" className="flex items-center gap-2">
-                  <Fingerprint size={16} />
-                  Biometric Auth
+                <TabsTrigger value="api" className="flex items-center gap-2">
+                  <Globe size={16} />
+                  API Management
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -475,14 +476,8 @@ function App() {
             />
           </TabsContent>
 
-          <TabsContent value="biometric" className="space-y-6">
-            <BiometricAuthenticationSystem 
-              userId={mockUser.id}
-              companyId={currentCompany.id}
-              onAuthSuccess={(sessionId) => {
-                toast.success(`Biometric authentication successful (Session: ${sessionId.slice(0, 8)}...)`)
-              }}
-            />
+          <TabsContent value="api" className="space-y-6">
+            <APIManagementDashboard companyId={currentCompany.id} />
           </TabsContent>
         </Tabs>
       </main>
