@@ -11,6 +11,7 @@ import { RealTimeSyncPanel } from '@/components/RealTimeSyncPanel'
 import { ModuleSyncStatus } from '@/components/ModuleSyncStatus'
 import { RealTimeDataFeed } from '@/components/RealTimeDataFeed'
 import { ConflictResolutionManager } from '@/components/ConflictResolutionManager'
+import { PermissionDashboard } from '@/components/PermissionDashboard'
 import { CompanyDashboard } from '@/components/CompanyDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -26,7 +27,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -190,6 +191,7 @@ function App() {
               <h1 className="text-3xl font-bold tracking-tight">
                 {activeView === 'dashboard' ? 'Dashboard' : 
                  activeView === 'conflicts' ? 'Advanced Conflict Resolution' :
+                 activeView === 'permissions' ? 'Permission Management' :
                  'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
@@ -197,6 +199,8 @@ function App() {
                   ? `Welcome back, ${mockUser.name}. Here's what's happening with ${currentCompany.name}.`
                   : activeView === 'conflicts'
                   ? 'Intelligent workflows and AI-powered resolution for data synchronization conflicts'
+                  : activeView === 'permissions'
+                  ? 'Advanced role-based access control with company isolation and security monitoring'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -207,6 +211,10 @@ function App() {
                 <TabsTrigger value="conflicts" className="flex items-center gap-2">
                   <Brain size={16} />
                   Conflict Resolution
+                </TabsTrigger>
+                <TabsTrigger value="permissions" className="flex items-center gap-2">
+                  <Shield size={16} />
+                  Permissions
                 </TabsTrigger>
                 <TabsTrigger value="companies" className="flex items-center gap-2">
                   <Buildings size={16} />
@@ -342,6 +350,13 @@ function App() {
 
           <TabsContent value="conflicts" className="space-y-6">
             <ConflictResolutionManager companyId={currentCompany.id} />
+          </TabsContent>
+
+          <TabsContent value="permissions" className="space-y-6">
+            <PermissionDashboard 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+            />
           </TabsContent>
 
           <TabsContent value="companies" className="space-y-6">

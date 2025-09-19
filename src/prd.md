@@ -1,28 +1,31 @@
-# Multi-Company ERP System with Real-Time Data Synchronization - Product Requirements Document
+# Multi-Company ERP System with Advanced RBAC - Product Requirements Document
 
 ## Core Purpose & Success
 
-**Mission Statement**: To create a comprehensive, enterprise-grade ERP system that provides real-time data synchronization across all business modules with multi-company architecture, ensuring data consistency, security isolation, and operational efficiency for organizations managing multiple business entities.
+**Mission Statement**: To create a comprehensive, enterprise-grade ERP system that provides real-time data synchronization across all business modules with multi-company architecture, advanced role-based permission management, and intelligent conflict resolution, ensuring data consistency, security isolation, and operational efficiency for organizations managing multiple business entities.
 
 **Success Indicators**: 
 - Zero data conflicts during normal operations with 95% automated resolution rate
 - Sub-second synchronization latency across all modules  
 - 99.9% uptime for real-time sync services
 - Secure multi-company data isolation with zero cross-company data leaks
+- Advanced RBAC with granular permissions and company isolation
 - User adoption rate of 95% across all business modules
 - Seamless company switching without re-authentication
+- 95%+ security compliance score across all standards
 
 **Experience Qualities**: 
-- **Secure**: Multi-layered security with complete company data isolation
-- **Reliable**: Users trust the system with critical business data
-- **Responsive**: Real-time updates provide immediate feedback
+- **Secure**: Multi-layered security with complete company data isolation and advanced RBAC
+- **Reliable**: Users trust the system with critical business data and permission management
+- **Responsive**: Real-time updates provide immediate feedback across all operations
 - **Unified**: Seamless integration across all business functions and multiple companies
+- **Compliant**: Enterprise-grade security and compliance monitoring
 
 ## Project Classification & Approach
 
-**Complexity Level**: Complex Application (advanced functionality, multi-company support, real-time synchronization, AI-powered conflict resolution)
+**Complexity Level**: Complex Application (advanced functionality, multi-company support, real-time synchronization, AI-powered conflict resolution, enterprise RBAC)
 
-**Primary User Activity**: Creating and managing business data with real-time collaboration across departments and companies, with secure context switching
+**Primary User Activity**: Creating and managing business data with real-time collaboration across departments and companies, with secure context switching and granular permission control
 
 ## Technical Specifications
 
@@ -213,6 +216,48 @@ CREATE TABLE sync_configurations (
     UNIQUE(company_id, module_id)
 );
 ```
+## Essential Features
+
+### Advanced Role-Based Permission Management
+
+**Core Functionality**:
+- **Hierarchical Role System**: Multi-level role hierarchy with inheritance and delegation capabilities
+- **Granular Permissions**: Fine-grained permission control with scope-based restrictions (global, company, department, team, own)
+- **Company Isolation**: Complete separation of roles and permissions between companies with secure context switching
+- **Permission Templates**: Pre-configured permission sets for common roles and responsibilities
+- **Dynamic Permission Assignment**: Runtime permission assignment with approval workflows and temporary access
+- **Risk Assessment**: Automatic risk level evaluation for permissions and role combinations
+- **Audit Trail**: Comprehensive logging of all permission changes and access attempts
+
+**Permission Scope Architecture**:
+- **Global Scope**: System-wide permissions (super admin functions)
+- **Company Scope**: Company-specific permissions (admin, management functions)
+- **Department Scope**: Department-level permissions (team management, reporting)
+- **Team Scope**: Team-specific permissions (project access, collaboration)
+- **Own Scope**: User's own data permissions (profile, personal documents)
+
+**Advanced Security Features**:
+- **Multi-Factor Authentication**: Conditional MFA based on permission risk levels
+- **Time-Based Access**: Temporary permissions with automatic expiration
+- **IP Whitelisting**: Location-based access restrictions for sensitive permissions
+- **Approval Workflows**: Multi-step approval process for high-risk permission grants
+- **Permission Inheritance**: Automatic permission propagation through organizational hierarchy
+- **Conflict Detection**: Automatic detection and resolution of permission conflicts
+
+### Multi-Company Access Control
+
+**Core Functionality**:
+- **User Invitation System**: Secure invitation workflow with role assignment and approval
+- **Company Switching**: Seamless context switching between companies without re-authentication
+- **Cross-Company User Management**: Centralized management of users across multiple companies
+- **Security Policy Engine**: Company-specific security policies and enforcement rules
+- **Access Audit**: Comprehensive audit trail for all company access and permission changes
+
+### Advanced Conflict Resolution System
+
+**Core Functionality**:
+1. **Intelligent Conflict Detection**
+   - Real-time monitoring across all ERP modules
    - Multiple conflict types: data mismatch, concurrent edit, version conflict, permission conflict
    - Business impact classification (revenue, compliance, operations, reporting)
    - Priority-based conflict categorization (critical, high, medium, low)

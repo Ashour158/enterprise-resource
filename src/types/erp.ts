@@ -305,6 +305,12 @@ export interface Role {
   description?: string
   permissions: string[]
   is_system_role: boolean
+  is_active: boolean
+  hierarchy_level: number
+  parent_role_id?: string
+  max_users?: number
+  current_users: number
+  created_by: string
   created_at: string
   updated_at: string
 }
@@ -312,12 +318,112 @@ export interface Role {
 export interface Permission {
   id: string
   permission_name: string
+  display_name: string
   description?: string
   module: string
   resource: string
-  action: 'create' | 'read' | 'update' | 'delete' | 'execute'
+  action: 'create' | 'read' | 'update' | 'delete' | 'execute' | 'approve' | 'export' | 'import'
+  scope: 'global' | 'company' | 'department' | 'team' | 'own'
   is_system_permission: boolean
+  requires_approval: boolean
+  risk_level: 'low' | 'medium' | 'high' | 'critical'
+  dependencies: string[]
   created_at: string
+}
+
+export interface RolePermission {
+  role_id: string
+  permission_id: string
+  granted: boolean
+  conditions?: PermissionCondition[]
+  granted_by: string
+  granted_at: string
+  expires_at?: string
+}
+
+export interface PermissionCondition {
+  type: 'time_based' | 'location_based' | 'approval_required' | 'mfa_required' | 'ip_whitelist'
+  config: Record<string, any>
+}
+
+export interface UserPermissionOverride {
+  id: string
+  user_id: string
+  company_id: string
+  permission_id: string
+  granted: boolean
+  reason: string
+  granted_by: string
+  expires_at?: string
+  created_at: string
+}
+
+export interface PermissionTemplate {
+  id: string
+  name: string
+  description: string
+  permissions: string[]
+  target_roles: string[]
+  is_default: boolean
+  created_at: string
+}
+
+export interface AccessPolicy {
+  id: string
+  company_id: string
+  name: string
+  description: string
+  rules: PolicyRule[]
+  priority: number
+  is_active: boolean
+  applies_to: 'users' | 'roles' | 'departments'
+  target_ids: string[]
+  created_at: string
+  updated_at: string
+}
+
+export interface PolicyRule {
+  id: string
+  type: 'allow' | 'deny' | 'require_approval'
+  resource: string
+  action: string
+  conditions: RuleCondition[]
+  effect_priority: number
+}
+
+export interface RuleCondition {
+  field: string
+  operator: 'equals' | 'not_equals' | 'in' | 'not_in' | 'greater_than' | 'less_than' | 'contains'
+  value: any
+}
+
+export interface PermissionRequest {
+  id: string
+  requester_id: string
+  company_id: string
+  permission_id: string
+  role_id?: string
+  justification: string
+  status: 'pending' | 'approved' | 'rejected' | 'expired'
+  approver_id?: string
+  approval_notes?: string
+  expires_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SecurityContext {
+  user_id: string
+  company_id: string
+  role_id: string
+  permissions: string[]
+  session_id: string
+  ip_address: string
+  location?: string
+  device_info: string
+  mfa_verified: boolean
+  last_permission_check: string
+  security_level: 'standard' | 'elevated' | 'administrative' | 'system'
 }
 
 export interface Department {
