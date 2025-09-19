@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { RoleManagement } from '@/components/RoleManagement'
 import { CompanyAccessControl } from '@/components/CompanyAccessControl'
+import { PermissionMatrix } from '@/components/PermissionMatrix'
+import { RoleHierarchy } from '@/components/RoleHierarchy'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +18,9 @@ import {
   Clock,
   Buildings,
   UserCheck,
-  Lock
+  Lock,
+  GridFour,
+  Tree
 } from '@phosphor-icons/react'
 import { PermissionTest } from '@/components/PermissionTest'
 
@@ -124,8 +128,16 @@ export const PermissionDashboard: React.FC<PermissionDashboardProps> = ({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="matrix">
+            <GridFour size={16} className="mr-2" />
+            Permission Matrix
+          </TabsTrigger>
+          <TabsTrigger value="hierarchy">
+            <Tree size={16} className="mr-2" />
+            Role Hierarchy
+          </TabsTrigger>
           <TabsTrigger value="roles">Role Management</TabsTrigger>
           <TabsTrigger value="access">Access Control</TabsTrigger>
           <TabsTrigger value="test">Permission Test</TabsTrigger>
@@ -291,6 +303,20 @@ export const PermissionDashboard: React.FC<PermissionDashboardProps> = ({
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="matrix" className="space-y-6">
+          <PermissionMatrix 
+            companyId={companyId}
+            userId={userId}
+          />
+        </TabsContent>
+
+        <TabsContent value="hierarchy" className="space-y-6">
+          <RoleHierarchy 
+            companyId={companyId}
+            userId={userId}
+          />
         </TabsContent>
 
         <TabsContent value="roles" className="space-y-6">
