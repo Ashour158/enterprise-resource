@@ -498,19 +498,62 @@ export interface AuditLog {
   timestamp: string
 }
 
+// Company invitations table (from database schema)
 export interface CompanyInvitation {
   id: string
   company_id: string
-  inviter_user_id: string
   email: string
-  role_id: string
-  department_id?: string
-  token: string
+  invited_by: string // references company_user_profiles(id)
+  role_id: string // references system_roles(id)
+  department?: string
+  position?: string
+  invitation_token: string
+  status: 'pending' | 'accepted' | 'expired' | 'cancelled'
   expires_at: string
   accepted_at?: string
-  status: 'pending' | 'accepted' | 'expired' | 'revoked'
+  message?: string
   created_at: string
-  updated_at: string
+}
+
+// User company access log (from database schema)
+export interface UserCompanyAccessLog {
+  id: string
+  global_user_id: string
+  company_id: string
+  access_type: 'login' | 'switch_company' | 'logout' | 'invitation_accepted'
+  ip_address?: string
+  user_agent?: string
+  success: boolean
+  error_message?: string
+  additional_data: Record<string, any>
+  created_at: string
+}
+
+// Security audit logs table (from database schema)
+export interface SecurityAuditLog {
+  id: string
+  global_user_id: string
+  company_id: string
+  event_type: string // login, logout, permission_change, data_access, company_switch
+  event_description?: string
+  ip_address?: string
+  user_agent?: string
+  risk_level: 'low' | 'medium' | 'high' | 'critical'
+  additional_data: Record<string, any>
+  created_at: string
+}
+
+// Data access policies table (from database schema)
+export interface DataAccessPolicy {
+  id: string
+  company_id: string
+  policy_name: string
+  module_name: string
+  role_level: number
+  access_scope: 'all' | 'department' | 'team' | 'own' | 'assigned'
+  conditions: Record<string, any>
+  is_active: boolean
+  created_at: string
 }
 
 export interface SyncConfiguration {

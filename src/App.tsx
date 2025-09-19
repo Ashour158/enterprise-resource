@@ -14,6 +14,7 @@ import { ConflictResolutionManager } from '@/components/ConflictResolutionManage
 import { PermissionDashboard } from '@/components/PermissionDashboard'
 import { UserProfileManager } from '@/components/UserProfileManager'
 import { CompanyDashboard } from '@/components/CompanyDashboard'
+import { CompanyInvitationManager } from '@/components/CompanyInvitationManager'
 import { AdvancedUserManagement } from '@/components/AdvancedUserManagement'
 import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -30,7 +31,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -198,6 +199,7 @@ function App() {
                  activeView === 'permissions' ? 'Permission Management' :
                  activeView === 'profile' ? 'User Profile' :
                  activeView === 'user-management' ? 'Advanced User Management' :
+                 activeView === 'invitations' ? 'Company Invitations' :
                  'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
@@ -213,6 +215,8 @@ function App() {
                   ? 'Manage your personal information, preferences, and security settings'
                   : activeView === 'user-management'
                   ? 'Advanced role-based user management with company isolation and database schema control'
+                  : activeView === 'invitations'
+                  ? 'Secure token-based company invitations with role assignments and audit trails'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -243,6 +247,10 @@ function App() {
                 <TabsTrigger value="user-management" className="flex items-center gap-2">
                   <Users size={16} />
                   User Management
+                </TabsTrigger>
+                <TabsTrigger value="invitations" className="flex items-center gap-2">
+                  <Mail size={16} />
+                  Invitations
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -400,6 +408,13 @@ function App() {
 
           <TabsContent value="user-management" className="space-y-6">
             <AdvancedUserManagement companyId={currentCompany.id} />
+          </TabsContent>
+
+          <TabsContent value="invitations" className="space-y-6">
+            <CompanyInvitationManager 
+              companyId={currentCompany.id} 
+              currentUserId={mockUser.id}
+            />
           </TabsContent>
         </Tabs>
       </main>
