@@ -488,6 +488,7 @@ export function AuthenticationSystem({ companyId, userId }: AuthenticationSystem
                             <SelectItem value="totp">Authenticator App (TOTP)</SelectItem>
                             <SelectItem value="sms">SMS Message</SelectItem>
                             <SelectItem value="email">Email Verification</SelectItem>
+                            <SelectItem value="biometric">Biometric Authentication</SelectItem>
                             <SelectItem value="hardware_key">Hardware Security Key</SelectItem>
                           </SelectContent>
                         </Select>
@@ -517,8 +518,55 @@ export function AuthenticationSystem({ companyId, userId }: AuthenticationSystem
                         </div>
                       )}
 
+                      {selectedMfaType === 'biometric' && (
+                        <div className="space-y-4">
+                          <Alert>
+                            <User className="h-4 w-4" />
+                            <AlertDescription>
+                              Biometric authentication uses your device's built-in security features like fingerprint, face recognition, or iris scanning.
+                            </AlertDescription>
+                          </Alert>
+                          <div className="text-center py-4">
+                            <User className="h-12 w-12 mx-auto mb-2 text-primary" />
+                            <p className="text-sm text-muted-foreground">
+                              Follow your device's prompts to set up biometric authentication
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedMfaType === 'hardware_key' && (
+                        <div className="space-y-4">
+                          <Alert>
+                            <Shield className="h-4 w-4" />
+                            <AlertDescription>
+                              Hardware security keys provide the highest level of security and are resistant to phishing attacks.
+                            </AlertDescription>
+                          </Alert>
+                          <div className="text-center py-4">
+                            <Shield className="h-12 w-12 mx-auto mb-2 text-primary" />
+                            <p className="text-sm text-muted-foreground">
+                              Insert your security key and follow the prompts
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex gap-2">
                         <Button onClick={() => {
+                          const newMethod: MFAMethod = {
+                            id: `mfa-${Date.now()}`,
+                            type: selectedMfaType as any,
+                            name: selectedMfaType === 'biometric' ? 'Device Biometric' :
+                                  selectedMfaType === 'hardware_key' ? 'Hardware Security Key' :
+                                  selectedMfaType === 'totp' ? 'Authenticator App' :
+                                  selectedMfaType === 'sms' ? 'SMS Verification' :
+                                  'Email Verification',
+                            enabled: true,
+                            isPrimary: (mfaMethods || []).length === 0,
+                            setupDate: new Date().toISOString().split('T')[0]
+                          }
+                          setMfaMethods(current => [...(current || []), newMethod])
                           toast.success('MFA method added successfully')
                           setShowMfaSetup(false)
                           setSelectedMfaType('')
@@ -581,6 +629,20 @@ export function AuthenticationSystem({ companyId, userId }: AuthenticationSystem
                     </div>
                   </div>
                 ))}
+
+                {(!mfaMethods || mfaMethods.length === 0) && (
+                  <div className="text-center py-8">
+                    <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="font-medium mb-2">No MFA Methods</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Add multi-factor authentication for enhanced security
+                    </p>
+                    <Button onClick={() => setShowMfaSetup(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add First Method
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

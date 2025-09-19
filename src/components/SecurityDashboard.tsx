@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Progress } from '@/components/ui/progress'
+import { MobileSecurityManager } from './MobileSecurityManager'
+import { AuthenticationSystem } from './AuthenticationSystem'
 import { 
   Shield, 
   ShieldCheck, 
@@ -408,6 +410,7 @@ export function SecurityDashboard({ companyId, userId }: SecurityDashboardProps)
           <TabsTrigger value="policies">Security Policies</TabsTrigger>
           <TabsTrigger value="events">Security Events</TabsTrigger>
           <TabsTrigger value="devices">Device Management</TabsTrigger>
+          <TabsTrigger value="mobile">Mobile Security</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="mfa">MFA Setup</TabsTrigger>
         </TabsList>
@@ -733,6 +736,10 @@ export function SecurityDashboard({ companyId, userId }: SecurityDashboardProps)
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="mobile" className="space-y-6">
+          <MobileSecurityManager userId={userId} companyId={companyId} />
         </TabsContent>
 
         <TabsContent value="mfa" className="space-y-6">
