@@ -14,6 +14,7 @@ import { ConflictResolutionManager } from '@/components/ConflictResolutionManage
 import { PermissionDashboard } from '@/components/PermissionDashboard'
 import { UserProfileManager } from '@/components/UserProfileManager'
 import { CompanyDashboard } from '@/components/CompanyDashboard'
+import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -28,7 +29,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -191,6 +192,7 @@ function App() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
                 {activeView === 'dashboard' ? 'Dashboard' : 
+                 activeView === 'visualization' ? 'Data Visualization' :
                  activeView === 'conflicts' ? 'Advanced Conflict Resolution' :
                  activeView === 'permissions' ? 'Permission Management' :
                  activeView === 'profile' ? 'User Profile' :
@@ -199,6 +201,8 @@ function App() {
               <p className="text-muted-foreground">
                 {activeView === 'dashboard' 
                   ? `Welcome back, ${mockUser.name}. Here's what's happening with ${currentCompany.name}.`
+                  : activeView === 'visualization'
+                  ? 'Advanced analytics and real-time data visualization for business intelligence'
                   : activeView === 'conflicts'
                   ? 'Intelligent workflows and AI-powered resolution for data synchronization conflicts'
                   : activeView === 'permissions'
@@ -212,6 +216,10 @@ function App() {
             <div className="flex items-center gap-4">
               <TabsList>
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="visualization" className="flex items-center gap-2">
+                  <ChartLine size={16} />
+                  Data Visualization
+                </TabsTrigger>
                 <TabsTrigger value="conflicts" className="flex items-center gap-2">
                   <Brain size={16} />
                   Conflict Resolution
@@ -354,6 +362,13 @@ function App() {
                 <SystemHealthMonitor health={mockSystemHealth} />
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="visualization" className="space-y-6">
+            <DataVisualizationDashboard 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+            />
           </TabsContent>
 
           <TabsContent value="conflicts" className="space-y-6">
