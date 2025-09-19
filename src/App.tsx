@@ -18,6 +18,8 @@ import { CompanyDashboard } from '@/components/CompanyDashboard'
 import { CompanyInvitationManager } from '@/components/CompanyInvitationManager'
 import { AdvancedUserManagement } from '@/components/AdvancedUserManagement'
 import { PermissionInheritanceManager } from '@/components/PermissionInheritanceManager'
+import { SecurityDashboard } from '@/components/SecurityDashboard'
+import { AuthenticationSystem } from '@/components/AuthenticationSystem'
 import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -196,7 +198,7 @@ function App() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
                 {activeView === 'dashboard' ? 'Dashboard' : 
-                 activeView === 'visualization' ? 'Data Visualization' :
+                 activeView === 'security' ? 'Security Dashboard' :
                  activeView === 'conflicts' ? 'Advanced Conflict Resolution' :
                  activeView === 'permissions' ? 'RBAC Management' :
                  activeView === 'inheritance' ? 'Permission Inheritance' :
@@ -208,6 +210,8 @@ function App() {
               <p className="text-muted-foreground">
                 {activeView === 'dashboard' 
                   ? `Welcome back, ${mockUser.name}. Here's what's happening with ${currentCompany.name}.`
+                  : activeView === 'security'
+                  ? 'Advanced multi-layered security framework with enterprise-grade authentication and compliance monitoring'
                   : activeView === 'visualization'
                   ? 'Advanced analytics and real-time data visualization for business intelligence'
                   : activeView === 'conflicts'
@@ -229,6 +233,10 @@ function App() {
             <div className="flex items-center gap-4">
               <TabsList>
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="security" className="flex items-center gap-2">
+                  <Shield size={16} />
+                  Security
+                </TabsTrigger>
                 <TabsTrigger value="visualization" className="flex items-center gap-2">
                   <ChartLine size={16} />
                   Data Visualization
@@ -387,6 +395,13 @@ function App() {
                 <SystemHealthMonitor health={mockSystemHealth} />
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="security" className="space-y-6">
+            <SecurityDashboard 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+            />
           </TabsContent>
 
           <TabsContent value="visualization" className="space-y-6">
