@@ -1,34 +1,211 @@
-import { ERPModule, Company, User, Notification, AIInsight, SystemHealth } from '@/types/erp'
+import { ERPModule, Company, User, GlobalUser, CompanyUserProfile, CompanyAccess, SessionContext, Notification, AIInsight, SystemHealth } from '@/types/erp'
 
 export const mockCompanies: Company[] = [
   {
     id: 'acme-corp',
     name: 'Acme Corporation',
+    company_code: 'ACME',
     domain: 'acme.com',
-    isActive: true
+    address: '123 Business Ave, Suite 100, New York, NY 10001',
+    phone: '+1 (555) 123-4567',
+    email: 'info@acme.com',
+    subscription_plan: 'enterprise',
+    settings: {
+      theme: 'default',
+      notification_preferences: ['email', 'in_app'],
+      business_hours: '9:00-17:00',
+      fiscal_year_start: '01-01'
+    },
+    security_settings: {
+      mfa_required: true,
+      password_policy: 'strong',
+      session_timeout: 480,
+      ip_whitelist_enabled: false
+    },
+    timezone: 'America/New_York',
+    currency: 'USD',
+    isActive: true,
+    created_at: '2023-01-15T10:00:00Z',
+    updated_at: '2024-01-15T10:30:00Z'
   },
   {
     id: 'tech-solutions',
     name: 'Tech Solutions Ltd',
+    company_code: 'TECH',
     domain: 'techsolutions.com',
-    isActive: true
+    address: '456 Innovation Dr, San Francisco, CA 94102',
+    phone: '+1 (555) 987-6543',
+    email: 'contact@techsolutions.com',
+    subscription_plan: 'professional',
+    settings: {
+      theme: 'dark',
+      notification_preferences: ['email'],
+      business_hours: '8:00-18:00',
+      fiscal_year_start: '04-01'
+    },
+    security_settings: {
+      mfa_required: false,
+      password_policy: 'medium',
+      session_timeout: 360,
+      ip_whitelist_enabled: true
+    },
+    timezone: 'America/Los_Angeles',
+    currency: 'USD',
+    isActive: true,
+    created_at: '2023-06-20T14:00:00Z',
+    updated_at: '2024-01-10T09:15:00Z'
   },
   {
     id: 'global-ventures',
     name: 'Global Ventures Inc',
+    company_code: 'GLOBAL',
     domain: 'globalventures.com',
-    isActive: false
+    address: '789 International Blvd, London, UK',
+    phone: '+44 20 7123 4567',
+    email: 'info@globalventures.com',
+    subscription_plan: 'enterprise',
+    settings: {
+      theme: 'default',
+      notification_preferences: ['email', 'sms', 'in_app'],
+      business_hours: '9:00-17:30',
+      fiscal_year_start: '04-01'
+    },
+    security_settings: {
+      mfa_required: true,
+      password_policy: 'strong',
+      session_timeout: 240,
+      ip_whitelist_enabled: true
+    },
+    timezone: 'Europe/London',
+    currency: 'GBP',
+    isActive: false,
+    created_at: '2023-03-10T11:00:00Z',
+    updated_at: '2023-12-15T16:45:00Z'
   }
 ]
 
+// Mock global user profile
+export const mockGlobalUser: GlobalUser = {
+  id: 'global-user-1',
+  email: 'sarah.johnson@example.com',
+  first_name: 'Sarah',
+  last_name: 'Johnson',
+  phone: '+1 (555) 123-4567',
+  profile_picture_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+  mfa_enabled: true,
+  mfa_secret: 'JBSWY3DPEHPK3PXP',
+  backup_codes: ['123456', '789012', '345678'],
+  last_login: '2024-01-15T11:30:00Z',
+  failed_login_attempts: 0,
+  password_changed_at: '2024-01-01T00:00:00Z',
+  is_active: true,
+  preferences: {
+    language: 'en',
+    date_format: 'MM/DD/YYYY',
+    time_format: '12h',
+    dashboard_layout: 'grid'
+  },
+  security_settings: {
+    login_notifications: true,
+    security_alerts: true,
+    api_access_enabled: false
+  },
+  created_at: '2023-01-15T10:00:00Z',
+  updated_at: '2024-01-15T11:30:00Z'
+}
+
+// Mock company user profiles
+export const mockCompanyProfiles: CompanyUserProfile[] = [
+  {
+    id: 'profile-1',
+    global_user_id: 'global-user-1',
+    company_id: 'acme-corp',
+    employee_id: 'EMP-001',
+    department: 'Information Technology',
+    job_title: 'System Administrator',
+    role: 'admin',
+    permissions: ['all'],
+    status: 'active',
+    hire_date: '2023-01-15',
+    cost_center: 'IT-001',
+    settings: {
+      default_module: 'dashboard',
+      notification_frequency: 'immediate'
+    },
+    last_activity: '2024-01-15T11:30:00Z',
+    created_at: '2023-01-15T10:00:00Z',
+    updated_at: '2024-01-15T11:30:00Z'
+  },
+  {
+    id: 'profile-2',
+    global_user_id: 'global-user-1',
+    company_id: 'tech-solutions',
+    employee_id: 'TS-042',
+    department: 'Operations',
+    job_title: 'Operations Manager',
+    role: 'manager',
+    permissions: ['finance', 'inventory', 'hr', 'reporting'],
+    status: 'active',
+    hire_date: '2023-06-20',
+    cost_center: 'OPS-001',
+    settings: {
+      default_module: 'finance',
+      notification_frequency: 'daily'
+    },
+    last_activity: '2024-01-14T16:45:00Z',
+    created_at: '2023-06-20T14:00:00Z',
+    updated_at: '2024-01-14T16:45:00Z'
+  }
+]
+
+// Mock company access for session context
+export const mockCompanyAccess: CompanyAccess[] = [
+  {
+    company_id: 'acme-corp',
+    company_name: 'Acme Corporation',
+    company_code: 'ACME',
+    role: 'admin',
+    permissions: ['all'],
+    status: 'active',
+    last_accessed: '2024-01-15T11:30:00Z'
+  },
+  {
+    company_id: 'tech-solutions',
+    company_name: 'Tech Solutions Ltd',
+    company_code: 'TECH',
+    role: 'manager',
+    permissions: ['finance', 'inventory', 'hr', 'reporting'],
+    status: 'active',
+    last_accessed: '2024-01-14T16:45:00Z'
+  }
+]
+
+// Mock session context
+export const mockSessionContext: SessionContext = {
+  global_user_id: 'global-user-1',
+  current_company_id: 'acme-corp',
+  available_companies: mockCompanyAccess,
+  jwt_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  expires_at: '2024-01-16T11:30:00Z',
+  permissions: ['all'],
+  role: 'admin'
+}
+
+// Combined user interface for UI usage
 export const mockUser: User = {
-  id: 'user-1',
+  id: 'global-user-1',
+  email: 'sarah.johnson@example.com',
   name: 'Sarah Johnson',
-  email: 'sarah.johnson@acme.com',
-  avatar: '',
+  avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
   role: 'System Administrator',
   permissions: ['all'],
-  companyId: 'acme-corp'
+  companyId: 'acme-corp',
+  employee_id: 'EMP-001',
+  department: 'Information Technology',
+  job_title: 'System Administrator',
+  is_owner: true,
+  company_profiles: mockCompanyProfiles,
+  global_profile: mockGlobalUser
 }
 
 export const mockModules: ERPModule[] = [

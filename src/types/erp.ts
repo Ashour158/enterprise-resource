@@ -18,19 +18,100 @@ export interface ERPModule {
 export interface Company {
   id: string
   name: string
+  company_code: string
   logo?: string
   domain: string
+  address?: string
+  phone?: string
+  email?: string
+  subscription_plan: 'enterprise' | 'professional' | 'standard' | 'starter'
+  settings: Record<string, any>
+  security_settings: Record<string, any>
+  timezone: string
+  currency: string
   isActive: boolean
+  created_at: string
+  updated_at: string
 }
 
+// Global user (authentication and personal info)
+export interface GlobalUser {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  phone?: string
+  profile_picture_url?: string
+  mfa_enabled: boolean
+  mfa_secret?: string
+  backup_codes: string[]
+  last_login?: string
+  failed_login_attempts: number
+  account_locked_until?: string
+  password_changed_at: string
+  is_active: boolean
+  preferences: Record<string, any>
+  security_settings: Record<string, any>
+  created_at: string
+  updated_at: string
+}
+
+// Company-specific user profile
+export interface CompanyUserProfile {
+  id: string
+  global_user_id: string
+  company_id: string
+  employee_id?: string
+  department?: string
+  job_title?: string
+  role: string
+  permissions: string[]
+  status: 'active' | 'inactive' | 'suspended'
+  hire_date?: string
+  manager_id?: string
+  cost_center?: string
+  settings: Record<string, any>
+  last_activity?: string
+  created_at: string
+  updated_at: string
+}
+
+// Combined user interface for UI usage
 export interface User {
   id: string
-  name: string
   email: string
+  name: string
   avatar?: string
   role: string
   permissions: string[]
   companyId: string
+  employee_id?: string
+  department?: string
+  job_title?: string
+  is_owner?: boolean
+  company_profiles: CompanyUserProfile[]
+  global_profile: GlobalUser
+}
+
+// Multi-company session context
+export interface SessionContext {
+  global_user_id: string
+  current_company_id: string
+  available_companies: CompanyAccess[]
+  jwt_token: string
+  expires_at: string
+  permissions: string[]
+  role: string
+}
+
+export interface CompanyAccess {
+  company_id: string
+  company_name: string
+  company_code: string
+  role: string
+  permissions: string[]
+  status: 'active' | 'pending' | 'suspended'
+  last_accessed?: string
 }
 
 export interface Notification {

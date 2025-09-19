@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { useRealTimeSync } from '@/hooks/useRealTimeSync'
+import { useRealTimeDataSync } from '@/hooks/useRealTimeDataSync'
+import { useMultiCompanyAuth } from '@/hooks/useMultiCompanyAuth'
 import { Header } from '@/components/Header'
 import { ModuleCard } from '@/components/ModuleCard'
 import { AIInsightsPanel } from '@/components/AIInsightsPanel'
@@ -9,6 +10,7 @@ import { RealTimeSyncPanel } from '@/components/RealTimeSyncPanel'
 import { ModuleSyncStatus } from '@/components/ModuleSyncStatus'
 import { RealTimeDataFeed } from '@/components/RealTimeDataFeed'
 import { ConflictResolutionManager } from '@/components/ConflictResolutionManager'
+import { CompanyDashboard } from '@/components/CompanyDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,7 +25,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -35,25 +37,41 @@ function App() {
   const activeModules = mockModules.filter(m => m.status === 'active')
   const totalNotifications = mockModules.reduce((sum, m) => sum + m.notifications, 0)
 
-  // Initialize real-time sync with proper null safety
+  // Multi-company authentication
+  const { 
+    isAuthenticated, 
+    currentUser, 
+    availableCompanies,
+    switchCompany
+  } = useMultiCompanyAuth()
+
+  // Real-time data synchronization with null safety
   const {
-    syncStatus,
     isConnected,
-    lastSyncTime,
-    syncProgress,
+    connectionQuality,
+    syncInProgress,
     conflicts,
-    triggerSync,
+    pendingChanges,
+    syncProgress,
+    lastSyncTime,
+    syncMetrics,
+    triggerManualSync,
     resolveConflict,
-    updateSyncConfig
-  } = useRealTimeSync(currentCompany.id)
+    updateSyncConfig,
+    getSyncStatus
+  } = useRealTimeDataSync(currentCompany.id)
 
   // Ensure conflicts is always an array
   const safeConflicts = Array.isArray(conflicts) ? conflicts : []
+  const safePendingChanges = pendingChanges || {}
 
-  const handleCompanyChange = (companyId: string) => {
-    setSelectedCompany(companyId)
-    const company = mockCompanies.find(c => c.id === companyId)
-    toast.success(`Switched to ${company?.name}`)
+  const handleCompanyChange = async (companyId: string) => {
+    const result = await switchCompany(companyId)
+    if (result.success) {
+      setSelectedCompany(companyId)
+      const company = mockCompanies.find(c => c.id === companyId)
+      toast.success(`Switched to ${company?.name}`)
+    }
   }
 
   const handleModuleSelect = (moduleId: string) => {
@@ -153,12 +171,16 @@ function App() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
-                {activeView === 'dashboard' ? 'Dashboard' : 'Advanced Conflict Resolution'}
+                {activeView === 'dashboard' ? 'Dashboard' : 
+                 activeView === 'conflicts' ? 'Advanced Conflict Resolution' :
+                 'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
                 {activeView === 'dashboard' 
                   ? `Welcome back, ${mockUser.name}. Here's what's happening with ${currentCompany.name}.`
-                  : 'Intelligent workflows and AI-powered resolution for data synchronization conflicts'
+                  : activeView === 'conflicts'
+                  ? 'Intelligent workflows and AI-powered resolution for data synchronization conflicts'
+                  : 'Manage access and switch between multiple companies'
                 }
               </p>
             </div>
@@ -168,6 +190,10 @@ function App() {
                 <TabsTrigger value="conflicts" className="flex items-center gap-2">
                   <Brain size={16} />
                   Conflict Resolution
+                </TabsTrigger>
+                <TabsTrigger value="companies" className="flex items-center gap-2">
+                  <Buildings size={16} />
+                  Companies
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -253,8 +279,8 @@ function App() {
                           module={module}
                           isOnline={isConnected}
                           lastSyncTime={lastSyncTime}
-                          pendingChanges={Math.floor(Math.random() * 3)} // Simulated pending changes
-                          onSync={triggerSync}
+                          pendingChanges={safePendingChanges[module.id] || 0}
+                          onSync={() => triggerManualSync(module.id)}
                         />
                       ))
                     ) : (
@@ -269,13 +295,23 @@ function App() {
 
               <div className="space-y-6">
                 <RealTimeSyncPanel
-                  syncStatus={syncStatus}
+                  syncStatus={getSyncStatus()}
                   syncProgress={syncProgress}
                   conflicts={safeConflicts}
                   modules={mockModules}
-                  onTriggerSync={triggerSync}
-                  onResolveConflict={resolveConflict}
-                  onUpdateSyncConfig={updateSyncConfig}
+                  onTriggerSync={() => triggerManualSync()}
+                  onResolveConflict={(conflictId: string, resolution: "client" | "server") => {
+                    const strategy = {
+                      strategy: resolution === 'client' ? 'client_wins' as const : 'server_wins' as const,
+                      confidence: 90,
+                      reasoning: `Manual resolution: ${resolution} wins`
+                    }
+                    resolveConflict(conflictId, strategy)
+                  }}
+                  onUpdateSyncConfig={(config) => {
+                    // Convert single config to array for the hook
+                    updateSyncConfig([config])
+                  }}
                 />
                 <RealTimeDataFeed companyId={currentCompany.id} />
                 <AIInsightsPanel 
@@ -289,6 +325,10 @@ function App() {
 
           <TabsContent value="conflicts" className="space-y-6">
             <ConflictResolutionManager companyId={currentCompany.id} />
+          </TabsContent>
+
+          <TabsContent value="companies" className="space-y-6">
+            <CompanyDashboard />
           </TabsContent>
         </Tabs>
       </main>
