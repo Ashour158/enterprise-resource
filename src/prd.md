@@ -1,117 +1,80 @@
-# Multi-Company ERP System with Advanced Database Schema - PRD
+# ERP System - Role-Based Access Control (RBAC) Enhancement
 
 ## Core Purpose & Success
-- **Mission Statement**: A comprehensive multi-company ERP system that enables users to manage multiple businesses through a unified interface with complete data isolation and advanced role-based permissions.
-- **Success Indicators**: Seamless company switching, secure data isolation, complete audit trails, and efficient user invitation workflows.
-- **Experience Qualities**: Secure, Professional, Comprehensive
+- **Mission Statement**: Implement a comprehensive 5-tier role-based access control system with multi-company isolation, ensuring secure and granular permissions management across all ERP modules.
+- **Success Indicators**: Zero unauthorized data access incidents, seamless role transitions, 100% company data isolation, and intuitive permission management for administrators.
+- **Experience Qualities**: Secure, Intuitive, Granular
 
 ## Project Classification & Approach
-- **Complexity Level**: Complex Application (advanced functionality, multi-tenant accounts, enterprise security)
-- **Primary User Activity**: Managing multi-company business operations with complex authentication flows
+- **Complexity Level**: Complex Application (advanced functionality with multi-tenant security)
+- **Primary User Activity**: Interacting (role management, permission configuration, security monitoring)
 
 ## Thought Process for Feature Selection
-- **Core Problem Analysis**: Enterprise users need to manage multiple companies with different roles and permissions while maintaining strict data isolation and security compliance.
-- **User Context**: Business administrators and employees who work across multiple companies with varying access levels and responsibilities.
-- **Critical Path**: Login → Company Selection → Role-based Dashboard → Secure Operations → Audit Logging
-- **Key Moments**: Company invitation acceptance, secure company switching, role-based data access, real-time synchronization
+- **Core Problem Analysis**: Enterprise systems need granular access control with company isolation and hierarchical role management
+- **User Context**: System administrators and company admins need to manage user permissions while maintaining strict security boundaries
+- **Critical Path**: Role definition → User assignment → Permission verification → Audit trail
+- **Key Moments**: Role assignment, permission escalation requests, cross-company access attempts
 
 ## Essential Features
 
-### Multi-Company Authentication System
-- Global user authentication with company-specific profiles
-- Secure company switching without re-authentication
-- Multi-factor authentication with backup codes
-- Session management with company context
+### 5-Tier Role Hierarchy System
+- **Super Admin (Level 1)**: Global system access across all companies and modules
+- **Company Admin (Level 2)**: Full company-specific access with user management capabilities
+- **Manager (Level 3)**: Department/team level access with approval workflows
+- **User (Level 4)**: Standard operational access to assigned modules and data
+- **Viewer (Level 5)**: Read-only access with limited export capabilities
 
-### Advanced Invitation System
-- Email-based company invitations with role assignments
-- Token-based secure invitation acceptance
-- Automatic profile creation for existing users
-- Department and position assignment during invitation
+### Permission Matrix Management
+- **Module-based Permissions**: Granular CRUD permissions for each ERP module
+- **Data Scope Control**: Company, department, team, and individual data access boundaries
+- **Dynamic Permission Assignment**: Role-based and individual permission overrides
+- **Permission Inheritance**: Hierarchical permission cascading with explicit overrides
 
-### Comprehensive Security & Audit System
-- Complete audit trails for all user actions
-- Risk-level classification for security events
-- IP and device tracking for access monitoring
-- Data access policy enforcement
-
-### Role-Based Permission Matrix
-- Company-isolated role definitions
-- Granular permission control per module
-- Data access policies with scope limitations
-- Dynamic permission evaluation
+### Security & Audit Framework
+- **Real-time Permission Validation**: Every action verified against current permissions
+- **Audit Trail System**: Comprehensive logging of all permission changes and access attempts
+- **Security Monitoring**: Anomaly detection and unauthorized access prevention
+- **Compliance Reporting**: GDPR, HIPAA, and SOX compliance tracking
 
 ## Design Direction
 
 ### Visual Tone & Identity
-- **Emotional Response**: Trust, security, professionalism, and enterprise reliability
-- **Design Personality**: Professional, clean, enterprise-grade with subtle modern touches
-- **Visual Metaphors**: Corporate hierarchy, secure vaults, organizational charts
-- **Simplicity Spectrum**: Rich interface with sophisticated functionality while maintaining clarity
+- **Emotional Response**: Professional confidence and security assurance
+- **Design Personality**: Enterprise-grade, systematic, and authoritative
+- **Visual Metaphors**: Shield iconography, hierarchical structures, access gates
+- **Simplicity Spectrum**: Rich interface with clear hierarchical organization
 
 ### Color Strategy
-- **Color Scheme Type**: Professional monochromatic with accent colors
-- **Primary Color**: Deep corporate blue (#1e40af) - represents trust and stability
-- **Secondary Colors**: Neutral grays for backgrounds and subtle interactions
-- **Accent Color**: Vibrant orange (#f59e0b) for important actions and alerts
-- **Color Psychology**: Blue conveys trust and security, orange draws attention to critical actions
-- **Color Accessibility**: WCAG AA compliant contrast ratios throughout
-- **Foreground/Background Pairings**: 
-  - Primary text (oklch(0.25 0.10 240)) on white background (oklch(1 0 0))
-  - White text (oklch(1 0 0)) on primary blue (oklch(0.45 0.15 240))
-  - Dark text (oklch(0.25 0.10 240)) on light backgrounds (oklch(0.95 0.02 240))
+- **Color Scheme Type**: Custom palette with security-focused semantics
+- **Primary Color**: Deep blue (oklch(0.45 0.15 240)) - trust and security
+- **Secondary Colors**: Neutral grays for structure and organization
+- **Accent Color**: Amber (oklch(0.70 0.20 50)) for warnings and attention
+- **Security Status Colors**: Green (approved), red (denied), yellow (pending)
+- **Color Accessibility**: WCAG AA compliant with 4.5:1 contrast ratios
 
 ### Typography System
-- **Font Pairing Strategy**: Inter for UI elements and headings, JetBrains Mono for technical data
-- **Typographic Hierarchy**: Clear distinction between titles (700), headings (600), body (400), and captions (400)
-- **Font Personality**: Clean, readable, professional, and modern
-- **Readability Focus**: 1.5 line height for body text, generous spacing for form fields
-- **Typography Consistency**: Consistent sizing scale and weight usage
-- **Which fonts**: Inter for all UI text, JetBrains Mono for code/technical data
-- **Legibility Check**: Both fonts are highly legible at all required sizes
-
-### Visual Hierarchy & Layout
-- **Attention Direction**: Clear visual flow from company selection to main actions
-- **White Space Philosophy**: Generous spacing to create breathing room and focus
-- **Grid System**: 12-column responsive grid with consistent breakpoints
-- **Responsive Approach**: Mobile-first with progressive enhancement
-- **Content Density**: Balanced information density with clear grouping
-
-### Animations
-- **Purposeful Meaning**: Smooth transitions for company switching and role changes
-- **Hierarchy of Movement**: Subtle hover states, loading animations, and status changes
-- **Contextual Appropriateness**: Professional, smooth transitions without distraction
+- **Font Pairing Strategy**: Inter for UI, JetBrains Mono for technical data
+- **Typographic Hierarchy**: Clear distinction between role levels and permission types
+- **Font Personality**: Professional, readable, and systematic
+- **Which fonts**: Inter (primary), JetBrains Mono (code/IDs)
 
 ### UI Elements & Component Selection
-- **Component Usage**: Cards for data grouping, Tables for complex data, Dialogs for confirmations
-- **Component Customization**: Custom styling for enterprise branding
-- **Component States**: Clear hover, active, and disabled states
-- **Icon Selection**: Phosphor icons for consistency and clarity
-- **Component Hierarchy**: Primary buttons for main actions, secondary for supporting actions
-- **Spacing System**: Consistent 4px grid spacing system
-- **Mobile Adaptation**: Responsive design with mobile-optimized interactions
+- **Permission Matrix**: Table components with clear CRUD indicators
+- **Role Cards**: Card components showing role hierarchy and capabilities
+- **Access Trees**: Expandable tree components for permission inheritance
+- **Security Badges**: Status indicators for permission levels and security states
+- **Audit Panels**: Timeline components for security events and changes
 
-### Visual Consistency Framework
-- **Design System Approach**: Component-based design with shared styling
-- **Style Guide Elements**: Color palette, typography, spacing, and component states
-- **Visual Rhythm**: Consistent patterns for similar elements
-- **Brand Alignment**: Enterprise-grade visual consistency
-
-### Accessibility & Readability
-- **Contrast Goal**: WCAG AA compliance minimum, AAA where possible
-- Keyboard navigation support throughout
-- Screen reader compatibility
-- Clear error messaging and validation
-
-## Edge Cases & Problem Scenarios
-- **Potential Obstacles**: Network connectivity issues during company switching, permission conflicts, session timeouts
-- **Edge Case Handling**: Graceful degradation, offline capabilities, conflict resolution workflows
-- **Technical Constraints**: Database performance with large datasets, real-time synchronization challenges
+### Animations
+- **Permission Changes**: Subtle transitions when permissions are modified
+- **Security Alerts**: Attention-grabbing animations for security events
+- **Role Transitions**: Smooth animations when switching between role views
 
 ## Implementation Considerations
-- **Scalability Needs**: Multi-tenant database design, horizontal scaling capabilities
-- **Testing Focus**: Security penetration testing, load testing, user acceptance testing
-- **Critical Questions**: How to handle permission changes in real-time, data migration strategies
+- **Multi-company Data Isolation**: Strict tenant separation with context validation
+- **Performance Optimization**: Efficient permission caching and validation
+- **Scalability**: Support for thousands of users across hundreds of companies
+- **Integration**: Seamless integration with existing ERP modules and authentication
 
 ## Reflection
-This approach provides enterprise-grade security and functionality while maintaining user experience quality. The multi-company architecture addresses real business needs for organizations managing multiple entities with complex permission requirements.
+This RBAC system provides enterprise-grade security while maintaining usability through clear visual hierarchy and intuitive permission management interfaces. The 5-tier system balances granular control with operational efficiency.

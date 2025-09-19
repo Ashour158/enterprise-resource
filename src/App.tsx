@@ -11,6 +11,7 @@ import { RealTimeSyncPanel } from '@/components/RealTimeSyncPanel'
 import { ModuleSyncStatus } from '@/components/ModuleSyncStatus'
 import { RealTimeDataFeed } from '@/components/RealTimeDataFeed'
 import { ConflictResolutionManager } from '@/components/ConflictResolutionManager'
+import { RBACDashboard } from '@/components/RBACDashboard'
 import { PermissionDashboard } from '@/components/PermissionDashboard'
 import { UserProfileManager } from '@/components/UserProfileManager'
 import { CompanyDashboard } from '@/components/CompanyDashboard'
@@ -196,7 +197,7 @@ function App() {
                 {activeView === 'dashboard' ? 'Dashboard' : 
                  activeView === 'visualization' ? 'Data Visualization' :
                  activeView === 'conflicts' ? 'Advanced Conflict Resolution' :
-                 activeView === 'permissions' ? 'Permission Management' :
+                 activeView === 'permissions' ? 'RBAC Management' :
                  activeView === 'profile' ? 'User Profile' :
                  activeView === 'user-management' ? 'Advanced User Management' :
                  activeView === 'invitations' ? 'Company Invitations' :
@@ -234,7 +235,7 @@ function App() {
                 </TabsTrigger>
                 <TabsTrigger value="permissions" className="flex items-center gap-2">
                   <Shield size={16} />
-                  Permissions
+                  RBAC Management
                 </TabsTrigger>
                 <TabsTrigger value="profile" className="flex items-center gap-2">
                   <User size={16} />
@@ -392,7 +393,7 @@ function App() {
           </TabsContent>
 
           <TabsContent value="permissions" className="space-y-6">
-            <PermissionDashboard 
+            <RBACDashboard 
               companyId={currentCompany.id}
               userId={mockUser.id}
             />
