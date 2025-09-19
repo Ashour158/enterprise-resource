@@ -497,3 +497,184 @@ export interface SyncConfiguration {
   created_at: string
   updated_at: string
 }
+
+// User Profile Management Interfaces
+export interface UserPreferences {
+  // Appearance
+  theme: 'light' | 'dark' | 'system'
+  language: 'en' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'zh' | 'ja'
+  timezone: string
+  date_format: 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD'
+  time_format: '12h' | '24h'
+  currency_display: 'symbol' | 'code' | 'name'
+  number_format: 'US' | 'EU' | 'custom'
+  
+  // Dashboard & Layout
+  dashboard_layout: 'grid' | 'list' | 'compact'
+  sidebar_collapsed: boolean
+  default_page: string
+  widgets_config: Record<string, any>
+  quick_access_modules: string[]
+  
+  // Notifications
+  email_notifications: boolean
+  push_notifications: boolean
+  desktop_notifications: boolean
+  notification_frequency: 'immediate' | 'hourly' | 'daily' | 'weekly'
+  notification_types: NotificationType[]
+  quiet_hours: {
+    enabled: boolean
+    start_time: string
+    end_time: string
+    timezone: string
+  }
+  
+  // Accessibility
+  high_contrast: boolean
+  large_text: boolean
+  reduce_motion: boolean
+  screen_reader: boolean
+  keyboard_shortcuts: boolean
+  
+  // Privacy & Security
+  session_timeout: number
+  two_factor_required: boolean
+  login_notifications: boolean
+  security_alerts: boolean
+  data_export_format: 'csv' | 'json' | 'xlsx'
+  
+  // Advanced
+  developer_mode: boolean
+  beta_features: boolean
+  analytics_opt_in: boolean
+  auto_save_interval: number
+  backup_frequency: 'daily' | 'weekly' | 'monthly'
+}
+
+export interface NotificationType {
+  category: 'system' | 'security' | 'workflow' | 'social' | 'financial' | 'inventory' | 'hr'
+  enabled: boolean
+  channels: ('email' | 'push' | 'desktop' | 'sms')[]
+  priority: 'high' | 'medium' | 'low'
+}
+
+export interface UserProfileUpdate {
+  // Basic Info
+  first_name?: string
+  last_name?: string
+  phone?: string
+  profile_picture_url?: string
+  
+  // Professional Info
+  job_title?: string
+  department?: string
+  bio?: string
+  skills?: string[]
+  certifications?: UserCertification[]
+  
+  // Preferences
+  preferences?: Partial<UserPreferences>
+  
+  // Contact Info
+  emergency_contact?: EmergencyContact
+  address?: UserAddress
+  
+  // Social Links
+  social_links?: SocialLink[]
+}
+
+export interface UserCertification {
+  id: string
+  name: string
+  issuing_organization: string
+  issue_date: string
+  expiry_date?: string
+  credential_id?: string
+  verification_url?: string
+  is_verified: boolean
+}
+
+export interface EmergencyContact {
+  name: string
+  relationship: string
+  phone: string
+  email?: string
+  address?: string
+}
+
+export interface UserAddress {
+  street: string
+  city: string
+  state: string
+  postal_code: string
+  country: string
+  type: 'home' | 'work' | 'other'
+}
+
+export interface SocialLink {
+  platform: 'linkedin' | 'twitter' | 'github' | 'website' | 'other'
+  url: string
+  is_public: boolean
+}
+
+export interface AvatarUpload {
+  file: File
+  preview_url: string
+  upload_progress: number
+  upload_status: 'pending' | 'uploading' | 'completed' | 'failed'
+  error_message?: string
+}
+
+export interface ProfileChangeLog {
+  id: string
+  user_id: string
+  field: string
+  old_value: any
+  new_value: any
+  changed_by: string
+  change_reason?: string
+  timestamp: string
+  company_id?: string
+}
+
+export interface ProfileSecuritySettings {
+  mfa_enabled: boolean
+  mfa_methods: ('totp' | 'sms' | 'email' | 'hardware_key')[]
+  backup_codes: string[]
+  active_sessions: UserSession[]
+  recent_logins: LoginHistory[]
+  trusted_devices: TrustedDevice[]
+  api_keys: ApiKey[]
+}
+
+export interface LoginHistory {
+  id: string
+  timestamp: string
+  ip_address: string
+  location?: string
+  device_info: string
+  browser: string
+  success: boolean
+  failure_reason?: string
+}
+
+export interface TrustedDevice {
+  id: string
+  device_name: string
+  device_type: 'mobile' | 'desktop' | 'tablet'
+  browser: string
+  last_used: string
+  is_current: boolean
+  trusted_until: string
+}
+
+export interface ApiKey {
+  id: string
+  name: string
+  key_preview: string
+  permissions: string[]
+  last_used?: string
+  expires_at?: string
+  is_active: boolean
+  created_at: string
+}

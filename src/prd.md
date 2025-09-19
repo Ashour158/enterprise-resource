@@ -46,7 +46,36 @@
 - **Company Isolation**: Each company maintains its own data isolation and role assignments  
 - **Session Management**: JWT tokens include company context for proper data filtering and security
 
-## Multi-Company User Architecture
+## Multi-Company User Architecture & Profile Management
+
+The system supports comprehensive user profile management with global and company-specific contexts:
+
+### Global User Profile
+- **Authentication Credentials**: Email (unique globally), password with MFA support
+- **Personal Information**: Name, phone, profile picture, emergency contacts
+- **Global Preferences**: Language, timezone, theme, accessibility settings
+- **Security Settings**: MFA configuration, trusted devices, login history
+- **Multi-Company Access**: Users can access multiple companies with single email
+
+### Company-Specific Profiles  
+- **Professional Information**: Employee ID, department, job title, manager
+- **Role Assignments**: Company-specific roles and permissions
+- **Local Settings**: Company-specific preferences and module access
+- **Activity Tracking**: Company-isolated audit logs and activity history
+
+### Profile Management Features
+- **Avatar Upload**: Secure image upload with progress tracking and validation
+- **Comprehensive Preferences**: Detailed customization for appearance, notifications, accessibility
+- **Security Center**: MFA setup, backup codes, session management, password changes
+- **Activity Monitoring**: Complete audit trail of profile changes and system access
+- **Data Export**: Profile and activity data export in multiple formats
+
+### User Experience Flow
+1. **Single Authentication**: Users log in once with their global credentials
+2. **Company Context**: System automatically loads appropriate company context
+3. **Context Switching**: Seamless switching between companies without re-authentication  
+4. **Profile Management**: Unified interface for managing global and company-specific settings
+5. **Security Monitoring**: Real-time alerts for security events and suspicious activity
 
 The system supports users having access to multiple companies with the same email address. Users can switch between companies they have access to without re-authentication, maintaining proper data isolation and security.
 
@@ -217,6 +246,35 @@ CREATE TABLE sync_configurations (
 );
 ```
 ## Essential Features
+
+### Comprehensive User Profile Management
+
+**Core Functionality**:
+- **Global Profile Management**: Unified profile across all companies with personal information, preferences, and security settings
+- **Avatar Upload System**: Secure image upload with progress tracking, validation, and preview functionality
+- **Multi-Company Profiles**: Company-specific professional information, roles, and settings with seamless context switching
+- **Comprehensive Preferences**: Detailed customization options for appearance, notifications, accessibility, privacy, and advanced settings
+- **Security Center**: Complete security management including MFA setup, backup codes, trusted devices, and session management
+- **Activity Monitoring**: Comprehensive audit trail of all profile changes, security events, and system access
+- **Data Export**: Profile and activity data export in multiple formats (JSON, CSV) with privacy protection
+
+**Profile Categories**:
+- **Basic Information**: Name, contact details, professional information, skills, certifications, emergency contacts
+- **Security Settings**: Password management, MFA configuration, trusted devices, login history, API keys  
+- **Preferences Management**: Theme, language, timezone, notifications, accessibility options, privacy controls
+- **Activity Tracking**: Change log, security events, login history with detailed filtering and search
+
+**Security Features**:
+- **Multi-Factor Authentication**: Support for TOTP, SMS, and email-based MFA with backup codes
+- **Session Management**: Active session monitoring with device tracking and remote session revocation
+- **Security Monitoring**: Real-time alerts for suspicious activity, failed login attempts, and security policy violations
+- **Privacy Controls**: Granular control over data sharing, analytics opt-in, and profile visibility
+
+**User Experience**:
+- **Intuitive Interface**: Clean, accessible design with progressive disclosure and guided workflows
+- **Real-time Updates**: Instant feedback for all profile changes with optimistic UI updates
+- **Responsive Design**: Seamless experience across desktop, tablet, and mobile devices
+- **Accessibility**: Full keyboard navigation, screen reader support, high contrast mode, and customizable text sizes
 
 ### Advanced Role-Based Permission Management
 

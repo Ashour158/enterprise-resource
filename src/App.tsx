@@ -12,6 +12,7 @@ import { ModuleSyncStatus } from '@/components/ModuleSyncStatus'
 import { RealTimeDataFeed } from '@/components/RealTimeDataFeed'
 import { ConflictResolutionManager } from '@/components/ConflictResolutionManager'
 import { PermissionDashboard } from '@/components/PermissionDashboard'
+import { UserProfileManager } from '@/components/UserProfileManager'
 import { CompanyDashboard } from '@/components/CompanyDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -27,7 +28,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -192,6 +193,7 @@ function App() {
                 {activeView === 'dashboard' ? 'Dashboard' : 
                  activeView === 'conflicts' ? 'Advanced Conflict Resolution' :
                  activeView === 'permissions' ? 'Permission Management' :
+                 activeView === 'profile' ? 'User Profile' :
                  'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
@@ -201,6 +203,8 @@ function App() {
                   ? 'Intelligent workflows and AI-powered resolution for data synchronization conflicts'
                   : activeView === 'permissions'
                   ? 'Advanced role-based access control with company isolation and security monitoring'
+                  : activeView === 'profile'
+                  ? 'Manage your personal information, preferences, and security settings'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -215,6 +219,10 @@ function App() {
                 <TabsTrigger value="permissions" className="flex items-center gap-2">
                   <Shield size={16} />
                   Permissions
+                </TabsTrigger>
+                <TabsTrigger value="profile" className="flex items-center gap-2">
+                  <User size={16} />
+                  Profile
                 </TabsTrigger>
                 <TabsTrigger value="companies" className="flex items-center gap-2">
                   <Buildings size={16} />
@@ -357,6 +365,10 @@ function App() {
               companyId={currentCompany.id}
               userId={mockUser.id}
             />
+          </TabsContent>
+
+          <TabsContent value="profile" className="space-y-6">
+            <UserProfileManager userId={mockUser.id} />
           </TabsContent>
 
           <TabsContent value="companies" className="space-y-6">
