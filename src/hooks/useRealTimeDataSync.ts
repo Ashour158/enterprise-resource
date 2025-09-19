@@ -35,7 +35,12 @@ interface RealTimeSyncState {
 }
 
 export function useRealTimeDataSync(companyId: string) {
-  // Persistent state
+  // Validate companyId parameter
+  if (!companyId) {
+    throw new Error('useRealTimeDataSync requires a valid companyId')
+  }
+
+  // Persistent state with company isolation
   const [syncConfig, setSyncConfig] = useKV<ModuleSyncConfig[]>(`sync-config-${companyId}`, [])
   const [conflicts, setConflicts] = useKV<SyncConflict[]>(`sync-conflicts-${companyId}`, [])
   const [pendingChanges, setPendingChanges] = useKV<Record<string, number>>(`pending-changes-${companyId}`, {})
@@ -63,22 +68,25 @@ export function useRealTimeDataSync(companyId: string) {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Initialize WebSocket connection
+  // Initialize WebSocket connection with company isolation
   const initializeConnection = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return
     }
 
     try {
-      // In a real implementation, this would connect to your WebSocket server
+      // In a real implementation, this would connect to your Flask-SocketIO server
+      // WebSocket URL would include company context for data isolation
+      // const wsUrl = `wss://api.yourdomain.com/sync/${companyId}?token=${sessionToken}`
+      
       // For demo purposes, we'll simulate a connection
       const mockWebSocket = {
         readyState: WebSocket.OPEN,
         send: (data: string) => {
-          console.log('Sending data:', data)
+          console.log(`[Company ${companyId}] Sending data:`, data)
         },
         close: () => {
-          console.log('WebSocket closed')
+          console.log(`[Company ${companyId}] WebSocket closed`)
         },
         onopen: null as ((event: Event) => void) | null,
         onclose: null as ((event: CloseEvent) => void) | null,
@@ -88,7 +96,7 @@ export function useRealTimeDataSync(companyId: string) {
 
       wsRef.current = mockWebSocket
 
-      // Simulate connection establishment
+      // Simulate connection establishment with company context
       setTimeout(() => {
         setSyncState(prev => ({
           ...prev,
@@ -96,10 +104,10 @@ export function useRealTimeDataSync(companyId: string) {
           connectionQuality: 'excellent'
         }))
         
-        // Simulate receiving real-time events
+        // Start receiving real-time events for this company only
         simulateRealTimeEvents()
         
-        toast.success('Real-time sync connected')
+        toast.success(`Real-time sync connected for company ${companyId}`)
       }, 1000)
 
       // Set up periodic connection quality checks
@@ -111,7 +119,7 @@ export function useRealTimeDataSync(companyId: string) {
         clearInterval(qualityCheckInterval)
       }
     } catch (error) {
-      console.error('Failed to initialize WebSocket connection:', error)
+      console.error(`Failed to initialize WebSocket connection for company ${companyId}:`, error)
       setSyncState(prev => ({
         ...prev,
         isConnected: false,
@@ -123,7 +131,7 @@ export function useRealTimeDataSync(companyId: string) {
         initializeConnection()
       }, 5000)
     }
-  }, [])
+  }, [companyId])
 
   // Simulate real-time events for demo
   const simulateRealTimeEvents = useCallback(() => {
@@ -192,48 +200,56 @@ export function useRealTimeDataSync(companyId: string) {
     }
   }, [])
 
-  // Detect and handle conflicts
+  // Detect and handle conflicts with enhanced metadata
   const detectAndHandleConflict = useCallback((event: DataSyncEvent) => {
-    const conflict: SyncConflict = {
-      id: `conflict-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-      module: event.module,
-      entity: event.entity,
-      entityId: event.data.id || 'unknown',
-      field: 'data',
-      serverValue: event.data,
-      clientValue: { modified: true, timestamp: new Date().toISOString() },
-      timestamp: new Date().toISOString(),
-      resolved: false,
-      priority: Math.random() < 0.3 ? 'critical' : Math.random() < 0.6 ? 'high' : 'medium',
-      conflictType: ['data_mismatch', 'concurrent_edit', 'version_conflict', 'permission_conflict'][
-        Math.floor(Math.random() * 4)
-      ] as any,
-      affectedUsers: [event.userId || 'unknown'],
-      businessImpact: ['revenue', 'compliance', 'operations', 'reporting', 'none'][
-        Math.floor(Math.random() * 5)
-      ] as any,
-      metadata: {
-        lastModified: new Date().toISOString(),
-        modifiedBy: event.userId || 'system',
-        version: 1,
-        dependencies: []
+    try {
+      const conflict: SyncConflict = {
+        id: `conflict-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        module: event.module,
+        entity: event.entity,
+        entityId: event.data.id || 'unknown',
+        field: 'data',
+        serverValue: event.data,
+        clientValue: { modified: true, timestamp: new Date().toISOString() },
+        timestamp: new Date().toISOString(),
+        resolved: false,
+        priority: Math.random() < 0.3 ? 'critical' : Math.random() < 0.6 ? 'high' : 'medium',
+        conflictType: (['data_mismatch', 'concurrent_edit', 'version_conflict', 'permission_conflict'][
+          Math.floor(Math.random() * 4)
+        ] as SyncConflict['conflictType']),
+        affectedUsers: [event.userId || 'unknown'],
+        businessImpact: (['revenue', 'compliance', 'operations', 'reporting', 'none'][
+          Math.floor(Math.random() * 5)
+        ] as SyncConflict['businessImpact']),
+        metadata: {
+          lastModified: new Date().toISOString(),
+          modifiedBy: event.userId || 'system',
+          version: 1,
+          dependencies: [],
+          validationErrors: []
+        }
       }
+
+      setConflicts(prev => {
+        const current = prev || []
+        return [...current, conflict]
+      })
+      
+      setSyncState(prev => ({
+        ...prev,
+        syncMetrics: {
+          ...prev.syncMetrics,
+          conflictsDetected: prev.syncMetrics.conflictsDetected + 1
+        }
+      }))
+
+      toast.warning(`Sync conflict detected in ${event.module}`, {
+        description: `Entity: ${event.entity}, Priority: ${conflict.priority}`
+      })
+    } catch (error) {
+      console.error('Error handling conflict detection:', error)
+      toast.error('Error processing sync conflict')
     }
-
-    setConflicts(prev => {
-      const current = prev || []
-      return [...current, conflict]
-    })
-    
-    setSyncState(prev => ({
-      ...prev,
-      syncMetrics: {
-        ...prev.syncMetrics,
-        conflictsDetected: prev.syncMetrics.conflictsDetected + 1
-      }
-    }))
-
-    toast.warning(`Sync conflict detected in ${event.module}`)
   }, [setConflicts])
 
   // Process data updates

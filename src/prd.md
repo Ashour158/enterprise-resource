@@ -6,7 +6,7 @@
 
 **Success Indicators**: 
 - Zero data conflicts during normal operations with 95% automated resolution rate
-- Sub-second synchronization latency across all modules
+- Sub-second synchronization latency across all modules  
 - 99.9% uptime for real-time sync services
 - Secure multi-company data isolation with zero cross-company data leaks
 - User adoption rate of 95% across all business modules
@@ -24,80 +24,195 @@
 
 **Primary User Activity**: Creating and managing business data with real-time collaboration across departments and companies, with secure context switching
 
-## Core Problem Analysis
+## Technical Specifications
 
-**Problem**: Traditional ERP systems suffer from:
-- Data silos and synchronization delays
-- Lack of multi-company support requiring separate instances
-- Complex user management across multiple organizations
-- Inconsistent data across departments and companies
-- Manual reconciliation processes
-- Delayed decision-making due to outdated information
-- Data conflicts when multiple users edit the same information
+### Backend Architecture
+- **Framework**: Flask with Python 3.9+, SQLAlchemy ORM, Flask-JWT-Extended
+- **Real-time**: Flask-SocketIO for WebSocket support with company-isolated channels
+- **Authentication**: JWT tokens with MFA, company context, and bcrypt password hashing
+- **Security**: Multi-layered security framework with RBAC and company isolation
+- **Integration**: Event-driven architecture for module communication
 
-**Solution**: Real-time data synchronization with multi-company architecture, advanced conflict resolution, and unified user management providing secure, isolated access to multiple business entities.
+### Frontend Architecture  
+- **Framework**: React 18+ with TypeScript, Material-UI components
+- **Real-time**: WebSocket integration with company context for live updates
+- **State Management**: React hooks with KV persistence for multi-company state
 
-## Multi-Company Architecture
+### Database Architecture
+- **Primary Database**: PostgreSQL 14+ with multi-tenant schema isolation
+- **Company Isolation**: Each company maintains its own data isolation and role assignments  
+- **Session Management**: JWT tokens include company context for proper data filtering and security
 
-### Global User Management
-- **Functionality**: Single user account can access multiple companies with role-based permissions
-- **Purpose**: Simplify user management while maintaining security isolation
-- **Success Criteria**: Users can switch between authorized companies without re-authentication
+## Multi-Company User Architecture
 
-### Company Data Isolation
-- **Functionality**: Complete data separation between companies with secure context switching
-- **Purpose**: Ensure regulatory compliance and data security
-- **Success Criteria**: Zero cross-company data leaks, audit trail for all access
+The system supports users having access to multiple companies with the same email address. Users can switch between companies they have access to without re-authentication, maintaining proper data isolation and security.
 
-### Session Management
-- **Functionality**: JWT-based sessions with company context and MFA support
-- **Purpose**: Secure authentication with granular permission control
-- **Success Criteria**: Session security meets enterprise compliance standards
+### Architecture Overview
+- Global users table stores authentication credentials and personal information
+- Company user profile table stores company-specific information (employee ID, department, role)  
+- Users can be invited to multiple companies and switch between them
+- Each company maintains its own data isolation and role assignments
+- Sessions include company context for proper data filtering and security
 
-## Essential Features
+### Core Database Schema
 
-### Multi-Company User Architecture
-- **Functionality**: 
-  - Global user profiles with company-specific roles and permissions
-  - Secure company switching with real-time context updates
-  - Role-based access control per company
-  - Employee ID and department mapping per company
-- **Purpose**: Enable users to work across multiple business entities securely
-- **Success Criteria**: 
-  - Users can switch between companies in under 2 seconds
-  - All permissions are properly isolated by company context
-  - Audit logs track all cross-company activities
+```sql
+-- Companies table
+CREATE TABLE companies (
+    id SERIAL PRIMARY KEY,
+    company_name VARCHAR(255) NOT NULL,
+    company_code VARCHAR(50) UNIQUE NOT NULL,
+    domain VARCHAR(255) UNIQUE,
+    logo_url VARCHAR(500),
+    address TEXT,
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    subscription_plan VARCHAR(50) DEFAULT 'enterprise',
+    settings JSONB DEFAULT '{}',
+    security_settings JSONB DEFAULT '{}',
+    timezone VARCHAR(100) DEFAULT 'UTC',
+    currency VARCHAR(10) DEFAULT 'USD',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT true
+);
 
-### Real-Time Data Synchronization
-- **Functionality**: WebSocket-based live data updates across all ERP modules with company isolation
-- **Purpose**: Eliminate data inconsistencies and provide immediate updates within company boundaries
-- **Success Criteria**: Sub-second propagation of data changes across all connected clients within the same company
+-- Global users table (email is unique globally across all companies)
+CREATE TABLE global_users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(50),
+    profile_picture_url VARCHAR(500),
+    mfa_enabled BOOLEAN DEFAULT false,
+    mfa_secret VARCHAR(255),
+    backup_codes JSONB DEFAULT '[]',
+    last_login TIMESTAMP,
+    failed_login_attempts INTEGER DEFAULT 0,
+    account_locked_until TIMESTAMP,
+    password_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT true,
+    preferences JSONB DEFAULT '{}',
+    security_settings JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-### Advanced Conflict Resolution System
-- **Functionality**: 
-  - AI-powered conflict detection and analysis
-  - Automated resolution workflows with business impact assessment
-  - Approval workflows for high-impact conflicts
-  - Machine learning for resolution strategy optimization
-  - Company-specific conflict resolution policies
-- **Purpose**: Maintain data integrity with intelligent resolution strategies and minimal manual intervention
-- **Success Criteria**: 
-  - 95% of conflicts resolved automatically using AI and predefined workflows
-  - Critical business conflicts resolved within 15 minutes
-  - Complete audit trail for all resolution decisions
-  - Company-specific resolution strategies maintained
+-- Company user profiles (many-to-many: users can belong to multiple companies)
+CREATE TABLE company_user_profiles (
+    id SERIAL PRIMARY KEY,
+    global_user_id INTEGER REFERENCES global_users(id) ON DELETE CASCADE,
+    company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+    employee_id VARCHAR(50),
+    department_id INTEGER REFERENCES departments(id),
+    job_title VARCHAR(255),
+    role_id INTEGER REFERENCES roles(id) NOT NULL,
+    manager_id INTEGER REFERENCES company_user_profiles(id),
+    cost_center VARCHAR(50),
+    hire_date DATE,
+    employment_type VARCHAR(20) DEFAULT 'full_time',
+    salary_band VARCHAR(20),
+    status VARCHAR(20) DEFAULT 'active',
+    settings JSONB DEFAULT '{}',
+    last_activity TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(global_user_id, company_id)
+);
 
-### Multi-Module Integration
-- **Functionality**: 14 integrated business modules with company-specific configurations
-- **Purpose**: Provide comprehensive business management in a unified platform with company isolation
-- **Success Criteria**: Seamless data flow within company boundaries and shared context across all modules
-  - Sub-5-second conflict detection and notification
-  - Comprehensive conflict analytics and trend analysis
-  - Business impact assessment for each conflict
+-- Roles table (company-specific)
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+    role_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    permissions TEXT[] DEFAULT '{}',
+    is_system_role BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(company_id, role_name)
+);
 
-#### Advanced Conflict Resolution Features:
-1. **Intelligent Conflict Detection**
-   - Real-time monitoring of data changes across all modules
+-- Departments table (company-specific)
+CREATE TABLE departments (
+    id SERIAL PRIMARY KEY,
+    company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    parent_department_id INTEGER REFERENCES departments(id),
+    manager_id INTEGER,
+    cost_center VARCHAR(50),
+    budget DECIMAL(15,2),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User sessions with company context
+CREATE TABLE user_sessions (
+    id SERIAL PRIMARY KEY,
+    global_user_id INTEGER REFERENCES global_users(id) ON DELETE CASCADE,
+    company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+    jwt_token VARCHAR(500) NOT NULL,
+    refresh_token VARCHAR(500),
+    expires_at TIMESTAMP NOT NULL,
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address INET,
+    user_agent TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Audit logs for security and compliance
+CREATE TABLE audit_logs (
+    id SERIAL PRIMARY KEY,
+    global_user_id INTEGER REFERENCES global_users(id),
+    company_id INTEGER REFERENCES companies(id),
+    action VARCHAR(100) NOT NULL,
+    resource VARCHAR(100) NOT NULL,
+    resource_id VARCHAR(100),
+    old_values JSONB,
+    new_values JSONB,
+    ip_address INET,
+    user_agent TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Company invitations
+CREATE TABLE company_invitations (
+    id SERIAL PRIMARY KEY,
+    company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+    inviter_user_id INTEGER REFERENCES global_users(id),
+    email VARCHAR(255) NOT NULL,
+    role_id INTEGER REFERENCES roles(id),
+    department_id INTEGER REFERENCES departments(id),
+    token VARCHAR(255) UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    accepted_at TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Real-time sync configuration per company
+CREATE TABLE sync_configurations (
+    id SERIAL PRIMARY KEY,
+    company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+    module_id VARCHAR(50) NOT NULL,
+    auto_sync BOOLEAN DEFAULT true,
+    sync_interval INTEGER DEFAULT 30,
+    priority VARCHAR(20) DEFAULT 'medium',
+    conflict_resolution VARCHAR(20) DEFAULT 'manual',
+    sync_fields TEXT[] DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    settings JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(company_id, module_id)
+);
+```
    - Multiple conflict types: data mismatch, concurrent edit, version conflict, permission conflict
    - Business impact classification (revenue, compliance, operations, reporting)
    - Priority-based conflict categorization (critical, high, medium, low)

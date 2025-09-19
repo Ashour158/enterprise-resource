@@ -76,6 +76,28 @@ export interface CompanyUserProfile {
   updated_at: string
 }
 
+// Company user profile with role assignments
+export interface CompanyUserProfiles {
+  id: string
+  global_user_id: string
+  company_id: string
+  employee_id?: string
+  department_id?: string
+  job_title?: string
+  role_id: string
+  manager_id?: string
+  cost_center?: string
+  hire_date?: string
+  employment_type: 'full_time' | 'part_time' | 'contractor' | 'intern'
+  salary_band?: string
+  status: 'active' | 'inactive' | 'suspended' | 'terminated'
+  permissions: string[]
+  settings: Record<string, any>
+  last_activity?: string
+  created_at: string
+  updated_at: string
+}
+
 // Combined user interface for UI usage
 export interface User {
   id: string
@@ -272,4 +294,100 @@ export interface WorkflowCondition {
   field: string
   operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains'
   value: any
+}
+
+// Database Schema Interfaces for Multi-Company Architecture
+
+export interface Role {
+  id: string
+  company_id: string
+  role_name: string
+  description?: string
+  permissions: string[]
+  is_system_role: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Permission {
+  id: string
+  permission_name: string
+  description?: string
+  module: string
+  resource: string
+  action: 'create' | 'read' | 'update' | 'delete' | 'execute'
+  is_system_permission: boolean
+  created_at: string
+}
+
+export interface Department {
+  id: string
+  company_id: string
+  name: string
+  description?: string
+  parent_department_id?: string
+  manager_id?: string
+  cost_center?: string
+  budget?: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface UserSession {
+  id: string
+  global_user_id: string
+  company_id: string
+  jwt_token: string
+  refresh_token?: string
+  expires_at: string
+  last_activity: string
+  ip_address?: string
+  user_agent?: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface AuditLog {
+  id: string
+  global_user_id: string
+  company_id: string
+  action: string
+  resource: string
+  resource_id?: string
+  old_values?: Record<string, any>
+  new_values?: Record<string, any>
+  ip_address?: string
+  user_agent?: string
+  timestamp: string
+}
+
+export interface CompanyInvitation {
+  id: string
+  company_id: string
+  inviter_user_id: string
+  email: string
+  role_id: string
+  department_id?: string
+  token: string
+  expires_at: string
+  accepted_at?: string
+  status: 'pending' | 'accepted' | 'expired' | 'revoked'
+  created_at: string
+  updated_at: string
+}
+
+export interface SyncConfiguration {
+  id: string
+  company_id: string
+  module_id: string
+  auto_sync: boolean
+  sync_interval: number
+  priority: 'high' | 'medium' | 'low'
+  conflict_resolution: 'server_wins' | 'client_wins' | 'manual' | 'workflow'
+  sync_fields: string[]
+  is_active: boolean
+  settings: Record<string, any>
+  created_at: string
+  updated_at: string
 }

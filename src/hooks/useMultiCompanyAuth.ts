@@ -6,7 +6,10 @@ import {
   CompanyAccess, 
   GlobalUser, 
   CompanyUserProfile,
-  User
+  User,
+  UserSession,
+  Role,
+  Permission
 } from '@/types/erp'
 
 interface AuthError {
@@ -20,6 +23,7 @@ interface LoginCredentials {
   password: string
   mfa_code?: string
   remember_me?: boolean
+  company_context?: string // Optional company selection during login
 }
 
 interface CompanySwitchResult {
@@ -28,14 +32,23 @@ interface CompanySwitchResult {
   error?: AuthError
 }
 
+interface MultiCompanyUser {
+  global_user: GlobalUser
+  company_profiles: CompanyUserProfile[]
+  current_session?: UserSession
+  available_companies: CompanyAccess[]
+}
+
 export function useMultiCompanyAuth() {
   const [sessionContext, setSessionContext] = useKV<SessionContext | null>('session-context', null)
   const [currentUser, setCurrentUser] = useKV<User | null>('current-user', null)
+  const [globalUser, setGlobalUser] = useKV<GlobalUser | null>('global-user', null)
+  const [companyProfiles, setCompanyProfiles] = useKV<CompanyUserProfile[]>('company-profiles', [])
   const [isLoading, setIsLoading] = useState(false)
   const [authError, setAuthError] = useState<AuthError | null>(null)
 
-  // Check if user is authenticated
-  const isAuthenticated = !!sessionContext && !!currentUser
+  // Check if user is authenticated with valid session
+  const isAuthenticated = !!sessionContext && !!currentUser && !!globalUser
 
   // Get current company from session context
   const currentCompany = sessionContext?.current_company_id || null
@@ -43,7 +56,12 @@ export function useMultiCompanyAuth() {
   // Get available companies for switching
   const availableCompanies = sessionContext?.available_companies || []
 
-  // Simulate authentication API call
+  // Get current company profile
+  const currentCompanyProfile = (companyProfiles || []).find(
+    profile => profile.company_id === currentCompany
+  )
+
+  // Simulate authentication API call with multi-company support
   const authenticateUser = useCallback(async (credentials: LoginCredentials): Promise<SessionContext | null> => {
     setIsLoading(true)
     setAuthError(null)
@@ -52,17 +70,95 @@ export function useMultiCompanyAuth() {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // Mock authentication logic
+      // Mock authentication logic for multi-company architecture
       if (credentials.email === 'sarah.johnson@example.com' && credentials.password === 'password123') {
         // Simulate MFA check if enabled
         if (credentials.mfa_code && credentials.mfa_code !== '123456') {
           throw new AuthError('INVALID_MFA', 'Invalid MFA code', 'mfa_code')
         }
 
-        // Create mock session context
+        // Mock global user data
+        const mockGlobalUser: GlobalUser = {
+          id: 'global-user-1',
+          email: credentials.email,
+          first_name: 'Sarah',
+          last_name: 'Johnson',
+          phone: '+1 (555) 123-4567',
+          profile_picture_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+          mfa_enabled: true,
+          backup_codes: ['123456789', '987654321'],
+          failed_login_attempts: 0,
+          is_active: true,
+          preferences: {
+            theme: 'light',
+            notifications: true,
+            timezone: 'America/New_York'
+          },
+          security_settings: {
+            login_notifications: true,
+            device_tracking: true
+          },
+          password_changed_at: '2024-01-15T10:00:00Z',
+          created_at: '2023-01-15T10:00:00Z',
+          updated_at: '2024-01-15T10:30:00Z'
+        }
+
+        // Mock company profiles for the user
+        const mockCompanyProfiles: CompanyUserProfile[] = [
+          {
+            id: 'profile-1',
+            global_user_id: 'global-user-1',
+            company_id: 'acme-corp',
+            employee_id: 'EMP-001',
+            department: 'Information Technology',
+            job_title: 'System Administrator',
+            role: 'admin',
+            permissions: ['all'],
+            status: 'active',
+            hire_date: '2023-01-15',
+            settings: {
+              dashboard_layout: 'grid',
+              notification_preferences: ['email', 'in_app']
+            },
+            created_at: '2023-01-15T10:00:00Z',
+            updated_at: '2024-01-15T10:30:00Z'
+          },
+          {
+            id: 'profile-2',
+            global_user_id: 'global-user-1',
+            company_id: 'tech-solutions',
+            employee_id: 'TS-101',
+            department: 'Operations',
+            job_title: 'Operations Manager',
+            role: 'manager',
+            permissions: ['finance', 'inventory', 'hr', 'reporting'],
+            status: 'active',
+            hire_date: '2023-06-01',
+            settings: {
+              dashboard_layout: 'list',
+              notification_preferences: ['email']
+            },
+            created_at: '2023-06-01T09:00:00Z',
+            updated_at: '2024-01-15T10:30:00Z'
+          }
+        ]
+
+        // Set global user and company profiles
+        setGlobalUser(mockGlobalUser)
+        setCompanyProfiles(mockCompanyProfiles)
+
+        // Determine initial company context
+        const initialCompanyId = credentials.company_context || 'acme-corp'
+        const initialProfile = mockCompanyProfiles.find(p => p.company_id === initialCompanyId)
+
+        if (!initialProfile) {
+          throw new AuthError('COMPANY_ACCESS_DENIED', 'No access to requested company')
+        }
+
+        // Create session context
         const session: SessionContext = {
           global_user_id: 'global-user-1',
-          current_company_id: 'acme-corp',
+          current_company_id: initialCompanyId,
           available_companies: [
             {
               company_id: 'acme-corp',
@@ -84,8 +180,8 @@ export function useMultiCompanyAuth() {
           ],
           jwt_token: 'mock-jwt-token-' + Date.now(),
           expires_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), // 8 hours
-          permissions: ['all'],
-          role: 'admin'
+          permissions: initialProfile.permissions,
+          role: initialProfile.role
         }
 
         return session
@@ -102,41 +198,49 @@ export function useMultiCompanyAuth() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [setGlobalUser, setCompanyProfiles])
 
-  // Login function
+  // Login function with multi-company support
   const login = useCallback(async (credentials: LoginCredentials): Promise<boolean> => {
     const session = await authenticateUser(credentials)
     
-    if (session) {
+    if (session && globalUser && companyProfiles) {
       setSessionContext(session)
       
-      // Create user object for UI
+      // Get current company profile for the session
+      const currentProfile = companyProfiles.find(p => p.company_id === session.current_company_id)
+      
+      if (!currentProfile) {
+        setAuthError(new AuthError('COMPANY_PROFILE_ERROR', 'Unable to load company profile'))
+        return false
+      }
+      
+      // Create user object for UI with current company context
       const user: User = {
         id: session.global_user_id,
-        email: credentials.email,
-        name: 'Sarah Johnson',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-        role: session.role,
-        permissions: session.permissions,
+        email: globalUser.email,
+        name: `${globalUser.first_name} ${globalUser.last_name}`,
+        avatar: globalUser.profile_picture_url,
+        role: currentProfile.role,
+        permissions: currentProfile.permissions,
         companyId: session.current_company_id,
-        employee_id: 'EMP-001',
-        department: 'Information Technology',
-        job_title: 'System Administrator',
-        is_owner: true,
-        company_profiles: [], // Would be loaded separately
-        global_profile: {} as GlobalUser // Would be loaded separately
+        employee_id: currentProfile.employee_id,
+        department: currentProfile.department,
+        job_title: currentProfile.job_title,
+        is_owner: currentProfile.role === 'admin',
+        company_profiles: companyProfiles,
+        global_profile: globalUser
       }
       
       setCurrentUser(user)
-      toast.success('Login successful')
+      toast.success(`Welcome back, ${globalUser.first_name}!`)
       return true
     }
     
     return false
-  }, [authenticateUser, setSessionContext, setCurrentUser])
+  }, [authenticateUser, globalUser, companyProfiles, setSessionContext, setCurrentUser])
 
-  // Logout function
+  // Logout function with proper cleanup
   const logout = useCallback(async (): Promise<void> => {
     setIsLoading(true)
     
@@ -144,8 +248,11 @@ export function useMultiCompanyAuth() {
       // Simulate API call to invalidate session
       await new Promise(resolve => setTimeout(resolve, 500))
       
+      // Clear all authentication state
       setSessionContext(null)
       setCurrentUser(null)
+      setGlobalUser(null)
+      setCompanyProfiles([])
       setAuthError(null)
       
       toast.success('Logged out successfully')
@@ -154,37 +261,42 @@ export function useMultiCompanyAuth() {
     } finally {
       setIsLoading(false)
     }
-  }, [setSessionContext, setCurrentUser])
+  }, [setSessionContext, setCurrentUser, setGlobalUser, setCompanyProfiles])
 
-  // Switch company function
+  // Switch company function with proper permission handling
   const switchCompany = useCallback(async (companyId: string): Promise<CompanySwitchResult> => {
-    if (!sessionContext) {
+    if (!sessionContext || !globalUser || !companyProfiles) {
       return { success: false, error: new AuthError('NO_SESSION', 'No active session') }
     }
 
     setIsLoading(true)
     
     try {
-      // Find the target company
+      // Find the target company and user profile
       const targetCompany = sessionContext.available_companies.find(c => c.company_id === companyId)
+      const targetProfile = companyProfiles.find(p => p.company_id === companyId)
       
       if (!targetCompany) {
         throw new AuthError('COMPANY_NOT_FOUND', 'Company not accessible')
       }
 
-      if (targetCompany.status !== 'active') {
+      if (!targetProfile) {
+        throw new AuthError('PROFILE_NOT_FOUND', 'User profile not found for company')
+      }
+
+      if (targetCompany.status !== 'active' || targetProfile.status !== 'active') {
         throw new AuthError('COMPANY_INACTIVE', 'Company access is suspended')
       }
 
       // Simulate API call to switch company context
       await new Promise(resolve => setTimeout(resolve, 800))
 
-      // Update session context
+      // Update session context with new company
       const updatedSession: SessionContext = {
         ...sessionContext,
         current_company_id: companyId,
-        permissions: targetCompany.permissions,
-        role: targetCompany.role,
+        permissions: targetProfile.permissions,
+        role: targetProfile.role,
         available_companies: sessionContext.available_companies.map(c => 
           c.company_id === companyId 
             ? { ...c, last_accessed: new Date().toISOString() }
@@ -192,13 +304,17 @@ export function useMultiCompanyAuth() {
         )
       }
 
-      // Update user context
+      // Update user context with new company profile
       if (currentUser) {
         const updatedUser: User = {
           ...currentUser,
           companyId: companyId,
-          role: targetCompany.role,
-          permissions: targetCompany.permissions
+          role: targetProfile.role,
+          permissions: targetProfile.permissions,
+          employee_id: targetProfile.employee_id,
+          department: targetProfile.department,
+          job_title: targetProfile.job_title,
+          is_owner: targetProfile.role === 'admin'
         }
         setCurrentUser(updatedUser)
       }
@@ -220,7 +336,7 @@ export function useMultiCompanyAuth() {
     } finally {
       setIsLoading(false)
     }
-  }, [sessionContext, currentUser, setSessionContext, setCurrentUser])
+  }, [sessionContext, globalUser, companyProfiles, currentUser, setSessionContext, setCurrentUser])
 
   // Refresh session function
   const refreshSession = useCallback(async (): Promise<boolean> => {
@@ -281,6 +397,9 @@ export function useMultiCompanyAuth() {
     isAuthenticated,
     isLoading,
     currentUser,
+    globalUser,
+    companyProfiles,
+    currentCompanyProfile,
     sessionContext,
     currentCompany,
     availableCompanies,

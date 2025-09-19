@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { useRealTimeDataSync } from '@/hooks/useRealTimeDataSync'
 import { useMultiCompanyAuth } from '@/hooks/useMultiCompanyAuth'
+import { EnhancedErrorBoundary, setupGlobalErrorHandlers } from '@/components/ErrorBoundary'
 import { Header } from '@/components/Header'
 import { ModuleCard } from '@/components/ModuleCard'
 import { AIInsightsPanel } from '@/components/AIInsightsPanel'
@@ -29,6 +30,11 @@ import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Building
 import { toast } from 'sonner'
 
 function App() {
+  // Setup global error handlers
+  useEffect(() => {
+    setupGlobalErrorHandlers()
+  }, [])
+
   const [selectedCompany, setSelectedCompany] = useKV('selected-company', mockCompanies[0].id)
   const [showNotifications, setShowNotifications] = useState(false)
   const [activeView, setActiveView] = useState('dashboard')
@@ -37,13 +43,16 @@ function App() {
   const activeModules = mockModules.filter(m => m.status === 'active')
   const totalNotifications = mockModules.reduce((sum, m) => sum + m.notifications, 0)
 
-  // Multi-company authentication
+  // Multi-company authentication with null safety
   const { 
     isAuthenticated, 
     currentUser, 
     availableCompanies,
     switchCompany
   } = useMultiCompanyAuth()
+
+  // Ensure availableCompanies is always an array
+  const safeAvailableCompanies = Array.isArray(availableCompanies) ? availableCompanies : []
 
   // Real-time data synchronization with null safety
   const {
@@ -66,11 +75,18 @@ function App() {
   const safePendingChanges = pendingChanges || {}
 
   const handleCompanyChange = async (companyId: string) => {
-    const result = await switchCompany(companyId)
-    if (result.success) {
-      setSelectedCompany(companyId)
-      const company = mockCompanies.find(c => c.id === companyId)
-      toast.success(`Switched to ${company?.name}`)
+    try {
+      const result = await switchCompany(companyId)
+      if (result.success) {
+        setSelectedCompany(companyId)
+        const company = mockCompanies.find(c => c.id === companyId)
+        toast.success(`Switched to ${company?.name || 'Unknown Company'}`)
+      } else {
+        toast.error(result.error?.message || 'Failed to switch company')
+      }
+    } catch (error) {
+      console.error('Error switching company:', error)
+      toast.error('Failed to switch company')
     }
   }
 
@@ -103,16 +119,17 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Toaster />
-      <Header 
-        user={mockUser}
-        currentCompany={currentCompany}
-        companies={mockCompanies}
-        notifications={mockNotifications}
-        onCompanyChange={handleCompanyChange}
-        onNotificationClick={handleNotificationClick}
-      />
+    <EnhancedErrorBoundary>
+      <div className="min-h-screen bg-background">
+        <Toaster />
+        <Header 
+          user={mockUser}
+          currentCompany={currentCompany}
+          companies={mockCompanies}
+          notifications={mockNotifications}
+          onCompanyChange={handleCompanyChange}
+          onNotificationClick={handleNotificationClick}
+        />
 
       {showNotifications && (
         <div className="fixed top-16 right-6 w-96 bg-background border border-border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
@@ -333,6 +350,7 @@ function App() {
         </Tabs>
       </main>
     </div>
+    </EnhancedErrorBoundary>
   )
 }
 
