@@ -22,6 +22,7 @@ import { SecurityDashboard } from '@/components/SecurityDashboard'
 import { BiometricAuthenticationSystem } from '@/components/BiometricAuthenticationSystem'
 import { APIManagementDashboard } from '@/components/APIManagementDashboard'
 import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
+import { WebhookManagementSystem } from '@/components/WebhookManagementSystem'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -36,7 +37,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -207,6 +208,7 @@ function App() {
                  activeView === 'user-management' ? 'Advanced User Management' :
                  activeView === 'invitations' ? 'Company Invitations' :
                  activeView === 'biometric' ? 'Biometric Authentication' :
+                 activeView === 'webhooks' ? 'Webhook Management' :
                  'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
@@ -230,6 +232,8 @@ function App() {
                   ? 'Secure token-based company invitations with role assignments and audit trails'
                   : activeView === 'biometric'
                   ? 'Advanced biometric authentication with fingerprint, Face ID, and hardware security keys'
+                  : activeView === 'webhooks'
+                  ? 'Real-time event delivery system with webhook endpoints and delivery tracking'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -276,6 +280,10 @@ function App() {
                 <TabsTrigger value="api" className="flex items-center gap-2">
                   <Globe size={16} />
                   API Management
+                </TabsTrigger>
+                <TabsTrigger value="webhooks" className="flex items-center gap-2">
+                  <LinkSimple size={16} />
+                  Webhooks
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -478,6 +486,13 @@ function App() {
 
           <TabsContent value="api" className="space-y-6">
             <APIManagementDashboard companyId={currentCompany.id} />
+          </TabsContent>
+
+          <TabsContent value="webhooks" className="space-y-6">
+            <WebhookManagementSystem 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+            />
           </TabsContent>
         </Tabs>
       </main>
