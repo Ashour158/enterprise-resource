@@ -19,7 +19,7 @@ import { CompanyInvitationManager } from '@/components/CompanyInvitationManager'
 import { AdvancedUserManagement } from '@/components/AdvancedUserManagement'
 import { PermissionInheritanceManager } from '@/components/PermissionInheritanceManager'
 import { SecurityDashboard } from '@/components/SecurityDashboard'
-import { AuthenticationSystem } from '@/components/AuthenticationSystem'
+import { BiometricAuthenticationSystem } from '@/components/BiometricAuthenticationSystem'
 import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -35,7 +35,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -205,6 +205,7 @@ function App() {
                  activeView === 'profile' ? 'User Profile' :
                  activeView === 'user-management' ? 'Advanced User Management' :
                  activeView === 'invitations' ? 'Company Invitations' :
+                 activeView === 'biometric' ? 'Biometric Authentication' :
                  'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
@@ -226,6 +227,8 @@ function App() {
                   ? 'Advanced role-based user management with company isolation and database schema control'
                   : activeView === 'invitations'
                   ? 'Secure token-based company invitations with role assignments and audit trails'
+                  : activeView === 'biometric'
+                  ? 'Advanced biometric authentication with fingerprint, Face ID, and hardware security keys'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -268,6 +271,10 @@ function App() {
                 <TabsTrigger value="invitations" className="flex items-center gap-2">
                   <Mail size={16} />
                   Invitations
+                </TabsTrigger>
+                <TabsTrigger value="biometric" className="flex items-center gap-2">
+                  <Fingerprint size={16} />
+                  Biometric Auth
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -398,10 +405,33 @@ function App() {
           </TabsContent>
 
           <TabsContent value="security" className="space-y-6">
-            <SecurityDashboard 
-              companyId={currentCompany.id}
-              userId={mockUser.id}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <SecurityDashboard 
+                  companyId={currentCompany.id}
+                  userId={mockUser.id}
+                />
+              </div>
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Biometric Authentication</CardTitle>
+                    <CardDescription>
+                      Secure mobile access with fingerprint and Face ID authentication
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <BiometricAuthenticationSystem 
+                      userId={mockUser.id}
+                      companyId={currentCompany.id}
+                      onAuthSuccess={(sessionId) => {
+                        toast.success(`Biometric authentication successful (Session: ${sessionId.slice(0, 8)}...)`)
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="visualization" className="space-y-6">
@@ -442,6 +472,16 @@ function App() {
             <CompanyInvitationManager 
               companyId={currentCompany.id} 
               currentUserId={mockUser.id}
+            />
+          </TabsContent>
+
+          <TabsContent value="biometric" className="space-y-6">
+            <BiometricAuthenticationSystem 
+              userId={mockUser.id}
+              companyId={currentCompany.id}
+              onAuthSuccess={(sessionId) => {
+                toast.success(`Biometric authentication successful (Session: ${sessionId.slice(0, 8)}...)`)
+              }}
             />
           </TabsContent>
         </Tabs>
