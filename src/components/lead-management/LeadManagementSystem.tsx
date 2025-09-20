@@ -19,6 +19,9 @@ import { LeadImportExport } from './LeadImportExport'
 import { LeadPipeline } from './LeadPipeline'
 import { LeadFilters } from './LeadFilters'
 import { LeadAIInsights } from './LeadAIInsights'
+import { AILeadScoringEngine } from './AILeadScoringEngine'
+import { EmailAutomationSystem } from './EmailAutomationSystem'
+import { LeadEnrichmentSystem } from './LeadEnrichmentSystem'
 import { 
   Plus, 
   Search, 
@@ -41,7 +44,10 @@ import {
   MapPin,
   Star,
   CheckSquare,
-  Settings
+  Settings,
+  Sparkle,
+  Globe,
+  Activity
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -60,6 +66,9 @@ interface Lead {
   aiLeadScore: number
   aiConversionProbability: number
   aiEstimatedDealValue: number
+  aiNextBestAction?: string
+  aiBuyingSignals?: string[]
+  aiSentimentScore?: number
   leadSource: string
   assignedTo?: string
   createdAt: string
@@ -80,6 +89,13 @@ interface Lead {
     state?: string
     country?: string
   }
+  enrichmentData?: any
+  enrichmentStatus?: 'pending' | 'completed' | 'failed' | 'partial'
+  enrichmentScore?: number
+  duplicateLeads?: string[]
+  duplicateStatus?: 'pending' | 'merged' | 'ignored'
+  emailCampaignEnrollments?: string[]
+  automationRules?: string[]
 }
 
 interface LeadManagementSystemProps {
@@ -100,6 +116,8 @@ export function LeadManagementSystem({ companyId, userId, userRole }: LeadManage
   const [showImportExport, setShowImportExport] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [isCreating, setIsCreating] = useState(false)
+  const [activeAITab, setActiveAITab] = useState('scoring')
+  const [showAIInsights, setShowAIInsights] = useState(true)
   const [cardLayout, setCardLayout] = useKV(`lead-card-layout-${userId}`, {
     showAIScore: true,
     showEngagement: true,
@@ -129,6 +147,9 @@ export function LeadManagementSystem({ companyId, userId, userRole }: LeadManage
           aiLeadScore: 85,
           aiConversionProbability: 0.75,
           aiEstimatedDealValue: 150000,
+          aiNextBestAction: 'Schedule demo call within 24 hours',
+          aiBuyingSignals: ['Active timeline', 'Budget defined', 'Decision-maker authority'],
+          aiSentimentScore: 0.8,
           leadSource: 'Website',
           assignedTo: userId,
           createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
@@ -169,6 +190,9 @@ export function LeadManagementSystem({ companyId, userId, userRole }: LeadManage
           aiLeadScore: 62,
           aiConversionProbability: 0.45,
           aiEstimatedDealValue: 75000,
+          aiNextBestAction: 'Send personalized case study',
+          aiBuyingSignals: ['Mid-market fit', 'Healthcare industry'],
+          aiSentimentScore: 0.6,
           leadSource: 'LinkedIn',
           assignedTo: userId,
           createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
@@ -198,6 +222,9 @@ export function LeadManagementSystem({ companyId, userId, userRole }: LeadManage
           aiLeadScore: 35,
           aiConversionProbability: 0.15,
           aiEstimatedDealValue: 25000,
+          aiNextBestAction: 'Qualify budget and timeline',
+          aiBuyingSignals: ['Early-stage startup'],
+          aiSentimentScore: 0.4,
           leadSource: 'Trade Show',
           createdAt: new Date(Date.now() - 86400000).toISOString(),
           updatedAt: new Date(Date.now() - 86400000).toISOString(),
@@ -351,6 +378,54 @@ export function LeadManagementSystem({ companyId, userId, userRole }: LeadManage
     })
   }
 
+  // AI action handler
+  const handleAIActionClick = (leadId: string, action: string) => {
+    const lead = leads.find(l => l.id === leadId)
+    if (!lead) return
+
+    switch (action.toLowerCase()) {
+      case 'schedule demo call':
+        toast.success(`Demo call scheduled for ${lead.firstName} ${lead.lastName}`)
+        break
+      case 'send email':
+        toast.success(`Email sent to ${lead.firstName} ${lead.lastName}`)
+        break
+      case 'create task':
+        toast.success(`Task created for ${lead.firstName} ${lead.lastName}`)
+        break
+      case 'update status':
+        handleUpdateLead(leadId, { leadStatus: 'qualified' })
+        break
+      default:
+        toast.success(`Action executed: ${action}`)
+    }
+  }
+
+  // Duplicate detection and merging
+  const handleDuplicateDetection = async (leadId: string) => {
+    const lead = leads.find(l => l.id === leadId)
+    if (!lead) return
+
+    // Simulate AI duplicate detection
+    const duplicates = leads.filter(l => 
+      l.id !== leadId && 
+      (l.email.toLowerCase() === lead.email.toLowerCase() ||
+       (l.firstName.toLowerCase() === lead.firstName.toLowerCase() && 
+        l.lastName.toLowerCase() === lead.lastName.toLowerCase() &&
+        l.companyName?.toLowerCase() === lead.companyName?.toLowerCase()))
+    )
+
+    if (duplicates.length > 0) {
+      await handleUpdateLead(leadId, {
+        duplicateLeads: duplicates.map(d => d.id),
+        duplicateStatus: 'pending'
+      })
+      toast.info(`Found ${duplicates.length} potential duplicates for ${lead.firstName} ${lead.lastName}`)
+    } else {
+      toast.success('No duplicates found')
+    }
+  }
+
   // Bulk operations
   const handleBulkUpdate = async (updates: Partial<Lead>) => {
     const selectedIds = Array.from(selectedLeads)
@@ -485,6 +560,90 @@ export function LeadManagementSystem({ companyId, userId, userRole }: LeadManage
         </Card>
       </div>
 
+      {/* AI Features Tabs */}
+      <Tabs value={activeAITab} onValueChange={setActiveAITab}>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="scoring" className="flex items-center gap-2">
+              <Brain size={16} />
+              AI Scoring
+            </TabsTrigger>
+            <TabsTrigger value="automation" className="flex items-center gap-2">
+              <Mail size={16} />
+              Email Automation
+            </TabsTrigger>
+            <TabsTrigger value="enrichment" className="flex items-center gap-2">
+              <Globe size={16} />
+              Lead Enrichment
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="flex items-center gap-2">
+              <Sparkle size={16} />
+              AI Insights
+            </TabsTrigger>
+          </TabsList>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAIInsights(!showAIInsights)}
+            className="flex items-center gap-2"
+          >
+            {showAIInsights ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showAIInsights ? 'Hide' : 'Show'} AI Features
+          </Button>
+        </div>
+
+        {showAIInsights && (
+          <>
+            <TabsContent value="scoring" className="space-y-4">
+              {selectedLead && (
+                <AILeadScoringEngine
+                  lead={selectedLead}
+                  onScoreUpdate={handleUpdateLead}
+                  onInsightAction={(insight, action) => handleAIActionClick(selectedLead.id, action)}
+                />
+              )}
+              {!selectedLead && (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Brain size={48} className="mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">AI Lead Scoring</h3>
+                    <p className="text-muted-foreground">
+                      Select a lead to view detailed AI scoring analysis
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="automation" className="space-y-4">
+              <EmailAutomationSystem
+                companyId={companyId}
+                userId={userId}
+                userRole={userRole}
+                leads={leads}
+                onLeadUpdate={handleUpdateLead}
+              />
+            </TabsContent>
+
+            <TabsContent value="enrichment" className="space-y-4">
+              <LeadEnrichmentSystem
+                companyId={companyId}
+                userId={userId}
+                leads={leads}
+                onLeadUpdate={handleUpdateLead}
+              />
+            </TabsContent>
+
+            <TabsContent value="insights" className="space-y-4">
+              <LeadAIInsights
+                leads={filteredLeads}
+                onLeadUpdate={handleUpdateLead}
+              />
+            </TabsContent>
+          </>
+        )}
+      </Tabs>
+
       {/* Search and Filters */}
       <Card>
         <CardContent className="p-4">
@@ -602,12 +761,6 @@ export function LeadManagementSystem({ companyId, userId, userRole }: LeadManage
           )}
         </CardContent>
       </Card>
-
-      {/* AI Insights */}
-      <LeadAIInsights
-        leads={filteredLeads}
-        onLeadUpdate={handleUpdateLead}
-      />
 
       {/* Main Content */}
       <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as any)}>
