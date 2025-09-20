@@ -26,6 +26,7 @@ import { OnboardingWorkflowManager } from '@/components/OnboardingWorkflowManage
 import { DepartmentOnboardingBuilder } from '@/components/DepartmentOnboardingBuilder'
 import { EmployeeOnboardingDashboard } from '@/components/EmployeeOnboardingDashboard'
 import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
+import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { WebhookManagementSystem } from '@/components/WebhookManagementSystem'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -41,7 +42,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple, UserCirclePlus, FlowArrow, GraduationCap } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple, UserCirclePlus, FlowArrow, GraduationCap, Calendar } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -216,6 +217,7 @@ function App() {
                  activeView === 'onboarding' ? 'Onboarding Management' :
                  activeView === 'onboarding-workflows' ? 'Onboarding Workflow Builder' :
                  activeView === 'employee-onboarding' ? 'My Onboarding Progress' :
+                 activeView === 'calendar' ? 'Smart Calendar Integration' :
                  'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
@@ -249,6 +251,8 @@ function App() {
                   ? 'Track your onboarding progress, complete tasks, and access resources for your new role'
                   : activeView === 'webhooks'
                   ? 'Real-time event delivery system with webhook endpoints and delivery tracking'
+                  : activeView === 'calendar'
+                  ? 'Smart calendar integration with automated scheduling for onboarding meetings and deadlines'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -311,6 +315,10 @@ function App() {
                 <TabsTrigger value="employee-onboarding" className="flex items-center gap-2">
                   <GraduationCap size={16} />
                   My Onboarding
+                </TabsTrigger>
+                <TabsTrigger value="calendar" className="flex items-center gap-2">
+                  <Calendar size={16} />
+                  Smart Calendar
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -554,6 +562,15 @@ function App() {
             <WebhookManagementSystem 
               companyId={currentCompany.id}
               userId={mockUser.id}
+            />
+          </TabsContent>
+
+          <TabsContent value="calendar" className="space-y-6">
+            <SmartCalendarIntegration 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+              departmentId="dept-002"
+              onboardingEmployeeId="emp-new-001"
             />
           </TabsContent>
         </Tabs>
