@@ -50,7 +50,19 @@ import {
   Upload,
   DotsThreeVertical as MoreVertical,
   ArrowsDownUp as ArrowUpDown,
-  Package
+  Package,
+  DotsNine as GripVertical,
+  UserCheck,
+  UserMinus,
+  Shuffle,
+  Target,
+  ArrowRight,
+  ArrowLeft,
+  UserCircle,
+  Envelope,
+  Phone,
+  Briefcase,
+  Calendar
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { mockModules } from '@/data/mockData'
@@ -70,19 +82,31 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
   const [departments, setDepartments] = useKV<Department[]>(`departments-${companyId}`, [])
   const [departmentUsers, setDepartmentUsers] = useKV<DepartmentUser[]>(`department-users-${companyId}`, [])
   const [auditLogs, setAuditLogs] = useKV<DepartmentAuditLog[]>(`department-audit-${companyId}`, [])
+  const [availableUsers, setAvailableUsers] = useKV<any[]>(`company-users-${companyId}`, [])
   
   // Ensure we always have arrays, even if useKV returns undefined
   const safeDepartments = departments || []
   const safeAuditLogs = auditLogs || []
+  const safeDepartmentUsers = departmentUsers || []
+  const safeAvailableUsers = availableUsers || []
+  
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showUserAssignDialog, setShowUserAssignDialog] = useState(false)
+  const [showUserManagementModal, setShowUserManagementModal] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
   const [filters, setFilters] = useState<DepartmentFilter>({})
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'name' | 'users' | 'created' | 'updated'>('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  
+  // Drag and drop state
+  const [draggedUser, setDraggedUser] = useState<any | null>(null)
+  const [dropTargetDepartment, setDropTargetDepartment] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
+  const [assignmentMode, setAssignmentMode] = useState<'single' | 'bulk'>('single')
 
   // Form state
   const [formData, setFormData] = useState<CreateDepartmentRequest>({
@@ -200,7 +224,112 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
       ]
       setDepartments(mockDepartments)
     }
-  }, [departments.length, companyId, currentUserId, setDepartments])
+  }, [departments?.length, companyId, currentUserId, setDepartments])
+
+  // Generate mock users if none exist
+  useEffect(() => {
+    if (safeAvailableUsers.length === 0) {
+      const mockUsers = [
+        {
+          id: 'user-001',
+          name: 'John Smith',
+          email: 'john.smith@company.com',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=john',
+          position: 'Software Engineer',
+          departmentId: 'dept-002',
+          phone: '+1-555-0101',
+          hireDate: '2023-03-15',
+          status: 'active',
+          role: 'user'
+        },
+        {
+          id: 'user-002',
+          name: 'Sarah Johnson',
+          email: 'sarah.johnson@company.com', 
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah',
+          position: 'HR Manager',
+          departmentId: 'dept-001',
+          phone: '+1-555-0102',
+          hireDate: '2022-06-01',
+          status: 'active',
+          role: 'manager'
+        },
+        {
+          id: 'user-003',
+          name: 'Mike Davis',
+          email: 'mike.davis@company.com',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mike',
+          position: 'IT Director',
+          departmentId: 'dept-002',
+          phone: '+1-555-0103',
+          hireDate: '2021-01-10',
+          status: 'active',
+          role: 'manager'
+        },
+        {
+          id: 'user-004',
+          name: 'Emily Wilson',
+          email: 'emily.wilson@company.com',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=emily',
+          position: 'Sales Manager',
+          departmentId: 'dept-003',
+          phone: '+1-555-0104',
+          hireDate: '2022-09-20',
+          status: 'active',
+          role: 'manager'
+        },
+        {
+          id: 'user-005',
+          name: 'David Brown',
+          email: 'david.brown@company.com',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=david',
+          position: 'Financial Analyst',
+          departmentId: 'dept-004',
+          phone: '+1-555-0105',
+          hireDate: '2023-02-14',
+          status: 'active',
+          role: 'user'
+        },
+        {
+          id: 'user-006',
+          name: 'Lisa Anderson',
+          email: 'lisa.anderson@company.com',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=lisa',
+          position: 'Marketing Specialist',
+          departmentId: null, // Unassigned user
+          phone: '+1-555-0106',
+          hireDate: '2023-11-01',
+          status: 'active',
+          role: 'user'
+        },
+        {
+          id: 'user-007',
+          name: 'Robert Garcia',
+          email: 'robert.garcia@company.com',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=robert',
+          position: 'Quality Assurance Engineer',
+          departmentId: null, // Unassigned user
+          phone: '+1-555-0107',
+          hireDate: '2023-12-15',
+          status: 'active',
+          role: 'user'
+        },
+        {
+          id: 'user-008',
+          name: 'Jennifer Martinez',
+          email: 'jennifer.martinez@company.com',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=jennifer',
+          position: 'UX Designer',
+          departmentId: null, // Unassigned user
+          phone: '+1-555-0108',
+          hireDate: '2024-01-02',
+          status: 'active',
+          role: 'user'
+        }
+      ]
+      setAvailableUsers(mockUsers)
+    }
+  }, [safeAvailableUsers.length, setAvailableUsers])
 
   // Calculate department statistics
   const getDepartmentStats = (): DepartmentStats => {
@@ -429,6 +558,114 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
     toast.success('Department deleted successfully')
   }
 
+  // User assignment functions
+  const handleAssignUserToDepartment = async (userId: string, departmentId: string | null) => {
+    if (!canManageDepartments) {
+      toast.error('Access denied: Only Super Admin and Company Admin can assign users')
+      return
+    }
+
+    const user = safeAvailableUsers.find(u => u.id === userId)
+    if (!user) return
+
+    const oldDepartmentId = user.departmentId
+    const newDepartment = departmentId ? safeDepartments.find(d => d.id === departmentId) : null
+
+    // Update user's department assignment
+    setAvailableUsers(prev => 
+      (prev || []).map(u => u.id === userId ? { ...u, departmentId } : u)
+    )
+
+    // Update department employee counts
+    if (oldDepartmentId) {
+      setDepartments(prev => 
+        (prev || []).map(d => d.id === oldDepartmentId ? { ...d, employeeCount: d.employeeCount - 1 } : d)
+      )
+    }
+    
+    if (departmentId) {
+      setDepartments(prev => 
+        (prev || []).map(d => d.id === departmentId ? { ...d, employeeCount: d.employeeCount + 1 } : d)
+      )
+    }
+
+    // Add audit log
+    const auditLog: DepartmentAuditLog = {
+      id: `audit-${Date.now()}`,
+      departmentId: departmentId || oldDepartmentId || '',
+      action: 'user_assigned',
+      details: { 
+        userId,
+        userName: user.name,
+        oldDepartmentId,
+        newDepartmentId: departmentId,
+        oldDepartmentName: oldDepartmentId ? safeDepartments.find(d => d.id === oldDepartmentId)?.name : null,
+        newDepartmentName: newDepartment?.name || 'Unassigned'
+      },
+      performedBy: currentUserId,
+      performedAt: new Date(),
+      companyId
+    }
+    setAuditLogs(prev => [...(prev || []), auditLog])
+
+    const actionText = departmentId 
+      ? `${user.name} assigned to ${newDepartment?.name}`
+      : `${user.name} unassigned from department`
+    toast.success(actionText)
+  }
+
+  const handleBulkUserAssignment = async (userIds: string[], departmentId: string | null) => {
+    if (!canManageDepartments) {
+      toast.error('Access denied: Only Super Admin and Company Admin can assign users')
+      return
+    }
+
+    for (const userId of userIds) {
+      await handleAssignUserToDepartment(userId, departmentId)
+    }
+    
+    setSelectedUsers([])
+    toast.success(`${userIds.length} users assigned successfully`)
+  }
+
+  // Drag and drop handlers
+  const handleDragStart = (user: any) => {
+    setDraggedUser(user)
+    setIsDragging(true)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedUser(null)
+    setIsDragging(false)
+    setDropTargetDepartment(null)
+  }
+
+  const handleDragOver = (e: React.DragEvent, departmentId: string) => {
+    e.preventDefault()
+    setDropTargetDepartment(departmentId)
+  }
+
+  const handleDragLeave = () => {
+    setDropTargetDepartment(null)
+  }
+
+  const handleDrop = (e: React.DragEvent, departmentId: string) => {
+    e.preventDefault()
+    if (draggedUser) {
+      handleAssignUserToDepartment(draggedUser.id, departmentId)
+    }
+    handleDragEnd()
+  }
+
+  // Get users by department
+  const getUsersByDepartment = (departmentId: string | null) => {
+    return safeAvailableUsers.filter(user => user.departmentId === departmentId)
+  }
+
+  const getUnassignedUsers = () => {
+    return safeAvailableUsers.filter(user => !user.departmentId)
+  }
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -539,6 +776,10 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="hierarchy">Hierarchy</TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <UserPlus size={16} />
+              User Assignment
+            </TabsTrigger>
             <TabsTrigger value="permissions">Permissions</TabsTrigger>
             <TabsTrigger value="audit">Audit Trail</TabsTrigger>
           </TabsList>
@@ -600,7 +841,7 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
                         <SelectValue placeholder="Select parent department" />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map(dept => (
+                        {(departments || []).map(dept => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name} ({dept.code})
                           </SelectItem>
@@ -810,12 +1051,12 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
                 <Building size={48} className="mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-semibold mb-2">No departments found</h3>
                 <p className="text-muted-foreground mb-4">
-                  {departments.length === 0 
+                  {(departments || []).length === 0 
                     ? "Get started by creating your first department"
                     : "Try adjusting your search criteria"
                   }
                 </p>
-                {canManageDepartments && departments.length === 0 && (
+                {canManageDepartments && (departments || []).length === 0 && (
                   <Button onClick={() => setShowCreateDialog(true)}>
                     <Plus size={16} className="mr-2" />
                     Create First Department
@@ -824,6 +1065,191 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="users" className="space-y-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold">User Assignment Management</h3>
+              <p className="text-muted-foreground">Drag and drop users to assign them to departments</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={assignmentMode === 'single' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setAssignmentMode('single')}
+              >
+                Single Mode
+              </Button>
+              <Button
+                variant={assignmentMode === 'bulk' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setAssignmentMode('bulk')}
+              >
+                Bulk Mode
+              </Button>
+              {assignmentMode === 'bulk' && selectedUsers.length > 0 && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowUserManagementModal(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Shuffle size={16} />
+                  Assign {selectedUsers.length} Users
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Unassigned Users Pool */}
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCircle size={20} />
+                  Unassigned Users
+                  <Badge variant="secondary" className="ml-auto">
+                    {getUnassignedUsers().length}
+                  </Badge>
+                </CardTitle>
+                <CardDescription>
+                  Users not assigned to any department
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-96">
+                  <div className="space-y-2">
+                    {getUnassignedUsers().map((user) => (
+                      <UserCard
+                        key={user.id}
+                        user={user}
+                        canManage={canManageDepartments}
+                        isDragging={isDragging}
+                        isSelected={selectedUsers.includes(user.id)}
+                        assignmentMode={assignmentMode}
+                        onDragStart={handleDragStart}
+                        onSelect={(selected) => {
+                          if (selected) {
+                            setSelectedUsers(prev => [...prev, user.id])
+                          } else {
+                            setSelectedUsers(prev => prev.filter(id => id !== user.id))
+                          }
+                        }}
+                        onUnassign={() => handleAssignUserToDepartment(user.id, null)}
+                      />
+                    ))}
+                    {getUnassignedUsers().length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <UserCheck size={24} className="mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">All users are assigned</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Department Columns */}
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {safeDepartments.map((department) => (
+                <Card
+                  key={department.id}
+                  className={`transition-all duration-200 ${
+                    dropTargetDepartment === department.id && isDragging
+                      ? 'ring-2 ring-primary bg-primary/5'
+                      : ''
+                  }`}
+                  onDragOver={(e) => handleDragOver(e, department.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, department.id)}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-sm">{department.name}</CardTitle>
+                        <CardDescription className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs">{department.code}</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {getUsersByDepartment(department.id).length} users
+                          </Badge>
+                        </CardDescription>
+                      </div>
+                      <Target size={16} className="text-muted-foreground" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-64">
+                      <div className="space-y-2">
+                        {getUsersByDepartment(department.id).map((user) => (
+                          <UserCard
+                            key={user.id}
+                            user={user}
+                            canManage={canManageDepartments}
+                            isDragging={isDragging}
+                            isSelected={selectedUsers.includes(user.id)}
+                            assignmentMode={assignmentMode}
+                            onDragStart={handleDragStart}
+                            onSelect={(selected) => {
+                              if (selected) {
+                                setSelectedUsers(prev => [...prev, user.id])
+                              } else {
+                                setSelectedUsers(prev => prev.filter(id => id !== user.id))
+                              }
+                            }}
+                            onUnassign={() => handleAssignUserToDepartment(user.id, null)}
+                          />
+                        ))}
+                        {getUsersByDepartment(department.id).length === 0 && (
+                          <div className="text-center py-4 text-muted-foreground">
+                            <Users size={16} className="mx-auto mb-1 opacity-50" />
+                            <p className="text-xs">No users assigned</p>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Assignment Statistics */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ChartBar size={20} />
+                Assignment Statistics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {safeAvailableUsers.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Users</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {safeAvailableUsers.filter(u => u.departmentId).length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Assigned</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {getUnassignedUsers().length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Unassigned</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {Math.round((safeAvailableUsers.filter(u => u.departmentId).length / Math.max(safeAvailableUsers.length, 1)) * 100)}%
+                  </div>
+                  <div className="text-sm text-muted-foreground">Assignment Rate</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="hierarchy" className="space-y-4">
@@ -879,7 +1305,7 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
                     </tr>
                   </thead>
                   <tbody>
-                    {departments.map(dept => (
+                    {(departments || []).map(dept => (
                       <tr key={dept.id}>
                         <td className="border border-border p-2 font-medium">
                           <div>
@@ -928,8 +1354,8 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
             <CardContent>
               <ScrollArea className="h-96">
                 <div className="space-y-4">
-                  {auditLogs.length > 0 ? (
-                    auditLogs.map(log => (
+                  {(auditLogs || []).length > 0 ? (
+                    (auditLogs || []).map(log => (
                       <div key={log.id} className="border border-border rounded-lg p-4">
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
@@ -942,7 +1368,7 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
                                 {log.action}
                               </Badge>
                               <span className="font-medium">
-                                Department {departments.find(d => d.id === log.departmentId)?.name || 'Unknown'}
+                                Department {(departments || []).find(d => d.id === log.departmentId)?.name || 'Unknown'}
                               </span>
                             </div>
                             <p className="text-sm text-muted-foreground">
@@ -1068,6 +1494,163 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk User Assignment Modal */}
+      <Dialog open={showUserManagementModal} onOpenChange={setShowUserManagementModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Bulk User Assignment</DialogTitle>
+            <DialogDescription>
+              Assign {selectedUsers.length} selected users to a department
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Selected Users:</Label>
+              <div className="max-h-32 overflow-y-auto border rounded-lg p-2">
+                {selectedUsers.map(userId => {
+                  const user = safeAvailableUsers.find(u => u.id === userId)
+                  return user ? (
+                    <div key={userId} className="text-sm p-1">
+                      {user.name} - {user.position}
+                    </div>
+                  ) : null
+                })}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Assign to Department:</Label>
+              <Select
+                onValueChange={(value) => {
+                  handleBulkUserAssignment(selectedUsers, value === 'unassigned' ? null : value)
+                  setShowUserManagementModal(false)
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {safeDepartments.map(dept => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name} ({dept.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUserManagementModal(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+// UserCard component for drag-and-drop interface
+interface UserCardProps {
+  user: any
+  canManage: boolean
+  isDragging: boolean
+  isSelected: boolean
+  assignmentMode: 'single' | 'bulk'
+  onDragStart: (user: any) => void
+  onSelect: (selected: boolean) => void
+  onUnassign: () => void
+}
+
+function UserCard({ 
+  user, 
+  canManage, 
+  isDragging, 
+  isSelected, 
+  assignmentMode, 
+  onDragStart, 
+  onSelect, 
+  onUnassign 
+}: UserCardProps) {
+  return (
+    <div
+      className={`
+        relative p-3 border rounded-lg cursor-pointer transition-all duration-200 
+        ${isSelected ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-muted/50'}
+        ${isDragging ? 'opacity-50' : ''}
+      `}
+      draggable={canManage && assignmentMode === 'single'}
+      onDragStart={() => canManage && assignmentMode === 'single' && onDragStart(user)}
+      onClick={() => assignmentMode === 'bulk' && onSelect(!isSelected)}
+    >
+      {assignmentMode === 'bulk' && (
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={onSelect}
+          className="absolute top-2 left-2"
+        />
+      )}
+      
+      <div className={`flex items-center gap-3 ${assignmentMode === 'bulk' ? 'ml-6' : ''}`}>
+        {assignmentMode === 'single' && canManage && (
+          <GripVertical size={16} className="text-muted-foreground" />
+        )}
+        
+        <img
+          src={user.avatar}
+          alt={user.name}
+          className="w-8 h-8 rounded-full"
+        />
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <p className="font-medium text-sm truncate">{user.name}</p>
+            {canManage && user.departmentId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onUnassign()
+                }}
+                className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+              >
+                <UserMinus size={12} />
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground truncate">{user.position}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge variant="outline" className="text-xs">
+              {user.role}
+            </Badge>
+            <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+              {user.status}
+            </Badge>
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-2 space-y-1">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Envelope size={10} />
+          <span className="truncate">{user.email}</span>
+        </div>
+        {user.phone && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Phone size={10} />
+            <span>{user.phone}</span>
+          </div>
+        )}
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Calendar size={10} />
+          <span>Hired: {new Date(user.hireDate).toLocaleDateString()}</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -1135,7 +1718,7 @@ function DepartmentTreeNode({ department, level, canManage, onEdit, onDelete }: 
               onClick={() => onDelete(department.id)}
               className="text-destructive hover:text-destructive"
             >
-              <Trash2 size={14} />
+              <Trash size={14} />
             </Button>
           </div>
         )}
