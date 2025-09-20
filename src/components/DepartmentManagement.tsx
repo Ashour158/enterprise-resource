@@ -331,6 +331,34 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
     }
   }, [safeAvailableUsers.length, setAvailableUsers])
 
+  // Keyboard shortcuts for bulk mode
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (assignmentMode === 'bulk') {
+        switch (event.key) {
+          case 'Escape':
+            setSelectedUsers([])
+            toast.info('Selection cleared')
+            break
+          case 'a':
+          case 'A':
+            if (event.ctrlKey || event.metaKey) {
+              event.preventDefault()
+              const allUserIds = safeAvailableUsers.map(u => u.id)
+              setSelectedUsers(allUserIds)
+              toast.success(`Selected all ${allUserIds.length} users`)
+            }
+            break
+        }
+      }
+    }
+
+    if (assignmentMode === 'bulk') {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [assignmentMode, safeAvailableUsers, setSelectedUsers])
+
   // Calculate department statistics
   const getDepartmentStats = (): DepartmentStats => {
     const activeDepartments = safeDepartments.filter(d => d.status === 'active')
@@ -1071,32 +1099,82 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-semibold">User Assignment Management</h3>
-              <p className="text-muted-foreground">Drag and drop users to assign them to departments</p>
+              <p className="text-muted-foreground">
+                {assignmentMode === 'single' 
+                  ? 'Drag and drop users to assign them to departments'
+                  : 'Select multiple users with checkboxes, then assign them to a department'
+                }
+              </p>
+              {assignmentMode === 'bulk' && selectedUsers.length > 0 && (
+                <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-700 font-medium">
+                    {selectedUsers.length} users selected • Press ESC to clear • Ctrl+A to select all
+                  </p>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant={assignmentMode === 'single' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setAssignmentMode('single')}
+                onClick={() => {
+                  setAssignmentMode('single')
+                  setSelectedUsers([])
+                }}
+                className="flex items-center gap-2"
               >
-                Single Mode
+                <GripVertical size={16} />
+                Drag & Drop
               </Button>
               <Button
                 variant={assignmentMode === 'bulk' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setAssignmentMode('bulk')}
+                onClick={() => {
+                  setAssignmentMode('bulk')
+                  setSelectedUsers([])
+                }}
+                className="flex items-center gap-2"
               >
-                Bulk Mode
+                <UserCheck size={16} />
+                Bulk Select
               </Button>
-              {assignmentMode === 'bulk' && selectedUsers.length > 0 && (
-                <Button
-                  size="sm"
-                  onClick={() => setShowUserManagementModal(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Shuffle size={16} />
-                  Assign {selectedUsers.length} Users
-                </Button>
+              {assignmentMode === 'bulk' && (
+                <>
+                  <Separator orientation="vertical" className="h-6" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const allUserIds = safeAvailableUsers.map(u => u.id)
+                      setSelectedUsers(allUserIds)
+                      toast.success(`Selected all ${allUserIds.length} users`)
+                    }}
+                    disabled={selectedUsers.length === safeAvailableUsers.length}
+                  >
+                    Select All ({safeAvailableUsers.length})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedUsers([])
+                      toast.info('Selection cleared')
+                    }}
+                    disabled={selectedUsers.length === 0}
+                  >
+                    Clear Selection
+                  </Button>
+                  {selectedUsers.length > 0 && (
+                    <Button
+                      size="sm"
+                      onClick={() => setShowUserManagementModal(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Shuffle size={16} />
+                      Assign {selectedUsers.length} Selected
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -1111,9 +1189,22 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
                   <Badge variant="secondary" className="ml-auto">
                     {getUnassignedUsers().length}
                   </Badge>
+                  {assignmentMode === 'bulk' && (
+                    <Badge variant="outline" className="text-xs">
+                      {selectedUsers.filter(id => !safeAvailableUsers.find(u => u.id === id)?.departmentId).length} selected
+                    </Badge>
+                  )}
                 </CardTitle>
                 <CardDescription>
                   Users not assigned to any department
+                  {assignmentMode === 'bulk' && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <div className="flex items-center gap-1 text-xs">
+                        <UserCheck size={12} />
+                        <span>Click to select multiple users</span>
+                      </div>
+                    </div>
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1172,9 +1263,22 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
                           <Badge variant="outline" className="text-xs">
                             {getUsersByDepartment(department.id).length} users
                           </Badge>
+                          {assignmentMode === 'bulk' && (
+                            <Badge variant="outline" className="text-xs bg-blue-50">
+                              {selectedUsers.filter(id => {
+                                const user = safeAvailableUsers.find(u => u.id === id)
+                                return user?.departmentId === department.id
+                              }).length} selected
+                            </Badge>
+                          )}
                         </CardDescription>
                       </div>
-                      <Target size={16} className="text-muted-foreground" />
+                      <div className="flex items-center gap-1">
+                        <Target size={16} className="text-muted-foreground" />
+                        {assignmentMode === 'bulk' && isDragging && (
+                          <div className="text-xs text-muted-foreground">Drop here</div>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -1497,7 +1601,7 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
 
       {/* Bulk User Assignment Modal */}
       <Dialog open={showUserManagementModal} onOpenChange={setShowUserManagementModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Bulk User Assignment</DialogTitle>
             <DialogDescription>
@@ -1505,41 +1609,132 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Selected Users:</Label>
-              <div className="max-h-32 overflow-y-auto border rounded-lg p-2">
-                {selectedUsers.map(userId => {
-                  const user = safeAvailableUsers.find(u => u.id === userId)
-                  return user ? (
-                    <div key={userId} className="text-sm p-1">
-                      {user.name} - {user.position}
-                    </div>
-                  ) : null
-                })}
-              </div>
+          <div className="space-y-6">
+            {/* Selected Users Display */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Selected Users ({selectedUsers.length}):</Label>
+              <ScrollArea className="max-h-48 border rounded-lg p-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {selectedUsers.map(userId => {
+                    const user = safeAvailableUsers.find(u => u.id === userId)
+                    return user ? (
+                      <div key={userId} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          className="w-6 h-6 rounded-full"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.position}</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {user.departmentId 
+                            ? safeDepartments.find(d => d.id === user.departmentId)?.code || 'Unknown'
+                            : 'Unassigned'
+                          }
+                        </Badge>
+                      </div>
+                    ) : null
+                  })}
+                </div>
+              </ScrollArea>
             </div>
             
+            {/* Assignment Options */}
+            <div className="space-y-4">
+              <Label className="text-sm font-medium">Assignment Action:</Label>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Assign to Department */}
+                <Card className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Building size={16} className="text-blue-600" />
+                      <span className="font-medium text-sm">Assign to Department</span>
+                    </div>
+                    <Select
+                      onValueChange={(value) => {
+                        handleBulkUserAssignment(selectedUsers, value)
+                        setShowUserManagementModal(false)
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {safeDepartments.map(dept => (
+                          <SelectItem key={dept.id} value={dept.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{dept.name}</span>
+                              <Badge variant="secondary" className="text-xs">{dept.code}</Badge>
+                              <span className="text-xs text-muted-foreground">
+                                ({dept.employeeCount} users)
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </Card>
+
+                {/* Unassign Users */}
+                <Card 
+                  className="p-4 cursor-pointer hover:bg-muted/50 transition-colors border-orange-200"
+                  onClick={() => {
+                    handleBulkUserAssignment(selectedUsers, null)
+                    setShowUserManagementModal(false)
+                  }}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <UserMinus size={16} className="text-orange-600" />
+                      <span className="font-medium text-sm">Remove from Departments</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Move all selected users to unassigned status
+                    </p>
+                    <Button variant="outline" size="sm" className="w-full">
+                      Unassign All Selected
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            </div>
+
+            {/* Preview Changes */}
             <div className="space-y-2">
-              <Label>Assign to Department:</Label>
-              <Select
-                onValueChange={(value) => {
-                  handleBulkUserAssignment(selectedUsers, value === 'unassigned' ? null : value)
-                  setShowUserManagementModal(false)
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {safeDepartments.map(dept => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name} ({dept.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-sm font-medium">Assignment Impact:</Label>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <div className="text-lg font-bold text-blue-600">
+                    {selectedUsers.filter(id => {
+                      const user = safeAvailableUsers.find(u => u.id === id)
+                      return !user?.departmentId
+                    }).length}
+                  </div>
+                  <div className="text-xs text-blue-600">Currently Unassigned</div>
+                </div>
+                <div className="p-3 bg-green-50 rounded-lg">
+                  <div className="text-lg font-bold text-green-600">
+                    {selectedUsers.filter(id => {
+                      const user = safeAvailableUsers.find(u => u.id === id)
+                      return user?.departmentId
+                    }).length}
+                  </div>
+                  <div className="text-xs text-green-600">Currently Assigned</div>
+                </div>
+                <div className="p-3 bg-purple-50 rounded-lg">
+                  <div className="text-lg font-bold text-purple-600">
+                    {new Set(selectedUsers.map(id => {
+                      const user = safeAvailableUsers.find(u => u.id === id)
+                      return user?.departmentId
+                    }).filter(Boolean)).size}
+                  </div>
+                  <div className="text-xs text-purple-600">Affected Departments</div>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -1579,9 +1774,11 @@ function UserCard({
   return (
     <div
       className={`
-        relative p-3 border rounded-lg cursor-pointer transition-all duration-200 
-        ${isSelected ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-muted/50'}
+        relative p-3 border rounded-lg transition-all duration-200 
+        ${isSelected ? 'ring-2 ring-primary bg-primary/10 border-primary' : 'hover:bg-muted/50 border-border'}
         ${isDragging ? 'opacity-50' : ''}
+        ${assignmentMode === 'bulk' ? 'cursor-pointer' : canManage ? 'cursor-move' : 'cursor-default'}
+        ${assignmentMode === 'single' && canManage ? 'hover:shadow-sm' : ''}
       `}
       draggable={canManage && assignmentMode === 'single'}
       onDragStart={() => canManage && assignmentMode === 'single' && onDragStart(user)}
@@ -1608,7 +1805,9 @@ function UserCard({
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <p className="font-medium text-sm truncate">{user.name}</p>
+            <p className={`font-medium text-sm truncate ${isSelected ? 'text-primary' : ''}`}>
+              {user.name}
+            </p>
             {canManage && user.departmentId && (
               <Button
                 variant="ghost"
@@ -1631,6 +1830,11 @@ function UserCard({
             <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className="text-xs">
               {user.status}
             </Badge>
+            {isSelected && assignmentMode === 'bulk' && (
+              <Badge variant="default" className="text-xs bg-primary">
+                Selected
+              </Badge>
+            )}
           </div>
         </div>
       </div>
