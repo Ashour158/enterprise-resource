@@ -10,6 +10,9 @@ import { SystemValidation } from '@/components/SystemValidation'
 import { FunctionValidationSuite } from '@/components/FunctionValidationSuite'
 import { SystemStatusDashboard } from '@/components/SystemStatusDashboard'
 import { ComprehensiveSystemCheck } from '@/components/ComprehensiveSystemCheck'
+import { CRMIntegrationTestSuite } from '@/components/CRMIntegrationTestSuite'
+import { CRMBusinessWorkflowTest } from '@/components/CRMBusinessWorkflowTest'
+import { CRMPerformanceTest } from '@/components/CRMPerformanceTest'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -1137,6 +1140,7 @@ export function SystemTestingSuite({ companyId, userId }: { companyId: string; u
               <TabsTrigger value="status">System Status</TabsTrigger>
               <TabsTrigger value="validation">System Validation</TabsTrigger>
               <TabsTrigger value="function-tests">Function Tests</TabsTrigger>
+              <TabsTrigger value="crm-integration">CRM Integration</TabsTrigger>
               <TabsTrigger value="detailed">Detailed Results</TabsTrigger>
               <TabsTrigger value="performance">Performance</TabsTrigger>
             </TabsList>
@@ -1211,6 +1215,28 @@ export function SystemTestingSuite({ companyId, userId }: { companyId: string; u
 
             <TabsContent value="function-tests" className="space-y-4">
               <FunctionValidationSuite companyId={companyId} userId={userId} />
+            </TabsContent>
+
+            <TabsContent value="crm-integration" className="space-y-4">
+              <Tabs defaultValue="integration-tests" className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="integration-tests">Integration Tests</TabsTrigger>
+                  <TabsTrigger value="workflow-tests">Business Workflows</TabsTrigger>
+                  <TabsTrigger value="performance-tests">Performance Testing</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="integration-tests">
+                  <CRMIntegrationTestSuite companyId={companyId} userId={userId} />
+                </TabsContent>
+                
+                <TabsContent value="workflow-tests">
+                  <CRMBusinessWorkflowTest companyId={companyId} userId={userId} />
+                </TabsContent>
+                
+                <TabsContent value="performance-tests">
+                  <CRMPerformanceTest companyId={companyId} userId={userId} />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
             <TabsContent value="detailed" className="space-y-4">
