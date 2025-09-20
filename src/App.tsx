@@ -22,6 +22,9 @@ import { SecurityDashboard } from '@/components/SecurityDashboard'
 import { BiometricAuthenticationSystem } from '@/components/BiometricAuthenticationSystem'
 import { APIManagementDashboard } from '@/components/APIManagementDashboard'
 import { DepartmentManagement } from '@/components/DepartmentManagement'
+import { OnboardingWorkflowManager } from '@/components/OnboardingWorkflowManager'
+import { DepartmentOnboardingBuilder } from '@/components/DepartmentOnboardingBuilder'
+import { EmployeeOnboardingDashboard } from '@/components/EmployeeOnboardingDashboard'
 import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
 import { WebhookManagementSystem } from '@/components/WebhookManagementSystem'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,7 +41,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple, UserCirclePlus, FlowArrow, GraduationCap } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -210,6 +213,9 @@ function App() {
                  activeView === 'invitations' ? 'Company Invitations' :
                  activeView === 'biometric' ? 'Biometric Authentication' :
                  activeView === 'departments' ? 'Department Management' :
+                 activeView === 'onboarding' ? 'Onboarding Management' :
+                 activeView === 'onboarding-workflows' ? 'Onboarding Workflow Builder' :
+                 activeView === 'employee-onboarding' ? 'My Onboarding Progress' :
                  'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
@@ -233,6 +239,14 @@ function App() {
                   ? 'Secure token-based company invitations with role assignments and audit trails'
                   : activeView === 'biometric'
                   ? 'Advanced biometric authentication with fingerprint, Face ID, and hardware security keys'
+                  : activeView === 'departments'
+                  ? 'Manage organizational structure, assign users to departments, and configure permissions'
+                  : activeView === 'onboarding'
+                  ? 'Comprehensive onboarding workflow management with department-specific templates and automation'
+                  : activeView === 'onboarding-workflows'
+                  ? 'Create and customize department-specific onboarding workflows with drag-and-drop builder'
+                  : activeView === 'employee-onboarding'
+                  ? 'Track your onboarding progress, complete tasks, and access resources for your new role'
                   : activeView === 'webhooks'
                   ? 'Real-time event delivery system with webhook endpoints and delivery tracking'
                   : 'Manage access and switch between multiple companies'
@@ -286,9 +300,17 @@ function App() {
                   <Globe size={16} />
                   API Management
                 </TabsTrigger>
-                <TabsTrigger value="webhooks" className="flex items-center gap-2">
-                  <LinkSimple size={16} />
-                  Webhooks
+                <TabsTrigger value="onboarding" className="flex items-center gap-2">
+                  <UserCirclePlus size={16} />
+                  Onboarding
+                </TabsTrigger>
+                <TabsTrigger value="onboarding-workflows" className="flex items-center gap-2">
+                  <FlowArrow size={16} />
+                  Workflows
+                </TabsTrigger>
+                <TabsTrigger value="employee-onboarding" className="flex items-center gap-2">
+                  <GraduationCap size={16} />
+                  My Onboarding
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -499,6 +521,33 @@ function App() {
 
           <TabsContent value="api" className="space-y-6">
             <APIManagementDashboard companyId={currentCompany.id} />
+          </TabsContent>
+
+          <TabsContent value="onboarding" className="space-y-6">
+            <OnboardingWorkflowManager 
+              companyId={currentCompany.id}
+              currentUserId={mockUser.id}
+              userRole="company_admin" // This would come from your RBAC system
+            />
+          </TabsContent>
+
+          <TabsContent value="onboarding-workflows" className="space-y-6">
+            <DepartmentOnboardingBuilder 
+              companyId={currentCompany.id}
+              departmentId="dept-002" // This would be selected by the user
+              currentUserId={mockUser.id}
+              userRole="company_admin" // This would come from your RBAC system
+              onClose={() => setActiveView('onboarding')}
+            />
+          </TabsContent>
+
+          <TabsContent value="employee-onboarding" className="space-y-6">
+            <EmployeeOnboardingDashboard 
+              companyId={currentCompany.id}
+              employeeId={mockUser.id}
+              currentUserId={mockUser.id}
+              userRole="employee" // This would come from your RBAC system
+            />
           </TabsContent>
 
           <TabsContent value="webhooks" className="space-y-6">
