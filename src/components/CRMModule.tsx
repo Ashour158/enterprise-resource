@@ -17,6 +17,7 @@ import { AccountManagement } from '@/components/crm/AccountManagement'
 import { QuoteManagement } from '@/components/crm/QuoteManagement'
 import { ActivityManagement } from '@/components/crm/ActivityManagement'
 import { ForecastManagement } from '@/components/crm/ForecastManagement'
+import { CustomerJourneyMapping } from '@/components/crm/CustomerJourneyMapping'
 import { FileAttachmentSystem } from '@/components/shared/FileAttachmentSystem'
 import { CRMImportExportSystem } from '@/components/shared/CRMImportExportSystem'
 import { CRMHistoryTracker, useCRMHistory } from '@/components/shared/CRMHistoryTracker'
@@ -315,7 +316,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
       {/* Main CRM Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="flex items-center justify-between">
-          <TabsList className="grid w-full grid-cols-10 lg:w-auto lg:grid-cols-none lg:flex">
+          <TabsList className="grid w-full grid-cols-11 lg:w-auto lg:grid-cols-none lg:flex">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <ChartLine size={16} />
               <span className="hidden sm:inline">Dashboard</span>
@@ -335,6 +336,10 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             <TabsTrigger value="pipeline" className="flex items-center gap-2">
               <TrendUp size={16} />
               <span className="hidden sm:inline">Pipeline</span>
+            </TabsTrigger>
+            <TabsTrigger value="journeys" className="flex items-center gap-2">
+              <Target size={16} />
+              <span className="hidden sm:inline">Journeys</span>
             </TabsTrigger>
             <TabsTrigger value="quotes" className="flex items-center gap-2">
               <Receipt size={16} />
@@ -443,6 +448,26 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             companyId={companyId}
             userId={userId}
             userRole={userRole}
+          />
+        </TabsContent>
+
+        <TabsContent value="journeys" className="space-y-6">
+          <CustomerJourneyMapping 
+            companyId={companyId}
+            onJourneySelect={(journey) => {
+              addHistoryEntry({
+                entityType: 'contact',
+                entityId: journey.id,
+                entityName: journey.customerName,
+                action: 'updated',
+                description: `Viewed customer journey for ${journey.customerName}`,
+                metadata: {
+                  companyId,
+                  relatedEntities: [{ type: 'customer', id: journey.customerId, name: journey.customerName }]
+                }
+              })
+              toast.info(`Opened journey for ${journey.customerName}`)
+            }}
           />
         </TabsContent>
 
