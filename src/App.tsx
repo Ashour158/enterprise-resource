@@ -28,6 +28,7 @@ import { EmployeeOnboardingDashboard } from '@/components/EmployeeOnboardingDash
 import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
 import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { WebhookManagementSystem } from '@/components/WebhookManagementSystem'
+import { CRMModule } from '@/components/CRMModule'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -253,6 +254,8 @@ function App() {
                   ? 'Real-time event delivery system with webhook endpoints and delivery tracking'
                   : activeView === 'calendar'
                   ? 'Smart calendar integration with automated scheduling for onboarding meetings and deadlines'
+                  : activeView === 'crm'
+                  ? 'Comprehensive customer relationship management with lead tracking, deal pipeline, and customer service'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -319,6 +322,10 @@ function App() {
                 <TabsTrigger value="calendar" className="flex items-center gap-2">
                   <Calendar size={16} />
                   Smart Calendar
+                </TabsTrigger>
+                <TabsTrigger value="crm" className="flex items-center gap-2">
+                  <Users size={16} />
+                  CRM
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -571,6 +578,14 @@ function App() {
               userId={mockUser.id}
               departmentId="dept-002"
               onboardingEmployeeId="emp-new-001"
+            />
+          </TabsContent>
+
+          <TabsContent value="crm" className="space-y-6">
+            <CRMModule 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+              userRole="company_admin"
             />
           </TabsContent>
         </Tabs>

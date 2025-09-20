@@ -1,133 +1,123 @@
-# Enterprise Multi-Company ERP Platform - API Architecture & Authentication System
+# Product Requirements Document: CRM Module for Multi-Company ERP System
 
 ## Core Purpose & Success
-- **Mission Statement**: Build a comprehensive API-first multi-company ERP platform that rivals enterprise solutions like Salesforce, Microsoft Dynamics, and SAP with seamless authentication, security, and scalability.
-- **Success Indicators**: Sub-200ms API response times, 99.9% uptime, seamless multi-company switching, enterprise-grade security compliance, and scalable architecture supporting 10,000+ concurrent users per company.
-- **Experience Qualities**: Secure, Scalable, Seamless
+
+**Mission Statement**: Create a comprehensive Customer Relationship Management module that integrates seamlessly with the multi-company ERP system, enabling businesses to manage their entire customer lifecycle from lead generation to post-sale support with AI-powered insights and real-time collaboration.
+
+**Success Indicators**:
+- Customer data consolidation across all touchpoints
+- Improved lead conversion rates through AI insights
+- Streamlined sales pipeline management
+- Enhanced customer service response times
+- Multi-company data isolation and security compliance
+
+**Experience Qualities**: Professional, Intelligent, Seamless
 
 ## Project Classification & Approach
-- **Complexity Level**: Complex Application (enterprise-grade functionality, multi-tenancy, advanced security)
-- **Primary User Activity**: Enterprise Resource Management across multiple companies with complex workflows
+
+**Complexity Level**: Complex Application (advanced functionality with multi-company context, AI integration, and enterprise-grade features)
+
+**Primary User Activity**: Creating, Acting, Interacting (managing customer relationships, tracking sales activities, analyzing performance)
+
+## Thought Process for Feature Selection
+
+**Core Problem Analysis**: Businesses need a unified platform to manage customer relationships across the entire lifecycle while maintaining strict data isolation between companies and providing actionable insights for sales and service teams.
+
+**User Context**: Sales representatives, customer service agents, managers, and executives will use this module throughout their workday to track prospects, manage existing customers, analyze performance, and collaborate on deals.
+
+**Critical Path**: Lead Capture → Qualification → Opportunity Management → Deal Closure → Customer Onboarding → Ongoing Support → Upselling/Cross-selling
+
+**Key Moments**:
+1. First contact with a new lead - system must capture and enrich data automatically
+2. Sales handoff to customer service - seamless transition with full context
+3. Performance review meetings - real-time analytics and AI insights must be available
 
 ## Essential Features
 
-### Authentication & Security Foundation
-- **Multi-Company JWT Authentication**: Company-scoped tokens with secure refresh mechanisms
-- **Role-Based Access Control (RBAC)**: Granular permissions with company isolation
-- **Multi-Factor Authentication**: TOTP, SMS, email, and biometric support
-- **Session Management**: Company-aware sessions with device tracking
-- **Security Monitoring**: Real-time threat detection and audit logging
+### Lead Management
+- **Functionality**: Capture, score, and nurture leads from multiple sources
+- **Purpose**: Maximize conversion rates and ensure no opportunities are missed
+- **Success Criteria**: 95% lead capture rate, automated scoring accuracy >80%
 
-### API Architecture
-- **RESTful Design**: Consistent, predictable endpoint structure
-- **GraphQL Integration**: Flexible data querying for complex relationships
-- **WebSocket Support**: Real-time updates and notifications
-- **Rate Limiting**: Company-aware throttling and quota management
-- **API Versioning**: Backward compatibility and smooth migrations
+### Contact & Account Management
+- **Functionality**: Comprehensive customer profiles with interaction history
+- **Purpose**: Provide complete customer context for all team members
+- **Success Criteria**: 360-degree customer view, real-time data synchronization
 
-### Data Management
-- **Multi-Tenant Database**: Company-isolated data with shared infrastructure
-- **Event-Driven Architecture**: Reliable cross-module communication
-- **Conflict Resolution**: Intelligent merge strategies for concurrent updates
-- **Audit Trails**: Comprehensive logging for compliance and forensics
-- **Smart Calendar Integration**: Automated onboarding meeting scheduling and deadline management
+### Sales Pipeline Management
+- **Functionality**: Visual pipeline with customizable stages and forecasting
+- **Purpose**: Track deals progression and predict revenue
+- **Success Criteria**: Accurate sales forecasting, clear bottleneck identification
+
+### Activity & Task Management
+- **Functionality**: Track calls, emails, meetings, and follow-ups
+- **Purpose**: Ensure consistent customer engagement and accountability
+- **Success Criteria**: 100% activity logging, automated reminders
+
+### Reporting & Analytics
+- **Functionality**: Real-time dashboards with AI-powered insights
+- **Purpose**: Enable data-driven decision making
+- **Success Criteria**: Custom report generation, predictive analytics accuracy
+
+### Customer Service Integration
+- **Functionality**: Ticket management integrated with customer profiles
+- **Purpose**: Provide seamless support experience
+- **Success Criteria**: Average response time <2 hours, customer satisfaction >90%
 
 ## Design Direction
 
-### API Response Format
-```json
-{
-  "success": boolean,
-  "data": object | array,
-  "meta": {
-    "timestamp": "ISO 8601",
-    "request_id": "uuid",
-    "company_id": "string",
-    "user_id": "string",
-    "api_version": "string"
-  },
-  "pagination": {
-    "page": number,
-    "limit": number,
-    "total": number,
-    "has_next": boolean
-  },
-  "errors": [
-    {
-      "code": "string",
-      "message": "string",
-      "field": "string",
-      "context": object
-    }
-  ]
-}
-```
+### Visual Tone & Identity
+**Emotional Response**: Users should feel confident, organized, and empowered to build meaningful customer relationships.
 
-### Authentication Flow
-1. **Initial Login**: POST /api/v1/auth/login → Returns user profile + company list
-2. **Company Selection**: POST /api/v1/auth/select-company → Returns company-scoped JWT
-3. **Token Refresh**: POST /api/v1/auth/refresh → Validates and refreshes tokens
-4. **Company Switching**: POST /api/v1/auth/switch-company → Seamless company transition
-5. **Secure Logout**: POST /api/v1/auth/logout → Invalidates all tokens
+**Design Personality**: Professional yet approachable, data-rich but not overwhelming, with clear action-oriented interfaces.
 
-### Security Architecture
-- **End-to-End Encryption**: AES-256-GCM for data at rest, TLS 1.3 for transit
-- **Company Data Isolation**: Row-level security with company_id filtering
-- **API Key Management**: Rotating keys with usage analytics
-- **Compliance Framework**: GDPR, HIPAA, SOX, and industry-specific standards
+**Visual Metaphors**: Pipeline flows, relationship networks, growth trajectories, and collaboration spaces.
+
+**Simplicity Spectrum**: Rich interface with progressive disclosure - show essential information prominently while keeping advanced features accessible.
+
+### Color Strategy
+**Color Scheme Type**: Analogous with complementary accents
+**Primary Color**: Deep blue (#2563eb) - conveys trust and professionalism
+**Secondary Colors**: Light blue (#60a5fa) for secondary actions, gray (#6b7280) for neutral elements
+**Accent Color**: Orange (#f97316) for CTAs and important status indicators
+**Color Psychology**: Blue builds trust essential for CRM, orange creates urgency for sales actions
+**Color Accessibility**: All combinations meet WCAG AA standards (4.5:1 contrast minimum)
+
+### Typography System
+**Font Pairing Strategy**: Inter for all text elements with JetBrains Mono for data fields requiring precise reading
+**Typographic Hierarchy**: Clear distinction between customer names (large, bold), company names (medium, semibold), contact details (regular), and metadata (small, muted)
+**Font Personality**: Clean, modern, highly legible for data-intensive interfaces
+**Which fonts**: Inter (primary), JetBrains Mono (data/code)
+**Legibility Check**: Optimized for long reading sessions and quick data scanning
+
+### Visual Hierarchy & Layout
+**Attention Direction**: Customer names and deal values prominently displayed, status indicators use color coding, action buttons clearly highlighted
+**White Space Philosophy**: Generous spacing between customer records, grouped related information, clear section divisions
+**Grid System**: Consistent 12-column grid with responsive breakpoints
+**Responsive Approach**: Mobile-first design with progressive enhancement for desktop features
+
+### Component Selection
+**Component Usage**: Data tables for customer lists, cards for pipeline deals, tabs for customer detail views, modals for quick actions
+**Icon Selection**: Phosphor icons for consistency with ERP system
+**Component Hierarchy**: Primary buttons for main actions (Save Deal, Contact Customer), secondary for supporting actions (Edit, Delete)
+
+### Accessibility & Readability
+**Contrast Goal**: WCAG AA compliance minimum, AAA preferred for critical data
 
 ## Implementation Considerations
 
-### Scalability Needs
-- **Horizontal Scaling**: Microservices architecture with container orchestration
-- **Database Sharding**: Company-aware data distribution
-- **Caching Strategy**: Redis clusters for session and frequently accessed data
-- **CDN Integration**: Global content delivery for static assets
+**Scalability Needs**: Support for millions of customers per company, real-time synchronization across modules
+**Testing Focus**: Multi-company data isolation, performance under load, AI accuracy
+**Critical Questions**: How to handle duplicate customer detection across companies? How to ensure GDPR compliance for customer data?
 
-### Performance Optimization
-- **Connection Pooling**: Efficient database connection management
-- **Query Optimization**: Indexed searches with company context
-- **Background Processing**: Celery workers for heavy operations
-- **Real-time Updates**: WebSocket connections with automatic failover
+## Integration Points
 
-### Monitoring & Observability
-- **Health Checks**: Comprehensive endpoint monitoring
-- **Performance Metrics**: Response times, throughput, and error rates
-- **Security Monitoring**: Anomaly detection and threat intelligence
-- **Business Metrics**: User engagement and feature adoption
-
-## Recommended API Enhancements
-
-### Advanced Authentication APIs
-- **OAuth 2.0/OIDC Integration**: Enterprise SSO support
-- **SAML Authentication**: Legacy system integration
-- **API Key Management**: Programmatic access control
-- **Passwordless Authentication**: Magic links and WebAuthn
-
-### Enhanced Security APIs
-- **Device Management**: Trusted device registration and monitoring
-- **Risk Assessment**: Real-time security scoring
-- **Incident Response**: Automated threat mitigation
-- **Compliance Reporting**: Regulatory audit trails
-
-### Advanced Data APIs
-- **Bulk Operations**: Efficient mass data processing
-- **Data Export/Import**: Standardized format support
-- **Backup Management**: Automated and on-demand backups
-- **Data Retention**: Policy-based data lifecycle management
-
-### Integration APIs
-- **Webhook Management**: Event subscription and delivery
-- **Third-Party Connectors**: Popular service integrations
-- **Custom Integrations**: Developer-friendly SDK and documentation
-- **API Gateway**: Centralized routing and transformation
-
-### Smart Calendar Integration APIs
-- **Calendar Sync**: Google Calendar, Outlook, Teams integration
-- **Auto-Scheduling**: Intelligent meeting optimization
-- **Conflict Resolution**: Smart rescheduling and priority management
-- **Meeting Management**: Video call generation and coordination
-- **Notification System**: Smart reminders and calendar alerts
+- **Department Management**: Link customers to departments for proper access control
+- **User Profiles**: Track sales rep performance and customer assignments
+- **Security Framework**: Enforce company-level data isolation for all customer data
+- **Real-time Sync**: Bidirectional updates with other ERP modules (Finance for invoicing, Support for tickets)
+- **AI Integration**: Leverage existing AI infrastructure for customer insights and sales predictions
 
 ## Reflection
-This API architecture positions the platform as a true enterprise competitor by focusing on security, scalability, and developer experience. The multi-company authentication system provides the foundation for complex business relationships while maintaining strict data isolation and security compliance. The smart calendar integration automates the complex task of scheduling onboarding activities, significantly reducing manual coordination overhead.
+
+This CRM module will be the cornerstone of customer-facing operations, requiring seamless integration with the existing multi-company architecture while providing the sophisticated features needed to compete with enterprise solutions like Salesforce. The focus on AI-powered insights and real-time collaboration will differentiate this solution in the market.
