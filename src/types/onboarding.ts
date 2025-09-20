@@ -201,6 +201,13 @@ export interface OnboardingStepProgress {
   formData?: Record<string, any>
   timeSpent?: number // minutes
   attempts?: number
+  feedback?: {
+    stepId: string
+    rating: number
+    comments: string
+    submittedAt: Date
+    submittedBy: string
+  }
 }
 
 export interface OnboardingNotification {

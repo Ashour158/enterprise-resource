@@ -10,11 +10,17 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Separator } from '@/components/ui/separator'
 import {
   OnboardingInstance,
   OnboardingStep,
   OnboardingStepProgress,
-  OnboardingWorkflow
+  OnboardingWorkflow,
+  OnboardingMessage
 } from '@/types/onboarding'
 import {
   CheckCircle,
@@ -74,7 +80,16 @@ export function EmployeeOnboardingDashboard({
   
   const [selectedStep, setSelectedStep] = useState<OnboardingStep | null>(null)
   const [showStepDetail, setShowStepDetail] = useState(false)
+  const [showMentorChat, setShowMentorChat] = useState(false)
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false)
+  const [showMilestoneDialog, setShowMilestoneDialog] = useState(false)
   const [activeTab, setActiveTab] = useState('progress')
+  const [newMessage, setNewMessage] = useState('')
+  const [stepFeedback, setStepFeedback] = useState('')
+  const [stepRating, setStepRating] = useState(5)
+  const [timeTracking, setTimeTracking] = useKV<Record<string, number>>(`time-tracking-${employeeId}`, {})
+  const [mentorNotes, setMentorNotes] = useKV<any[]>(`mentor-notes-${employeeId}`, [])
+  const [milestones, setMilestones] = useKV<any[]>(`onboarding-milestones-${employeeId}`, [])
 
   // Initialize mock data if empty
   useEffect(() => {
@@ -84,7 +99,72 @@ export function EmployeeOnboardingDashboard({
     if (!employeeInfo) {
       generateMockEmployeeInfo()
     }
+    if (!milestones || milestones.length === 0) {
+      generateMockMilestones()
+    }
+    if (!mentorNotes || mentorNotes.length === 0) {
+      generateMockMentorNotes()
+    }
   }, [employeeId])
+
+  const generateMockMilestones = () => {
+    const mockMilestones = [
+      {
+        id: 'milestone-001',
+        title: 'First Day Complete',
+        description: 'Successfully completed all first-day onboarding activities',
+        achievedDate: new Date('2024-01-22'),
+        type: 'major',
+        badge: 'First Day Champion',
+        points: 100
+      },
+      {
+        id: 'milestone-002',
+        title: 'Documentation Master',
+        description: 'Completed all HR documentation and forms',
+        achievedDate: new Date('2024-01-23'),
+        type: 'standard',
+        badge: 'Documentation Expert',
+        points: 50
+      },
+      {
+        id: 'milestone-003',
+        title: 'Tech Setup Pro',
+        description: 'IT setup and system access configured',
+        achievedDate: null,
+        type: 'pending',
+        badge: 'Tech Savvy',
+        points: 75
+      }
+    ]
+    setMilestones(mockMilestones)
+  }
+
+  const generateMockMentorNotes = () => {
+    const mockNotes = [
+      {
+        id: 'note-001',
+        mentorId: 'buddy-001',
+        mentorName: 'John Smith',
+        content: 'Sarah is making excellent progress! She\'s very eager to learn and asks great questions.',
+        category: 'progress',
+        timestamp: new Date('2024-01-22T16:30:00Z'),
+        isPrivate: false,
+        tags: ['positive', 'engagement']
+      },
+      {
+        id: 'note-002',
+        mentorId: 'manager-001',
+        mentorName: 'Mike Davis',
+        content: 'First week review went well. Sarah shows strong technical foundation and team collaboration skills.',
+        category: 'review',
+        timestamp: new Date('2024-01-26T14:00:00Z'),
+        isPrivate: false,
+        tags: ['review', 'technical', 'collaboration']
+      }
+    ]
+    setMentorNotes(mockNotes)
+  }
 
   const generateMockOnboardingInstance = () => {
     const mockInstance: OnboardingInstance = {
@@ -394,6 +474,160 @@ export function EmployeeOnboardingDashboard({
     return onboardingInstance.stepProgress.find(sp => sp.stepId === stepId) || null
   }
 
+  const sendMentorMessage = () => {
+    if (!newMessage.trim()) return
+    
+    const message: OnboardingMessage = {
+      id: `msg-${Date.now()}`,
+      fromId: currentUserId,
+      toId: onboardingInstance?.buddyId || 'buddy-001',
+      subject: 'Question from Onboarding',
+      content: newMessage,
+      type: 'question' as const,
+      priority: 'medium' as const,
+      sentAt: new Date(),
+      readAt: undefined,
+      tags: ['question', 'onboarding']
+    }
+    
+    if (onboardingInstance) {
+      const updatedInstance = {
+        ...onboardingInstance,
+        messages: [...onboardingInstance.messages, message],
+        updatedAt: new Date()
+      }
+      setOnboardingInstance(updatedInstance)
+    }
+    
+    setNewMessage('')
+    setShowMentorChat(false)
+    toast.success('Message sent to your mentor!')
+  }
+
+  const submitStepFeedback = (stepId: string) => {
+    if (!stepFeedback.trim()) return
+    
+    const feedback = {
+      stepId,
+      rating: stepRating,
+      comments: stepFeedback,
+      submittedAt: new Date(),
+      submittedBy: currentUserId
+    }
+    
+    // Update step progress with feedback
+    if (onboardingInstance) {
+      const updatedStepProgress = onboardingInstance.stepProgress.map(sp => {
+        if (sp.stepId === stepId) {
+          return {
+            ...sp,
+            feedback: feedback
+          }
+        }
+        return sp
+      })
+      
+      const updatedInstance = {
+        ...onboardingInstance,
+        stepProgress: updatedStepProgress,
+        updatedAt: new Date()
+      }
+      setOnboardingInstance(updatedInstance)
+    }
+    
+    setStepFeedback('')
+    setStepRating(5)
+    setShowFeedbackDialog(false)
+    toast.success('Feedback submitted successfully!')
+  }
+
+  const startTimeTracking = (stepId: string) => {
+    setTimeTracking(current => ({
+      ...current,
+      [stepId]: Date.now()
+    }))
+    toast.info('Time tracking started for this step')
+  }
+
+  const stopTimeTracking = (stepId: string) => {
+    const currentTracking = timeTracking || {}
+    const startTime = currentTracking[stepId]
+    if (!startTime) return
+    
+    const timeSpent = Math.round((Date.now() - startTime) / 60000) // Convert to minutes
+    
+    if (onboardingInstance) {
+      const updatedStepProgress = onboardingInstance.stepProgress.map(sp => {
+        if (sp.stepId === stepId) {
+          return {
+            ...sp,
+            timeSpent: (sp.timeSpent || 0) + timeSpent
+          }
+        }
+        return sp
+      })
+      
+      const updatedInstance = {
+        ...onboardingInstance,
+        stepProgress: updatedStepProgress,
+        updatedAt: new Date()
+      }
+      setOnboardingInstance(updatedInstance)
+    }
+    
+    setTimeTracking(current => {
+      const updated = { ...current }
+      delete updated[stepId]
+      return updated
+    })
+    
+    toast.success(`Time tracked: ${timeSpent} minutes`)
+  }
+
+  const calculateOverallScore = () => {
+    if (!onboardingInstance) return 0
+    
+    const completedSteps = onboardingInstance.stepProgress.filter(sp => sp.status === 'completed')
+    const totalFeedback = completedSteps.reduce((sum, sp) => {
+      return sum + (sp.feedback?.rating || 5)
+    }, 0)
+    
+    return completedSteps.length > 0 ? Math.round(totalFeedback / completedSteps.length * 10) / 10 : 0
+  }
+
+  const getProgressInsights = (): Array<{type: string, title: string, message: string}> => {
+    if (!onboardingInstance || !workflow) return []
+    
+    const insights: Array<{type: string, title: string, message: string}> = []
+    const completedSteps = onboardingInstance.stepProgress.filter(sp => sp.status === 'completed')
+    const progressRate = (completedSteps.length / workflow.steps.length) * 100
+    
+    if (progressRate > 75) {
+      insights.push({
+        type: 'success',
+        title: 'Excellent Progress!',
+        message: 'You\'re ahead of schedule and doing great!'
+      })
+    } else if (progressRate < 25) {
+      insights.push({
+        type: 'warning',
+        title: 'Need Some Momentum',
+        message: 'Consider reaching out to your mentor for support.'
+      })
+    }
+    
+    const avgTimePerStep = completedSteps.reduce((sum, sp) => sum + (sp.timeSpent || 0), 0) / completedSteps.length
+    if (avgTimePerStep > 120) {
+      insights.push({
+        type: 'info',
+        title: 'Take Your Time',
+        message: 'You\'re being thorough, which is great for learning!'
+      })
+    }
+    
+    return insights
+  }
+
   const markStepComplete = (stepId: string) => {
     if (!onboardingInstance) return
     
@@ -537,6 +771,9 @@ export function EmployeeOnboardingDashboard({
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="progress">Progress</TabsTrigger>
+          <TabsTrigger value="mentor">Mentor Chat</TabsTrigger>
+          <TabsTrigger value="insights">Insights</TabsTrigger>
+          <TabsTrigger value="milestones">Milestones</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
@@ -610,12 +847,48 @@ export function EmployeeOnboardingDashboard({
                                   
                                   <div className="flex items-center gap-2">
                                     {getStepStatusIcon(stepProgress?.status || 'not_started')}
+                                    {stepProgress?.status === 'in_progress' && (
+                                      <>
+                                        {(timeTracking || {})[step.id] ? (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => stopTimeTracking(step.id)}
+                                            className="text-red-600"
+                                          >
+                                            <Timer size={16} className="mr-1" />
+                                            Stop
+                                          </Button>
+                                        ) : (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => startTimeTracking(step.id)}
+                                          >
+                                            <Timer size={16} className="mr-1" />
+                                            Start
+                                          </Button>
+                                        )}
+                                      </>
+                                    )}
                                     {canComplete && (
                                       <Button
                                         size="sm"
                                         onClick={() => markStepComplete(step.id)}
                                       >
                                         Complete
+                                      </Button>
+                                    )}
+                                    {stepProgress?.status === 'completed' && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedStep(step)
+                                          setShowFeedbackDialog(true)
+                                        }}
+                                      >
+                                        <Star size={16} />
                                       </Button>
                                     )}
                                     <Button
@@ -751,6 +1024,253 @@ export function EmployeeOnboardingDashboard({
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="mentor" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle size={20} />
+                  Chat with Your Mentor
+                </CardTitle>
+                <CardDescription>
+                  Direct communication with your onboarding buddy
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <Avatar>
+                    <AvatarFallback>JS</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h4 className="font-medium">{employeeInfo.buddy}</h4>
+                    <p className="text-sm text-muted-foreground">Your Onboarding Buddy</p>
+                  </div>
+                  <div className="ml-auto">
+                    <Badge variant="outline" className="text-xs">Online</Badge>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <Label>Send a Message</Label>
+                  <Textarea
+                    placeholder="Ask a question or share your thoughts..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    rows={4}
+                  />
+                  <Button onClick={sendMentorMessage} className="w-full">
+                    <MessageCircle size={16} className="mr-2" />
+                    Send Message
+                  </Button>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-medium mb-3">Recent Conversations</h4>
+                  <div className="space-y-2">
+                    {onboardingInstance.messages.slice(0, 3).map((message) => (
+                      <div key={message.id} className="p-2 bg-muted/30 rounded text-sm">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium">
+                            {message.fromId === currentUserId ? 'You' : 'Mentor'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(message.sentAt), 'MMM dd, HH:mm')}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground">{message.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users size={20} />
+                  Mentor Notes & Progress
+                </CardTitle>
+                <CardDescription>
+                  Your mentor's observations and feedback
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(mentorNotes || []).map((note) => (
+                    <div key={note.id} className="p-3 border rounded-lg">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="w-6 h-6">
+                            <AvatarFallback className="text-xs">{note.mentorName.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium">{note.mentorName}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(note.timestamp), 'MMM dd, HH:mm')}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{note.content}</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{note.category}</Badge>
+                        {note.tags.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="insights" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target size={20} />
+                  Progress Insights
+                </CardTitle>
+                <CardDescription>
+                  AI-powered insights about your onboarding journey
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {getProgressInsights().map((insight, index) => (
+                    <Alert key={index} className={
+                      insight.type === 'success' ? 'border-green-200 bg-green-50' :
+                      insight.type === 'warning' ? 'border-yellow-200 bg-yellow-50' :
+                      'border-blue-200 bg-blue-50'
+                    }>
+                      <Target className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>{insight.title}</strong><br />
+                        {insight.message}
+                      </AlertDescription>
+                    </Alert>
+                  ))}
+                  
+                  {getProgressInsights().length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Target size={24} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No insights available yet</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ChartBar size={20} />
+                  Performance Metrics
+                </CardTitle>
+                <CardDescription>
+                  Your onboarding performance and engagement metrics
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">{calculateOverallScore()}</div>
+                    <div className="text-xs text-muted-foreground">Overall Score</div>
+                  </div>
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {Math.round((onboardingInstance.stepProgress.reduce((sum, sp) => sum + (sp.timeSpent || 0), 0)) / 60)}h
+                    </div>
+                    <div className="text-xs text-muted-foreground">Time Invested</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Engagement Level</span>
+                    <span className="text-sm text-muted-foreground">85%</span>
+                  </div>
+                  <Progress value={85} className="h-2" />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Learning Progress</span>
+                    <span className="text-sm text-muted-foreground">{onboardingInstance.progress}%</span>
+                  </div>
+                  <Progress value={onboardingInstance.progress} className="h-2" />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Team Integration</span>
+                    <span className="text-sm text-muted-foreground">92%</span>
+                  </div>
+                  <Progress value={92} className="h-2" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="milestones" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award size={20} />
+                Onboarding Milestones
+              </CardTitle>
+              <CardDescription>
+                Track your achievements and unlock badges
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(milestones || []).map((milestone) => (
+                  <Card key={milestone.id} className={`p-4 ${
+                    milestone.achievedDate ? 'bg-green-50 border-green-200' : 'bg-muted/50'
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                        milestone.achievedDate ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {milestone.achievedDate ? (
+                          <Award size={20} />
+                        ) : (
+                          <div className="w-6 h-6 border-2 border-current rounded-full" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium">{milestone.title}</h4>
+                        <p className="text-sm text-muted-foreground mb-2">{milestone.description}</p>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={milestone.achievedDate ? 'default' : 'outline'} className="text-xs">
+                            {milestone.badge}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {milestone.points} points
+                          </span>
+                        </div>
+                        {milestone.achievedDate && (
+                          <p className="text-xs text-green-600 mt-1">
+                            Achieved: {format(new Date(milestone.achievedDate), 'MMM dd, yyyy')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="timeline" className="space-y-6">
@@ -1147,6 +1667,76 @@ export function EmployeeOnboardingDashboard({
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Feedback Dialog */}
+      <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Star size={20} />
+              Rate This Step
+            </DialogTitle>
+            <DialogDescription>
+              How was your experience with "{selectedStep?.title}"?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Rating</Label>
+              <div className="flex items-center gap-1 mt-2">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <Button
+                    key={rating}
+                    variant="ghost"
+                    size="sm"
+                    className="p-1"
+                    onClick={() => setStepRating(rating)}
+                  >
+                    <Star 
+                      size={20} 
+                      className={rating <= stepRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} 
+                    />
+                  </Button>
+                ))}
+                <span className="ml-2 text-sm text-muted-foreground">
+                  {stepRating}/5
+                </span>
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="feedback" className="text-sm font-medium">
+                Comments (Optional)
+              </Label>
+              <Textarea
+                id="feedback"
+                placeholder="Share your thoughts about this step..."
+                value={stepFeedback}
+                onChange={(e) => setStepFeedback(e.target.value)}
+                rows={3}
+                className="mt-2"
+              />
+            </div>
+            
+            <div className="flex gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowFeedbackDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => selectedStep && submitStepFeedback(selectedStep.id)}
+                className="flex-1"
+              >
+                Submit Feedback
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
