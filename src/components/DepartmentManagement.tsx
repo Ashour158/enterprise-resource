@@ -107,6 +107,18 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
   const [isDragging, setIsDragging] = useState(false)
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [assignmentMode, setAssignmentMode] = useState<'single' | 'bulk'>('single')
+  
+  // User filtering and search state
+  const [userSearchTerm, setUserSearchTerm] = useState('')
+  const [userFilters, setUserFilters] = useState<{
+    department?: string
+    role?: string
+    status?: string
+    hireDate?: 'recent' | 'older'
+    assigned?: 'all' | 'assigned' | 'unassigned'
+  }>({ assigned: 'all' })
+  const [userSortBy, setUserSortBy] = useState<'name' | 'position' | 'hireDate' | 'department'>('name')
+  const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('asc')
 
   // Form state
   const [formData, setFormData] = useState<CreateDepartmentRequest>({
@@ -331,6 +343,82 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
     }
   }, [safeAvailableUsers.length, setAvailableUsers])
 
+  // Filter and search users
+  const getFilteredUsers = () => {
+    let filtered = safeAvailableUsers.filter(user => {
+      // Search by name, email, or position
+      if (userSearchTerm) {
+        const searchLower = userSearchTerm.toLowerCase()
+        const matchesSearch = 
+          user.name.toLowerCase().includes(searchLower) ||
+          user.email.toLowerCase().includes(searchLower) ||
+          user.position.toLowerCase().includes(searchLower)
+        if (!matchesSearch) return false
+      }
+
+      // Filter by assignment status
+      if (userFilters.assigned === 'assigned' && !user.departmentId) return false
+      if (userFilters.assigned === 'unassigned' && user.departmentId) return false
+
+      // Filter by specific department
+      if (userFilters.department && user.departmentId !== userFilters.department) return false
+
+      // Filter by role
+      if (userFilters.role && user.role !== userFilters.role) return false
+
+      // Filter by status
+      if (userFilters.status && user.status !== userFilters.status) return false
+
+      // Filter by hire date
+      if (userFilters.hireDate) {
+        const hireDate = new Date(user.hireDate)
+        const sixMonthsAgo = new Date()
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+        
+        if (userFilters.hireDate === 'recent' && hireDate < sixMonthsAgo) return false
+        if (userFilters.hireDate === 'older' && hireDate >= sixMonthsAgo) return false
+      }
+
+      return true
+    })
+
+    // Sort users
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any
+      
+      switch (userSortBy) {
+        case 'name':
+          aValue = a.name.toLowerCase()
+          bValue = b.name.toLowerCase()
+          break
+        case 'position':
+          aValue = a.position.toLowerCase()
+          bValue = b.position.toLowerCase()
+          break
+        case 'hireDate':
+          aValue = new Date(a.hireDate).getTime()
+          bValue = new Date(b.hireDate).getTime()
+          break
+        case 'department':
+          const deptA = a.departmentId ? safeDepartments.find(d => d.id === a.departmentId)?.name || '' : ''
+          const deptB = b.departmentId ? safeDepartments.find(d => d.id === b.departmentId)?.name || '' : ''
+          aValue = deptA.toLowerCase()
+          bValue = deptB.toLowerCase()
+          break
+        default:
+          return 0
+      }
+
+      if (userSortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+      }
+    })
+
+    return filtered
+  }
+
   // Keyboard shortcuts for bulk mode
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -344,9 +432,9 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
           case 'A':
             if (event.ctrlKey || event.metaKey) {
               event.preventDefault()
-              const allUserIds = safeAvailableUsers.map(u => u.id)
-              setSelectedUsers(allUserIds)
-              toast.success(`Selected all ${allUserIds.length} users`)
+              const filteredUserIds = getFilteredUsers().map(u => u.id)
+              setSelectedUsers(filteredUserIds)
+              toast.success(`Selected all ${filteredUserIds.length} filtered users`)
             }
             break
         }
@@ -357,7 +445,7 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
       document.addEventListener('keydown', handleKeyDown)
       return () => document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [assignmentMode, safeAvailableUsers, setSelectedUsers])
+  }, [assignmentMode, userSearchTerm, userFilters, userSortBy, userSortOrder, safeAvailableUsers, safeDepartments])
 
   // Calculate department statistics
   const getDepartmentStats = (): DepartmentStats => {
@@ -684,6 +772,8 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
     }
     handleDragEnd()
   }
+
+  // Filter and search users
 
   // Get users by department
   const getUsersByDepartment = (departmentId: string | null) => {
@@ -1096,6 +1186,169 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
         </TabsContent>
 
         <TabsContent value="users" className="space-y-4">
+          {/* User Search and Filter Controls */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                <div className="flex flex-col lg:flex-row gap-4">
+                  {/* Search Input */}
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+                    <Input
+                      placeholder="Search users by name, email, or position..."
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  
+                  {/* Quick Filter Buttons */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={userFilters.assigned === 'all' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setUserFilters(prev => ({ ...prev, assigned: 'all' }))}
+                    >
+                      All Users ({getFilteredUsers().length})
+                    </Button>
+                    <Button
+                      variant={userFilters.assigned === 'assigned' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setUserFilters(prev => ({ ...prev, assigned: 'assigned' }))}
+                    >
+                      Assigned ({safeAvailableUsers.filter(u => u.departmentId).length})
+                    </Button>
+                    <Button
+                      variant={userFilters.assigned === 'unassigned' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setUserFilters(prev => ({ ...prev, assigned: 'unassigned' }))}
+                    >
+                      Unassigned ({safeAvailableUsers.filter(u => !u.departmentId).length})
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Advanced Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {/* Department Filter */}
+                  <Select
+                    value={userFilters.department || ''}
+                    onValueChange={(value) => setUserFilters(prev => ({ ...prev, department: value || undefined }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter by department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Departments</SelectItem>
+                      {safeDepartments.map(dept => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name} ({dept.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Role Filter */}
+                  <Select
+                    value={userFilters.role || ''}
+                    onValueChange={(value) => setUserFilters(prev => ({ ...prev, role: value || undefined }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter by role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Roles</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Status Filter */}
+                  <Select
+                    value={userFilters.status || ''}
+                    onValueChange={(value) => setUserFilters(prev => ({ ...prev, status: value || undefined }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Status</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="suspended">Suspended</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Hire Date Filter */}
+                  <Select
+                    value={userFilters.hireDate || ''}
+                    onValueChange={(value) => setUserFilters(prev => ({ ...prev, hireDate: value as any || undefined }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter by hire date" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Dates</SelectItem>
+                      <SelectItem value="recent">Recent (Last 6 months)</SelectItem>
+                      <SelectItem value="older">Older than 6 months</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Sort Controls */}
+                  <div className="flex gap-1">
+                    <Select
+                      value={userSortBy}
+                      onValueChange={(value) => setUserSortBy(value as any)}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name">Sort by Name</SelectItem>
+                        <SelectItem value="position">Sort by Position</SelectItem>
+                        <SelectItem value="hireDate">Sort by Hire Date</SelectItem>
+                        <SelectItem value="department">Sort by Department</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setUserSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                      className="px-3"
+                    >
+                      <ArrowUpDown size={16} />
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Filter Summary */}
+                {(userSearchTerm || Object.values(userFilters).some(v => v && v !== 'all')) && (
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <Filter size={16} className="text-blue-600" />
+                    <span className="text-sm text-blue-700 font-medium">
+                      Showing {getFilteredUsers().length} of {safeAvailableUsers.length} users
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setUserSearchTerm('')
+                        setUserFilters({ assigned: 'all' })
+                        setUserSortBy('name')
+                        setUserSortOrder('asc')
+                        toast.info('Filters cleared')
+                      }}
+                      className="ml-auto h-6 px-2 text-blue-600 hover:text-blue-700"
+                    >
+                      Clear Filters
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-semibold">User Assignment Management</h3>
@@ -1145,13 +1398,13 @@ export function DepartmentManagement({ companyId, currentUserId, userRole }: Dep
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const allUserIds = safeAvailableUsers.map(u => u.id)
-                      setSelectedUsers(allUserIds)
-                      toast.success(`Selected all ${allUserIds.length} users`)
+                      const filteredUserIds = getFilteredUsers().map(u => u.id)
+                      setSelectedUsers(filteredUserIds)
+                      toast.success(`Selected all ${filteredUserIds.length} filtered users`)
                     }}
-                    disabled={selectedUsers.length === safeAvailableUsers.length}
+                    disabled={selectedUsers.length === getFilteredUsers().length}
                   >
-                    Select All ({safeAvailableUsers.length})
+                    Select All Filtered ({getFilteredUsers().length})
                   </Button>
                   <Button
                     variant="outline"
