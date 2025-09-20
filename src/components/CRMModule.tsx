@@ -10,6 +10,11 @@ import { CRMDashboard } from '@/components/crm/CRMDashboard'
 import { SalesReportingDashboard } from '@/components/crm/SalesReportingDashboard'
 import { ContactManagement } from '@/components/crm/ContactManagement'
 import { DealPipeline } from '@/components/crm/DealPipeline'
+import { LeadManagement } from '@/components/crm/LeadManagement'
+import { AccountManagement } from '@/components/crm/AccountManagement'
+import { QuoteManagement } from '@/components/crm/QuoteManagement'
+import { ActivityManagement } from '@/components/crm/ActivityManagement'
+import { ForecastManagement } from '@/components/crm/ForecastManagement'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
 import { CRMAnalytics as CRMAnalyticsType, CRMSettings } from '@/types/crm'
 import { 
@@ -24,13 +29,19 @@ import {
   Gear,
   Phone,
   EnvelopeSimple as Mail,
-  Video,
+  VideoCamera as Video,
   Target,
   CurrencyDollar as DollarSign,
   Activity,
   UserCheck,
   Clock,
-  Warning as AlertTriangle
+  Warning as AlertTriangle,
+  UserPlus,
+  Handshake,
+  Receipt,
+  PresentationChart,
+  Export,
+  Download as Import
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -70,8 +81,8 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
       icon: <Phone size={16} />,
       label: 'Log Call',
       action: () => {
+        setActiveTab('activities')
         toast.success('Call logging interface opened')
-        // Would open call logging modal
       }
     },
     {
@@ -79,15 +90,15 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
       label: 'Send Email',
       action: () => {
         toast.success('Email composer opened')
-        // Would open email composer
+        // Would integrate with email system
       }
     },
     {
       icon: <Video size={16} />,
       label: 'Schedule Meeting',
       action: () => {
+        setActiveTab('activities')
         toast.success('Meeting scheduler opened')
-        // Would open calendar integration
       }
     },
     {
@@ -96,6 +107,22 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
       action: () => {
         setActiveTab('pipeline')
         toast.info('Switched to deal pipeline')
+      }
+    },
+    {
+      icon: <UserPlus size={16} />,
+      label: 'Add Lead',
+      action: () => {
+        setActiveTab('leads')
+        toast.info('Switched to lead management')
+      }
+    },
+    {
+      icon: <Receipt size={16} />,
+      label: 'Create Quote',
+      action: () => {
+        setActiveTab('quotes')
+        toast.info('Switched to quote management')
       }
     }
   ]
@@ -125,11 +152,11 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         change: '+3.1%'
       },
       {
-        label: 'Avg Deal Size',
-        value: `$${safeAnalytics.averageDealSize.toLocaleString()}`,
-        icon: <ChartLine size={20} />,
+        label: 'Total Contacts',
+        value: safeAnalytics.totalContacts.toString(),
+        icon: <Users size={20} />,
         color: 'text-orange-600',
-        change: '+5.8%'
+        change: '+15.8%'
       }
     ]
   }
@@ -145,7 +172,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
       type: 'info',
       icon: <UserCheck size={16} />,
       message: `${quickStats.newLeads} new leads awaiting qualification`,
-      action: () => setActiveTab('contacts')
+      action: () => setActiveTab('leads')
     },
     {
       type: 'warning',
@@ -154,6 +181,26 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
       action: () => setActiveTab('pipeline')
     }
   ]
+
+  const handleScheduleMeeting = (entityId: string) => {
+    // Integration with smart calendar
+    toast.success('Meeting scheduled and added to calendar')
+  }
+
+  const handleCreateDeal = (leadId: string) => {
+    setActiveTab('pipeline')
+    toast.success('Lead converted to deal opportunity')
+  }
+
+  const handleBulkExport = () => {
+    toast.success('Exporting all CRM data...')
+    // Would export all CRM components data
+  }
+
+  const handleBulkImport = () => {
+    toast.success('Bulk import dialog opened')
+    // Would open comprehensive import dialog
+  }
 
   return (
     <div className="space-y-6">
@@ -232,10 +279,14 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
       {/* Main CRM Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="flex items-center justify-between">
-          <TabsList className="grid w-full grid-cols-9 lg:w-auto lg:grid-cols-none lg:flex">
+          <TabsList className="grid w-full grid-cols-10 lg:w-auto lg:grid-cols-none lg:flex">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <ChartLine size={16} />
               <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="leads" className="flex items-center gap-2">
+              <UserPlus size={16} />
+              <span className="hidden sm:inline">Leads</span>
             </TabsTrigger>
             <TabsTrigger value="contacts" className="flex items-center gap-2">
               <Users size={16} />
@@ -249,13 +300,17 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
               <TrendUp size={16} />
               <span className="hidden sm:inline">Pipeline</span>
             </TabsTrigger>
+            <TabsTrigger value="quotes" className="flex items-center gap-2">
+              <Receipt size={16} />
+              <span className="hidden sm:inline">Quotes</span>
+            </TabsTrigger>
             <TabsTrigger value="activities" className="flex items-center gap-2">
               <Calendar size={16} />
               <span className="hidden sm:inline">Activities</span>
             </TabsTrigger>
-            <TabsTrigger value="tasks" className="flex items-center gap-2">
-              <CheckSquare size={16} />
-              <span className="hidden sm:inline">Tasks</span>
+            <TabsTrigger value="forecasting" className="flex items-center gap-2">
+              <PresentationChart size={16} />
+              <span className="hidden sm:inline">Forecasting</span>
             </TabsTrigger>
             <TabsTrigger value="service" className="flex items-center gap-2">
               <Headset size={16} />
@@ -265,13 +320,17 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
               <FileText size={16} />
               <span className="hidden sm:inline">Reports</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Gear size={16} />
-              <span className="hidden sm:inline">Settings</span>
-            </TabsTrigger>
           </TabsList>
 
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleBulkExport}>
+              <Export size={16} className="mr-2" />
+              Export All
+            </Button>
+            <Button variant="outline" onClick={handleBulkImport}>
+              <Import size={16} className="mr-2" />
+              Import Data
+            </Button>
             <Badge variant="outline" className="hidden sm:flex">
               Company: {companyId}
             </Badge>
@@ -290,6 +349,16 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
           />
         </TabsContent>
 
+        <TabsContent value="leads" className="space-y-6">
+          <LeadManagement 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+            onScheduleMeeting={handleScheduleMeeting}
+            onCreateDeal={handleCreateDeal}
+          />
+        </TabsContent>
+
         <TabsContent value="contacts" className="space-y-6">
           <ContactManagement 
             companyId={companyId}
@@ -299,15 +368,11 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         </TabsContent>
 
         <TabsContent value="accounts" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Management</CardTitle>
-              <CardDescription>Manage customer accounts and organizations</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Account management interface will be implemented here.</p>
-            </CardContent>
-          </Card>
+          <AccountManagement 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+          />
         </TabsContent>
 
         <TabsContent value="pipeline" className="space-y-6">
@@ -318,28 +383,29 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
           />
         </TabsContent>
 
-        <TabsContent value="activities" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity Center</CardTitle>
-              <CardDescription>Track calls, meetings, and customer interactions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Activity center interface will be implemented here.</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="quotes" className="space-y-6">
+          <QuoteManagement 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+          />
         </TabsContent>
 
-        <TabsContent value="tasks" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Task Management</CardTitle>
-              <CardDescription>Manage follow-ups and action items</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Task management interface will be implemented here.</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="activities" className="space-y-6">
+          <ActivityManagement 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+            onScheduleMeeting={handleScheduleMeeting}
+          />
+        </TabsContent>
+
+        <TabsContent value="forecasting" className="space-y-6">
+          <ForecastManagement 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+          />
         </TabsContent>
 
         <TabsContent value="service" className="space-y-6">
@@ -349,7 +415,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
               <CardDescription>Handle support tickets and customer issues</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">Customer service interface will be implemented here.</p>
+              <p className="text-muted-foreground">Customer service interface with ticket management, knowledge base, and customer support tools will be implemented here.</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -360,18 +426,6 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             userId={userId}
             userRole={userRole}
           />
-        </TabsContent>
-
-        <TabsContent value="settings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>CRM Settings</CardTitle>
-              <CardDescription>Configure CRM preferences and integrations</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">CRM settings interface will be implemented here.</p>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

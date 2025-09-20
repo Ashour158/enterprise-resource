@@ -1,3 +1,177 @@
+// Lead Management Types
+export interface Lead {
+  id: string
+  companyId?: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  company: string
+  title: string
+  source: string
+  status: 'new' | 'contacted' | 'qualified' | 'converted' | 'lost'
+  score: number
+  estimatedValue: number
+  assignedTo: string
+  tags: string[]
+  notes: string
+  customFields: Record<string, any>
+  activities: LeadActivity[]
+  files: CRMFile[]
+  createdAt: Date
+  updatedAt: Date
+  lastContactDate: Date | null
+  nextFollowUpDate: Date | null
+}
+
+export interface LeadActivity {
+  id: string
+  leadId: string
+  type: 'call' | 'email' | 'meeting' | 'note' | 'task'
+  subject: string
+  description: string
+  date: Date
+  duration?: number
+  outcome?: 'positive' | 'neutral' | 'negative'
+  createdBy: string
+  createdAt: Date
+}
+
+export interface CRMFile {
+  id: string
+  name: string
+  type: string
+  size: number
+  url: string
+  uploadedBy: string
+  uploadedAt: Date
+  tags: string[]
+}
+
+// Quote Management Types
+export interface Quote {
+  id: string
+  companyId: string
+  quoteNumber: string
+  accountId?: string
+  contactId?: string
+  dealId?: string
+  title: string
+  description?: string
+  status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired'
+  validUntil: Date
+  currency: string
+  subtotal: number
+  taxRate: number
+  taxAmount: number
+  discountRate: number
+  discountAmount: number
+  totalAmount: number
+  terms: string
+  notes?: string
+  lineItems: QuoteLineItem[]
+  createdBy: string
+  assignedTo?: string
+  sentDate?: Date
+  viewedDate?: Date
+  acceptedDate?: Date
+  rejectedDate?: Date
+  rejectionReason?: string
+  files: CRMFile[]
+  activities: QuoteActivity[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface QuoteLineItem {
+  id: string
+  productId?: string
+  name: string
+  description?: string
+  quantity: number
+  unitPrice: number
+  discount: number
+  discountAmount: number
+  lineTotal: number
+  order: number
+}
+
+export interface QuoteActivity {
+  id: string
+  quoteId: string
+  type: 'created' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'modified' | 'expired'
+  description: string
+  metadata?: Record<string, any>
+  createdBy: string
+  createdAt: Date
+}
+
+// Forecasting Types
+export interface Forecast {
+  id: string
+  companyId: string
+  name: string
+  period: 'monthly' | 'quarterly' | 'yearly'
+  startDate: Date
+  endDate: Date
+  ownerId: string
+  teamId?: string
+  targets: {
+    revenue: number
+    deals: number
+    newCustomers: number
+  }
+  actuals: {
+    revenue: number
+    deals: number
+    newCustomers: number
+    pipeline: number
+  }
+  forecast: {
+    committed: number
+    bestCase: number
+    worstCase: number
+    pipeline: number
+  }
+  deals: ForecastDeal[]
+  adjustments: ForecastAdjustment[]
+  status: 'draft' | 'submitted' | 'approved' | 'final'
+  submissions: ForecastSubmission[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface ForecastDeal {
+  dealId: string
+  dealName: string
+  value: number
+  probability: number
+  closeDate: Date
+  stage: string
+  category: 'committed' | 'best_case' | 'omitted'
+  notes?: string
+}
+
+export interface ForecastAdjustment {
+  id: string
+  type: 'add' | 'subtract'
+  amount: number
+  reason: string
+  category: 'committed' | 'best_case'
+  createdBy: string
+  createdAt: Date
+}
+
+export interface ForecastSubmission {
+  id: string
+  submittedBy: string
+  submittedAt: Date
+  status: 'pending' | 'approved' | 'rejected'
+  approvedBy?: string
+  approvedAt?: Date
+  comments?: string
+}
+
 export interface Contact {
   id: string
   companyId: string
