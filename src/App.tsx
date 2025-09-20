@@ -36,6 +36,7 @@ import { ClickableDataTestReport } from '@/components/ClickableDataTestReport'
 import { CRMProductivitySummary } from '@/components/CRMProductivitySummary'
 import { SystemTestingSuite } from '@/components/SystemTestingSuite'
 import { ClickableDataShowcase } from '@/components/shared/ClickableDataShowcase'
+import { CRMApiDocumentation } from '@/components/CRMApiDocumentation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -228,6 +229,7 @@ function App() {
                  activeView === 'calendar' ? 'Smart Calendar Integration' :
                  activeView === 'crm-profiles' ? 'CRM Profile Experience' :
                  activeView === 'testing' ? 'System Testing Suite' :
+                 activeView === 'api-docs' ? 'Enhanced CRM API Documentation' :
                  'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
@@ -271,6 +273,8 @@ function App() {
                   ? 'Test and analyze clickable data elements that enhance productivity across all CRM workflows with interactive demos, performance testing, and detailed analytics'
                   : activeView === 'testing'
                   ? 'Comprehensive system testing suite for validating all ERP components, features, and integrations'
+                  : activeView === 'api-docs'
+                  ? 'Complete REST API documentation with enhanced CRM endpoints, real-time updates, email integration, and AI-powered features'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -353,6 +357,10 @@ function App() {
                 <TabsTrigger value="clickable-data" className="flex items-center gap-2">
                   <ChartLine size={16} />
                   Clickable Data Test
+                </TabsTrigger>
+                <TabsTrigger value="api-docs" className="flex items-center gap-2">
+                  <Globe size={16} />
+                  API Documentation
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -661,6 +669,13 @@ function App() {
 
           <TabsContent value="testing" className="space-y-6">
             <SystemTestingSuite 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+            />
+          </TabsContent>
+
+          <TabsContent value="api-docs" className="space-y-6">
+            <CRMApiDocumentation 
               companyId={currentCompany.id}
               userId={mockUser.id}
             />
