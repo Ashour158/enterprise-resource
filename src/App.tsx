@@ -29,7 +29,7 @@ import { DataVisualizationDashboard } from '@/components/DataVisualizationDashbo
 import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { WebhookManagementSystem } from '@/components/WebhookManagementSystem'
 import { CRMModule } from '@/components/CRMModule'
-import { CRMProfileDemo } from '@/components/crm/CRMProfileDemo'
+import { CRMProfileDemo } from '@/components/CRMProfileDemo'
 import { SystemTestingSuite } from '@/components/SystemTestingSuite'
 import { ClickableDataShowcase } from '@/components/shared/ClickableDataShowcase'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
