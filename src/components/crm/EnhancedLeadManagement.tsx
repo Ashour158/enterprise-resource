@@ -60,9 +60,13 @@ import {
   ClockCounterClockwise,
   Confetti,
   ShieldCheck,
-  Checks
+  Checks,
+  Timer,
+  CalendarX,
+  Warning as AlertTriangleIcon
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { differenceInDays, format } from 'date-fns'
 
 interface EnhancedLeadManagementProps {
   companyId: string
@@ -97,6 +101,32 @@ interface LeadAIProfile {
   aiNotes: string[]
 }
 
+interface AgingAnalysis {
+  leadId: string
+  daysInPipeline: number
+  daysSinceLastContact: number
+  daysUntilNextFollowUp: number
+  agingCategory: 'new' | 'warm' | 'cold' | 'frozen' | 'stale'
+  riskLevel: 'low' | 'medium' | 'high' | 'critical'
+  recommendedAction: string
+  aiInsights: string[]
+  conversionProbability: number
+  urgencyScore: number
+}
+
+interface AgingRule {
+  id: string
+  name: string
+  description: string
+  category: 'new' | 'warm' | 'cold' | 'frozen' | 'stale'
+  minDays: number
+  maxDays: number
+  riskLevel: 'low' | 'medium' | 'high' | 'critical'
+  autoActions: string[]
+  notificationThreshold: number
+  isActive: boolean
+}
+
 export function EnhancedLeadManagement({ companyId, userId, userRole, onScheduleMeeting, onCreateDeal }: EnhancedLeadManagementProps) {
   const [leads, setLeads] = useKV<Lead[]>(`enhanced-leads-${companyId}`, mockLeads)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
@@ -112,11 +142,77 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onSchedule
   const [leadAIProfiles, setLeadAIProfiles] = useKV<Record<string, LeadAIProfile>>(`lead-ai-profiles-${companyId}`, {})
   const [aiProcessing, setAIProcessing] = useState(false)
   const [bulkOperations, setBulkOperations] = useState<string[]>([])
+  
+  // Lead aging state
+  const [agingAnalyses, setAgingAnalyses] = useState<AgingAnalysis[]>([])
+  const [agingRules, setAgingRules] = useKV<AgingRule[]>(`aging-rules-${companyId}`, [
+    {
+      id: 'rule-new',
+      name: 'New Leads',
+      description: 'Recently created leads requiring immediate attention',
+      category: 'new',
+      minDays: 0,
+      maxDays: 2,
+      riskLevel: 'medium',
+      autoActions: ['send_welcome_email', 'assign_to_rep'],
+      notificationThreshold: 1,
+      isActive: true
+    },
+    {
+      id: 'rule-warm',
+      name: 'Warm Leads', 
+      description: 'Engaged leads in active conversation',
+      category: 'warm',
+      minDays: 3,
+      maxDays: 14,
+      riskLevel: 'low',
+      autoActions: ['schedule_follow_up'],
+      notificationThreshold: 7,
+      isActive: true
+    },
+    {
+      id: 'rule-cold',
+      name: 'Cold Leads',
+      description: 'Leads with reduced engagement',
+      category: 'cold',
+      minDays: 15,
+      maxDays: 30,
+      riskLevel: 'medium',
+      autoActions: ['nurture_campaign', 'manager_review'],
+      notificationThreshold: 21,
+      isActive: true
+    },
+    {
+      id: 'rule-frozen',
+      name: 'Frozen Leads',
+      description: 'Long-term prospects with minimal activity',
+      category: 'frozen',
+      minDays: 31,
+      maxDays: 90,
+      riskLevel: 'high',
+      autoActions: ['quarterly_review', 'special_offer'],
+      notificationThreshold: 60,
+      isActive: true
+    },
+    {
+      id: 'rule-stale',
+      name: 'Stale Leads',
+      description: 'Inactive leads requiring cleanup decision',
+      category: 'stale',
+      minDays: 91,
+      maxDays: 365,
+      riskLevel: 'critical',
+      autoActions: ['archive_review', 'final_attempt'],
+      notificationThreshold: 120,
+      isActive: true
+    }
+  ])
 
   // AI-powered lead scoring and insights
   useEffect(() => {
     generateAIInsights()
     updateLeadScores()
+    analyzeLeadAging()
   }, [leads])
 
   const generateAIInsights = async () => {
@@ -358,6 +454,266 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onSchedule
     return prediction
   }
 
+  // Lead Aging Analysis Functions
+  const analyzeLeadAging = async () => {
+    if (!leads?.length) return
+
+    const now = new Date()
+    const analyses: AgingAnalysis[] = []
+
+    for (const lead of leads) {
+      const daysInPipeline = differenceInDays(now, lead.createdAt)
+      const daysSinceLastContact = lead.lastContactDate 
+        ? differenceInDays(now, lead.lastContactDate)
+        : daysInPipeline
+      const daysUntilNextFollowUp = lead.nextFollowUpDate
+        ? differenceInDays(lead.nextFollowUpDate, now)
+        : 0
+
+      // Determine aging category based on rules
+      const agingCategory = determineAgingCategory(daysInPipeline, daysSinceLastContact)
+      const riskLevel = determineRiskLevel(agingCategory, daysSinceLastContact, lead)
+      
+      // Generate AI insights
+      const aiInsights = await generateAgingInsights(lead, daysInPipeline, daysSinceLastContact)
+      
+      // Calculate conversion probability based on aging
+      const conversionProbability = calculateConversionProbability(lead, daysInPipeline, daysSinceLastContact)
+      
+      // Calculate urgency score
+      const urgencyScore = calculateUrgencyScore(lead, daysInPipeline, daysSinceLastContact, riskLevel)
+
+      const analysis: AgingAnalysis = {
+        leadId: lead.id,
+        daysInPipeline,
+        daysSinceLastContact,
+        daysUntilNextFollowUp,
+        agingCategory,
+        riskLevel,
+        recommendedAction: getRecommendedAction(agingCategory, riskLevel, lead),
+        aiInsights,
+        conversionProbability,
+        urgencyScore
+      }
+
+      analyses.push(analysis)
+    }
+
+    setAgingAnalyses(analyses)
+  }
+
+  const determineAgingCategory = (daysInPipeline: number, daysSinceLastContact: number): AgingAnalysis['agingCategory'] => {
+    const relevantDays = Math.max(daysInPipeline, daysSinceLastContact)
+    
+    if (relevantDays <= 2) return 'new'
+    if (relevantDays <= 14) return 'warm'
+    if (relevantDays <= 30) return 'cold'
+    if (relevantDays <= 90) return 'frozen'
+    return 'stale'
+  }
+
+  const determineRiskLevel = (category: AgingAnalysis['agingCategory'], daysSinceLastContact: number, lead: Lead): AgingAnalysis['riskLevel'] => {
+    const rule = agingRules.find(r => r.category === category)
+    if (!rule) return 'medium'
+
+    // Adjust risk based on lead value and engagement
+    let adjustedRisk = rule.riskLevel
+    
+    if (lead.estimatedValue > 50000 && daysSinceLastContact > 7) {
+      adjustedRisk = adjustedRisk === 'low' ? 'medium' : adjustedRisk === 'medium' ? 'high' : 'critical'
+    }
+    
+    if (lead.score > 80 && daysSinceLastContact > 5) {
+      adjustedRisk = adjustedRisk === 'low' ? 'medium' : 'high'
+    }
+
+    return adjustedRisk
+  }
+
+  const generateAgingInsights = async (lead: Lead, daysInPipeline: number, daysSinceLastContact: number): Promise<string[]> => {
+    try {
+      const prompt = spark.llmPrompt`
+      Analyze this lead's aging pattern and provide insights:
+      
+      Lead: ${lead.firstName} ${lead.lastName} at ${lead.company}
+      Days in pipeline: ${daysInPipeline}
+      Days since last contact: ${daysSinceLastContact}
+      Lead score: ${lead.score}
+      Estimated value: $${lead.estimatedValue}
+      Current status: ${lead.status}
+      Source: ${lead.source}
+      
+      Provide 2-3 specific insights about:
+      1. Risk factors
+      2. Opportunity indicators
+      3. Recommended timing for next contact
+      
+      Keep each insight under 50 words.
+      `
+
+      const response = await spark.llm(prompt, 'gpt-4o-mini')
+      return response.split('\n').filter(line => line.trim()).slice(0, 3)
+    } catch (error) {
+      return [
+        'Consider immediate follow-up due to aging',
+        'Review engagement history for patterns',
+        'Assess if lead criteria still match'
+      ]
+    }
+  }
+
+  const calculateConversionProbability = (lead: Lead, daysInPipeline: number, daysSinceLastContact: number): number => {
+    let baseProbability = lead.score * 0.8 // Start with lead score
+
+    // Adjust for aging
+    if (daysInPipeline <= 7) baseProbability += 10 // Fresh leads
+    else if (daysInPipeline <= 30) baseProbability += 5
+    else if (daysInPipeline <= 60) baseProbability -= 5
+    else baseProbability -= 15 // Old leads
+
+    // Adjust for contact recency
+    if (daysSinceLastContact <= 3) baseProbability += 15
+    else if (daysSinceLastContact <= 7) baseProbability += 5
+    else if (daysSinceLastContact <= 14) baseProbability -= 5
+    else baseProbability -= 10
+
+    // Adjust for lead value
+    if (lead.estimatedValue > 50000) baseProbability += 10
+    else if (lead.estimatedValue > 20000) baseProbability += 5
+
+    // Adjust for source quality
+    if (lead.source === 'Referral') baseProbability += 15
+    else if (lead.source === 'Website') baseProbability += 10
+    else if (lead.source === 'LinkedIn') baseProbability += 5
+
+    return Math.max(5, Math.min(95, baseProbability))
+  }
+
+  const calculateUrgencyScore = (lead: Lead, daysInPipeline: number, daysSinceLastContact: number, riskLevel: string): number => {
+    let urgency = 0
+
+    // Base urgency on aging
+    urgency += Math.min(50, daysInPipeline * 2)
+    urgency += Math.min(30, daysSinceLastContact * 3)
+
+    // Adjust for risk level
+    const riskMultiplier = {
+      'low': 0.8,
+      'medium': 1.0,
+      'high': 1.3,
+      'critical': 1.6
+    }
+    urgency *= riskMultiplier[riskLevel as keyof typeof riskMultiplier]
+
+    // Adjust for lead value
+    if (lead.estimatedValue > 50000) urgency *= 1.4
+    else if (lead.estimatedValue > 20000) urgency *= 1.2
+
+    // Adjust for lead score
+    if (lead.score > 80) urgency *= 1.3
+    else if (lead.score > 60) urgency *= 1.1
+
+    return Math.min(100, Math.max(0, urgency))
+  }
+
+  const getRecommendedAction = (category: AgingAnalysis['agingCategory'], riskLevel: AgingAnalysis['riskLevel'], lead: Lead): string => {
+    const actions = {
+      new: {
+        low: 'Schedule introduction call within 24 hours',
+        medium: 'Send personalized welcome email immediately',
+        high: 'Assign to senior rep for immediate contact',
+        critical: 'Priority assignment with same-day contact'
+      },
+      warm: {
+        low: 'Continue regular follow-up sequence',
+        medium: 'Schedule product demo or consultation',
+        high: 'Escalate to manager for review',
+        critical: 'Immediate intervention required'
+      },
+      cold: {
+        low: 'Re-engage with value-added content',
+        medium: 'Personal outreach with specific offer',
+        high: 'Multi-channel re-engagement campaign',
+        critical: 'Executive involvement in outreach'
+      },
+      frozen: {
+        low: 'Add to long-term nurture sequence',
+        medium: 'Quarterly check-in with industry updates',
+        high: 'Special promotion or event invitation',
+        critical: 'Final qualification attempt before archiving'
+      },
+      stale: {
+        low: 'Archive with periodic newsletter inclusion',
+        medium: 'One final personalized attempt',
+        high: 'Manager review for archive decision',
+        critical: 'Immediate archive or final executive outreach'
+      }
+    }
+
+    return actions[category][riskLevel] || 'Review and determine next steps'
+  }
+
+  const generateAIActionPlan = async (analysis: AgingAnalysis) => {
+    const lead = leads?.find(l => l.id === analysis.leadId)
+    if (!lead) return
+
+    setAIProcessing(true)
+    try {
+      const prompt = spark.llmPrompt`
+      Create a detailed action plan for this aging lead:
+      
+      Lead: ${lead.firstName} ${lead.lastName}
+      Aging Category: ${analysis.agingCategory}
+      Risk Level: ${analysis.riskLevel}
+      Days in Pipeline: ${analysis.daysInPipeline}
+      Days Since Contact: ${analysis.daysSinceLastContact}
+      Conversion Probability: ${analysis.conversionProbability}%
+      
+      Create a 3-step action plan with:
+      1. Immediate action (next 24-48 hours)
+      2. Short-term strategy (next week)
+      3. Long-term approach (next month)
+      
+      Include specific messaging suggestions and timing.
+      `
+
+      const actionPlan = await spark.llm(prompt, 'gpt-4o-mini')
+      
+      toast.success('AI Action Plan Generated', {
+        description: 'Detailed recommendations created',
+        action: {
+          label: 'Copy',
+          onClick: () => navigator.clipboard.writeText(actionPlan)
+        }
+      })
+    } catch (error) {
+      toast.error('Failed to generate action plan')
+    } finally {
+      setAIProcessing(false)
+    }
+  }
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'new': return 'bg-green-100 text-green-800 border-green-200'
+      case 'warm': return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'cold': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case 'frozen': return 'bg-orange-100 text-orange-800 border-orange-200'
+      case 'stale': return 'bg-red-100 text-red-800 border-red-200'
+      default: return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case 'low': return 'text-green-600'
+      case 'medium': return 'text-yellow-600'
+      case 'high': return 'text-orange-600'
+      case 'critical': return 'text-red-600'
+      default: return 'text-gray-600'
+    }
+  }
+
   const filteredLeads = (leads || []).filter(lead => {
     const matchesSearch = 
       lead.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -404,6 +760,7 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onSchedule
 
   const LeadCard = ({ lead }: { lead: Lead }) => {
     const profile = leadAIProfiles[lead.id]
+    const aging = agingAnalyses.find(a => a.leadId === lead.id)
     const isSelected = bulkOperations.includes(lead.id)
 
     return (
@@ -435,6 +792,11 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onSchedule
               <Badge variant={lead.status === 'qualified' ? 'default' : 'secondary'}>
                 {lead.status}
               </Badge>
+              {aging && (
+                <Badge className={getCategoryColor(aging.agingCategory)}>
+                  {aging.agingCategory}
+                </Badge>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -449,6 +811,36 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onSchedule
               <div className="text-sm text-muted-foreground">Est. Value</div>
             </div>
           </div>
+
+          {/* Aging Information */}
+          {aging && (
+            <div className="space-y-2 border-t pt-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1">
+                  <Timer size={14} />
+                  Days in Pipeline
+                </span>
+                <span className="font-medium">{aging.daysInPipeline}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1">
+                  <ClockCounterClockwise size={14} />
+                  Last Contact
+                </span>
+                <span className="font-medium">
+                  {aging.daysSinceLastContact === 0 ? 'Today' : `${aging.daysSinceLastContact} days ago`}
+                </span>
+              </div>
+              {aging.riskLevel !== 'low' && (
+                <div className="flex items-center gap-2 text-sm">
+                  <AlertTriangleIcon className={getRiskColor(aging.riskLevel)} size={14} />
+                  <span className={`font-medium ${getRiskColor(aging.riskLevel)}`}>
+                    {aging.riskLevel.charAt(0).toUpperCase() + aging.riskLevel.slice(1)} Risk
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           {profile && (
             <div className="space-y-2">
@@ -706,8 +1098,9 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onSchedule
             </DialogHeader>
             
             <Tabs defaultValue="overview" className="h-[75vh]">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="aging">Lead Aging</TabsTrigger>
                 <TabsTrigger value="ai-profile">AI Profile</TabsTrigger>
                 <TabsTrigger value="activities">Activities</TabsTrigger>
                 <TabsTrigger value="communications">Communications</TabsTrigger>
@@ -828,6 +1221,235 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onSchedule
                       </div>
                     </CardContent>
                   </Card>
+                </TabsContent>
+
+                <TabsContent value="aging" className="space-y-6">
+                  {(() => {
+                    const aging = agingAnalyses.find(a => a.leadId === selectedLead.id)
+                    if (!aging) {
+                      return (
+                        <Card>
+                          <CardContent className="py-12 text-center">
+                            <Timer className="mx-auto mb-4 text-muted-foreground" size={48} />
+                            <h3 className="text-lg font-medium mb-2">Lead Aging Analysis</h3>
+                            <p className="text-muted-foreground mb-4">Analyzing lead aging patterns...</p>
+                            <Button onClick={analyzeLeadAging}>
+                              <Clock size={16} className="mr-2" />
+                              Analyze Lead Aging
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      )
+                    }
+
+                    return (
+                      <div className="space-y-6">
+                        {/* Aging Overview */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Days in Pipeline</p>
+                                  <p className="text-2xl font-bold">{aging.daysInPipeline}</p>
+                                </div>
+                                <Timer className="text-blue-600" size={24} />
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Days Since Contact</p>
+                                  <p className="text-2xl font-bold">{aging.daysSinceLastContact}</p>
+                                </div>
+                                <ClockCounterClockwise className="text-orange-600" size={24} />
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Urgency Score</p>
+                                  <p className="text-2xl font-bold">{Math.round(aging.urgencyScore)}/100</p>
+                                </div>
+                                <AlertTriangleIcon className={getRiskColor(aging.riskLevel)} size={24} />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        {/* Aging Category and Risk */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <Card>
+                            <CardHeader>
+                              <CardTitle>Aging Category</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-4">
+                                <div className={`p-4 rounded-lg border ${getCategoryColor(aging.agingCategory)}`}>
+                                  <div className="text-center">
+                                    <div className="text-xl font-bold capitalize mb-1">{aging.agingCategory}</div>
+                                    <div className="text-sm">Lead Category</div>
+                                  </div>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <div className="flex justify-between text-sm">
+                                    <span>Risk Level</span>
+                                    <Badge variant="outline" className={getRiskColor(aging.riskLevel)}>
+                                      {aging.riskLevel}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex justify-between text-sm">
+                                    <span>Conversion Probability</span>
+                                    <span className="font-medium">{aging.conversionProbability}%</span>
+                                  </div>
+                                  <Progress value={aging.conversionProbability} className="h-2" />
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardHeader>
+                              <CardTitle>Recommended Action</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <Alert className="border-blue-200 bg-blue-50 mb-4">
+                                <Lightbulb className="text-blue-600" size={16} />
+                                <AlertDescription>
+                                  <div className="font-medium text-blue-800 mb-1">Next Steps:</div>
+                                  <div className="text-blue-700">{aging.recommendedAction}</div>
+                                </AlertDescription>
+                              </Alert>
+
+                              <div className="space-y-3">
+                                <Button 
+                                  className="w-full"
+                                  onClick={() => generateAIActionPlan(aging)}
+                                  disabled={aiProcessing}
+                                >
+                                  <Brain size={16} className="mr-2" />
+                                  Generate AI Action Plan
+                                </Button>
+                                
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full"
+                                  onClick={() => generateLeadEmail(selectedLead.id, 'follow-up')}
+                                >
+                                  <Mail size={16} className="mr-2" />
+                                  Send Follow-up Email
+                                </Button>
+                                
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full"
+                                  onClick={() => onScheduleMeeting?.(selectedLead.id)}
+                                >
+                                  <Calendar size={16} className="mr-2" />
+                                  Schedule Meeting
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        {/* AI Insights */}
+                        {aging.aiInsights.length > 0 && (
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="flex items-center gap-2">
+                                <Brain className="text-purple-500" size={20} />
+                                AI Aging Insights
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-3">
+                                {aging.aiInsights.map((insight, index) => (
+                                  <Alert key={index} className="border-purple-200 bg-purple-50">
+                                    <Star className="text-purple-600" size={16} />
+                                    <AlertDescription className="text-purple-700">
+                                      {insight}
+                                    </AlertDescription>
+                                  </Alert>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Aging Timeline */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Lead Timeline</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                <div className="flex-1">
+                                  <div className="flex justify-between items-center">
+                                    <span className="font-medium">Lead Created</span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {format(selectedLead.createdAt, 'PPP')}
+                                    </span>
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {aging.daysInPipeline} days ago
+                                  </div>
+                                </div>
+                              </div>
+
+                              {selectedLead.lastContactDate && (
+                                <div className="flex items-center gap-3">
+                                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                  <div className="flex-1">
+                                    <div className="flex justify-between items-center">
+                                      <span className="font-medium">Last Contact</span>
+                                      <span className="text-sm text-muted-foreground">
+                                        {format(selectedLead.lastContactDate, 'PPP')}
+                                      </span>
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {aging.daysSinceLastContact} days ago
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {selectedLead.nextFollowUpDate && (
+                                <div className="flex items-center gap-3">
+                                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                  <div className="flex-1">
+                                    <div className="flex justify-between items-center">
+                                      <span className="font-medium">Next Follow-up</span>
+                                      <span className="text-sm text-muted-foreground">
+                                        {format(selectedLead.nextFollowUpDate, 'PPP')}
+                                      </span>
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {aging.daysUntilNextFollowUp > 0 
+                                        ? `In ${aging.daysUntilNextFollowUp} days`
+                                        : aging.daysUntilNextFollowUp === 0
+                                        ? 'Today'
+                                        : `${Math.abs(aging.daysUntilNextFollowUp)} days overdue`
+                                      }
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )
+                  })()}
                 </TabsContent>
 
                 <TabsContent value="ai-profile" className="space-y-6">
