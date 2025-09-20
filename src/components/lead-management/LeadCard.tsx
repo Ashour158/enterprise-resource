@@ -79,6 +79,7 @@ interface LeadCardProps {
   onUpdate: (updates: Partial<Lead>) => void
   onDelete: () => void
   onView: () => void
+  onOpenTimeline?: (leadId: string) => void
   layout: CardLayout
   userRole: string
 }
@@ -90,6 +91,7 @@ export function LeadCard({
   onUpdate, 
   onDelete, 
   onView, 
+  onOpenTimeline,
   layout,
   userRole 
 }: LeadCardProps) {
@@ -187,6 +189,12 @@ export function LeadCard({
               <Eye size={16} className="mr-2" />
               View Details
             </DropdownMenuItem>
+            {onOpenTimeline && (
+              <DropdownMenuItem onClick={() => onOpenTimeline(lead.id)}>
+                <Clock size={16} className="mr-2" />
+                View Timeline
+              </DropdownMenuItem>
+            )}
             {(userRole === 'super_admin' || userRole === 'company_admin' || userRole === 'manager') && (
               <DropdownMenuItem onClick={() => setIsEditing(true)}>
                 <Edit size={16} className="mr-2" />

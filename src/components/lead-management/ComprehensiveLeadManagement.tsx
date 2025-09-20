@@ -54,12 +54,14 @@ interface ComprehensiveLeadManagementProps {
   companyId: string
   userId: string
   userRole: string
+  onOpenTimeline?: (leadId: string) => void
 }
 
 export function ComprehensiveLeadManagement({ 
   companyId, 
   userId, 
-  userRole 
+  userRole,
+  onOpenTimeline
 }: ComprehensiveLeadManagementProps) {
   const [activeTab, setActiveTab] = useState('overview')
   const [leads, setLeads] = useState<Lead[]>([])
@@ -349,6 +351,7 @@ export function ComprehensiveLeadManagement({
             companyId={companyId}
             userId={userId}
             userRole={userRole}
+            onOpenTimeline={onOpenTimeline}
           />
         </TabsContent>
 

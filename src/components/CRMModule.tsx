@@ -27,6 +27,9 @@ import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { HolidayCalendarManager } from '@/components/HolidayCalendarManager'
 import { RegionalBusinessRulesDemo } from '@/components/crm/RegionalBusinessRulesDemo'
 import { ComprehensiveLeadManagement } from '@/components/lead-management/ComprehensiveLeadManagement'
+import { LeadTimelineManager } from '@/components/lead-management/LeadTimelineManager'
+import { LeadAgingDashboard } from '@/components/lead-management/LeadAgingDashboard'
+import { QuoteAttachmentManager } from '@/components/lead-management/QuoteAttachmentManager'
 import { ComprehensiveDealManagement } from '@/components/crm/deal/ComprehensiveDealManagement'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
 import { CRMAnalytics as CRMAnalyticsType, CRMSettings } from '@/types/crm'
@@ -80,6 +83,8 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
   })
   const [showImportExport, setShowImportExport] = useState(false)
   const [selectedEntityForHistory, setSelectedEntityForHistory] = useState<{type?: string, id?: string}>({})
+  const [selectedLeadForTimeline, setSelectedLeadForTimeline] = useState<string | null>(null)
+  const [showTimelineDialog, setShowTimelineDialog] = useState(false)
 
   // Initialize CRM history tracking
   const { addEntry: addHistoryEntry } = useCRMHistory(companyId, userId, 'Current User')
@@ -332,6 +337,10 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
               <UserPlus size={16} />
               <span className="hidden sm:inline">Leads</span>
             </TabsTrigger>
+            <TabsTrigger value="lead-aging" className="flex items-center gap-2">
+              <Clock size={16} />
+              <span className="hidden sm:inline">Lead Aging</span>
+            </TabsTrigger>
             <TabsTrigger value="contacts" className="flex items-center gap-2">
               <Users size={16} />
               <span className="hidden sm:inline">Contacts</span>
@@ -441,6 +450,18 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             companyId={companyId}
             userId={userId}
             userRole={userRole}
+            onOpenTimeline={(leadId) => {
+              setSelectedLeadForTimeline(leadId)
+              setShowTimelineDialog(true)
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="lead-aging" className="space-y-6">
+          <LeadAgingDashboard 
+            companyId={companyId}
+            userId={userId}
+            assignedOnly={false}
           />
         </TabsContent>
 
@@ -659,6 +680,26 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
               userId={userId}
               userRole={userRole}
               onClose={() => setShowImportExport(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Lead Timeline Modal */}
+      {showTimelineDialog && selectedLeadForTimeline && (
+        <Dialog open={showTimelineDialog} onOpenChange={setShowTimelineDialog}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Lead Timeline & Activity Management</DialogTitle>
+            </DialogHeader>
+            <LeadTimelineManager
+              leadId={selectedLeadForTimeline}
+              companyId={companyId}
+              userId={userId}
+              onClose={() => {
+                setShowTimelineDialog(false)
+                setSelectedLeadForTimeline(null)
+              }}
             />
           </DialogContent>
         </Dialog>

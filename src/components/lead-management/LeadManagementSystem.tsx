@@ -102,9 +102,10 @@ interface LeadManagementSystemProps {
   companyId: string
   userId: string
   userRole: string
+  onOpenTimeline?: (leadId: string) => void
 }
 
-export function LeadManagementSystem({ companyId, userId, userRole }: LeadManagementSystemProps) {
+export function LeadManagementSystem({ companyId, userId, userRole, onOpenTimeline }: LeadManagementSystemProps) {
   // State management
   const [leads, setLeads] = useKV(`leads-${companyId}`, [] as Lead[])
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set())
@@ -776,6 +777,7 @@ export function LeadManagementSystem({ companyId, userId, userRole }: LeadManage
                   onUpdate={(updates) => handleUpdateLead(lead.id, updates)}
                   onDelete={() => handleDeleteLead(lead.id)}
                   onView={() => setSelectedLead(lead)}
+                  onOpenTimeline={onOpenTimeline}
                   layout={cardLayout}
                   userRole={userRole}
                 />
