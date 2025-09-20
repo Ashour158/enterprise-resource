@@ -27,6 +27,7 @@ import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { HolidayCalendarManager } from '@/components/HolidayCalendarManager'
 import { RegionalBusinessRulesDemo } from '@/components/crm/RegionalBusinessRulesDemo'
 import { ComprehensiveLeadManagement } from '@/components/lead-management/ComprehensiveLeadManagement'
+import { ComprehensiveDealManagement } from '@/components/crm/deal/ComprehensiveDealManagement'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
 import { CRMAnalytics as CRMAnalyticsType, CRMSettings } from '@/types/crm'
 import { 
@@ -460,7 +461,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         </TabsContent>
 
         <TabsContent value="pipeline" className="space-y-6">
-          <AIEnhancedDealPipeline 
+          <ComprehensiveDealManagement 
             companyId={companyId}
             userId={userId}
             userRole={userRole}
