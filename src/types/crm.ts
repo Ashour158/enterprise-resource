@@ -58,7 +58,8 @@ export interface Quote {
   dealId?: string
   title: string
   description?: string
-  status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired'
+  status: 'draft' | 'pending_approval' | 'approved' | 'rejected' | 'sent' | 'viewed' | 'accepted' | 'expired' | 'cancelled'
+  approvalStatus?: 'not_required' | 'pending' | 'approved' | 'rejected' | 'escalated'
   validUntil: Date
   currency: string
   subtotal: number
@@ -84,8 +85,212 @@ export interface Quote {
   emailSettings?: QuoteEmailSettings
   numberingConfig?: QuoteNumberingConfig
   customActions?: QuoteCustomAction[]
+  approvalWorkflow?: QuoteApprovalWorkflow
+  approvals: QuoteApproval[]
   createdAt: Date
   updatedAt: Date
+}
+
+// Quote Approval Workflow Types
+export interface QuoteApprovalWorkflow {
+  id: string
+  companyId: string
+  name: string
+  description?: string
+  isActive: boolean
+  triggerConditions: ApprovalTriggerCondition[]
+  approvalChain: ApprovalLevel[]
+  settings: ApprovalWorkflowSettings
+  createdBy: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface ApprovalTriggerCondition {
+  id: string
+  type: 'amount_threshold' | 'discount_percentage' | 'product_category' | 'customer_type' | 'custom_field' | 'approval_matrix'
+  operator: 'greater_than' | 'less_than' | 'equals' | 'not_equals' | 'contains' | 'in_range'
+  value: any
+  secondaryValue?: any // For range conditions
+  field?: string // For custom field conditions
+  priority: number
+}
+
+export interface ApprovalLevel {
+  id: string
+  name: string
+  order: number
+  approvalType: 'any_user' | 'specific_users' | 'role_based' | 'department' | 'manager_hierarchy' | 'amount_based'
+  approvers: ApprovalApprover[]
+  requiredApprovals: number // How many approvals needed at this level
+  timeoutHours?: number
+  escalationRules?: EscalationRule[]
+  skipConditions?: SkipCondition[]
+  parallelApproval: boolean // Whether approvers can approve simultaneously
+  autoApproval?: AutoApprovalRule
+}
+
+export interface ApprovalApprover {
+  id: string
+  type: 'user' | 'role' | 'department' | 'manager'
+  userId?: string
+  roleId?: string
+  departmentId?: string
+  managerLevel?: number // 1 = direct manager, 2 = manager's manager, etc.
+  maxApprovalAmount?: number
+  isBackup: boolean
+  order: number
+}
+
+export interface EscalationRule {
+  id: string
+  triggerHours: number
+  action: 'notify' | 'escalate' | 'auto_approve' | 'auto_reject'
+  escalateTo: ApprovalApprover[]
+  notificationTemplate?: string
+}
+
+export interface SkipCondition {
+  id: string
+  type: 'amount_under' | 'user_role' | 'department' | 'customer_tier' | 'product_type'
+  value: any
+  operator: string
+}
+
+export interface AutoApprovalRule {
+  id: string
+  conditions: ApprovalTriggerCondition[]
+  action: 'approve' | 'reject'
+  reason: string
+}
+
+export interface ApprovalWorkflowSettings {
+  allowParallelApproval: boolean
+  requireComments: boolean
+  allowDelegation: boolean
+  notifyCreator: boolean
+  notifyAssignee: boolean
+  emailTemplates: {
+    pending: string
+    approved: string
+    rejected: string
+    escalated: string
+  }
+  reminders: {
+    enabled: boolean
+    intervals: number[] // Hours after which to send reminders
+    maxReminders: number
+  }
+  audit: {
+    trackViews: boolean
+    trackEdits: boolean
+    requireSignature: boolean
+  }
+}
+
+export interface QuoteApproval {
+  id: string
+  quoteId: string
+  workflowId: string
+  levelId: string
+  approverId: string
+  approverName: string
+  approverRole: string
+  status: 'pending' | 'approved' | 'rejected' | 'delegated' | 'expired'
+  requestedAt: Date
+  respondedAt?: Date
+  comments?: string
+  digitalSignature?: string
+  ipAddress?: string
+  userAgent?: string
+  delegatedTo?: {
+    userId: string
+    userName: string
+    delegatedAt: Date
+    reason: string
+  }
+  remindersSent: number
+  viewedAt?: Date[]
+  autoApproval?: {
+    ruleId: string
+    reason: string
+    triggeredAt: Date
+  }
+}
+
+export interface ApprovalMatrix {
+  id: string
+  companyId: string
+  name: string
+  description?: string
+  dimensions: ApprovalDimension[]
+  rules: ApprovalMatrixRule[]
+  isDefault: boolean
+  createdBy: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface ApprovalDimension {
+  id: string
+  name: string
+  type: 'amount' | 'percentage' | 'category' | 'region' | 'customer_tier'
+  ranges: DimensionRange[]
+}
+
+export interface DimensionRange {
+  id: string
+  label: string
+  minValue?: number
+  maxValue?: number
+  stringValues?: string[]
+  order: number
+}
+
+export interface ApprovalMatrixRule {
+  id: string
+  name: string
+  conditions: {
+    dimensionId: string
+    rangeId: string
+  }[]
+  approvers: ApprovalApprover[]
+  requiredApprovals: number
+  priority: number
+}
+
+export interface ApprovalAuditLog {
+  id: string
+  quoteId: string
+  approvalId: string
+  action: 'requested' | 'approved' | 'rejected' | 'delegated' | 'escalated' | 'expired' | 'cancelled'
+  userId: string
+  userName: string
+  userRole: string
+  timestamp: Date
+  details: Record<string, any>
+  ipAddress: string
+  userAgent: string
+  previousStatus?: string
+  newStatus?: string
+  comments?: string
+  digitalSignature?: string
+}
+
+export interface ApprovalNotification {
+  id: string
+  type: 'approval_request' | 'approval_reminder' | 'approval_approved' | 'approval_rejected' | 'approval_escalated'
+  recipientId: string
+  quoteId: string
+  approvalId?: string
+  subject: string
+  message: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed'
+  sentAt?: Date
+  deliveredAt?: Date
+  readAt?: Date
+  metadata: Record<string, any>
 }
 
 export interface QuoteTemplate {

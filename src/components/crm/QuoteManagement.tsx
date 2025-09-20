@@ -10,7 +10,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Quote, QuoteLineItem } from '@/types/crm'
+import { QuoteApprovalWorkflowManager } from './quote/QuoteApprovalWorkflowManager'
+import { QuoteApprovalDashboard } from './quote/QuoteApprovalDashboard'
 import { 
   Plus, 
   MagnifyingGlass as Search, 
@@ -26,7 +29,9 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  PaperPlaneTilt as Send
+  PaperPlaneTilt as Send,
+  Shield,
+  FlowArrow
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -46,7 +51,8 @@ const mockQuotes: Quote[] = [
     dealId: 'deal-001',
     title: 'Enterprise Software License',
     description: 'Annual software license for enterprise package',
-    status: 'sent',
+    status: 'pending_approval',
+    approvalStatus: 'pending',
     validUntil: new Date('2024-02-15'),
     currency: 'USD',
     subtotal: 48000,
@@ -90,6 +96,21 @@ const mockQuotes: Quote[] = [
     viewedDate: new Date('2024-01-22'),
     files: [],
     activities: [],
+    approvals: [
+      {
+        id: 'approval-001',
+        quoteId: 'quote-001',
+        workflowId: 'workflow-001',
+        levelId: 'level-001',
+        approverId: 'manager-001',
+        approverName: 'John Manager',
+        approverRole: 'Sales Manager',
+        status: 'pending',
+        requestedAt: new Date('2024-01-20'),
+        comments: undefined,
+        remindersSent: 1
+      }
+    ],
     createdAt: new Date('2024-01-20'),
     updatedAt: new Date('2024-01-22')
   },
@@ -102,6 +123,7 @@ const mockQuotes: Quote[] = [
     title: 'Marketing Automation Package',
     description: 'Marketing automation software and services',
     status: 'draft',
+    approvalStatus: 'not_required',
     validUntil: new Date('2024-02-20'),
     currency: 'USD',
     subtotal: 15000,
@@ -142,6 +164,7 @@ const mockQuotes: Quote[] = [
     assignedTo: 'user-002',
     files: [],
     activities: [],
+    approvals: [],
     createdAt: new Date('2024-01-25'),
     updatedAt: new Date('2024-01-25')
   }
@@ -152,18 +175,23 @@ export function QuoteManagement({ companyId, userId, userRole }: QuoteManagement
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null)
   const [showQuoteForm, setShowQuoteForm] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showApprovalView, setShowApprovalView] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [formData, setFormData] = useState<Partial<Quote>>({})
   const [lineItems, setLineItems] = useState<QuoteLineItem[]>([])
+  const [activeTab, setActiveTab] = useState('quotes')
 
   const quoteStatuses = [
     { value: 'draft', label: 'Draft', color: 'bg-gray-500' },
-    { value: 'sent', label: 'Sent', color: 'bg-blue-500' },
-    { value: 'viewed', label: 'Viewed', color: 'bg-yellow-500' },
-    { value: 'accepted', label: 'Accepted', color: 'bg-green-500' },
+    { value: 'pending_approval', label: 'Pending Approval', color: 'bg-yellow-500' },
+    { value: 'approved', label: 'Approved', color: 'bg-green-500' },
     { value: 'rejected', label: 'Rejected', color: 'bg-red-500' },
-    { value: 'expired', label: 'Expired', color: 'bg-orange-500' }
+    { value: 'sent', label: 'Sent', color: 'bg-blue-500' },
+    { value: 'viewed', label: 'Viewed', color: 'bg-purple-500' },
+    { value: 'accepted', label: 'Accepted', color: 'bg-emerald-500' },
+    { value: 'expired', label: 'Expired', color: 'bg-orange-500' },
+    { value: 'cancelled', label: 'Cancelled', color: 'bg-slate-500' }
   ]
 
   const filteredQuotes = (quotes || []).filter(quote => {
@@ -177,6 +205,13 @@ export function QuoteManagement({ companyId, userId, userRole }: QuoteManagement
     return matchesSearch && matchesStatus
   })
 
+  // Check if quote needs approval based on mock workflow rules
+  const needsApproval = (quote: Partial<Quote>) => {
+    if (!quote.totalAmount) return false
+    // Simple rule: quotes over $10,000 or with discount > 15% need approval
+    return quote.totalAmount > 10000 || (quote.discountRate || 0) > 15
+  }
+
   const handleCreateQuote = () => {
     if (!formData.title || lineItems.length === 0) {
       toast.error('Please fill in required fields and add at least one line item')
@@ -189,6 +224,11 @@ export function QuoteManagement({ companyId, userId, userRole }: QuoteManagement
     const taxAmount = discountedSubtotal * ((formData.taxRate || 0) / 100)
     const totalAmount = discountedSubtotal + taxAmount
 
+    // Determine initial status based on approval needs
+    const requiresApproval = needsApproval({ totalAmount, discountRate: formData.discountRate })
+    const initialStatus = requiresApproval ? 'pending_approval' : 'draft'
+    const approvalStatus = requiresApproval ? 'pending' : 'not_required'
+
     const newQuote: Quote = {
       id: `quote-${Date.now()}`,
       companyId,
@@ -198,7 +238,8 @@ export function QuoteManagement({ companyId, userId, userRole }: QuoteManagement
       dealId: formData.dealId,
       title: formData.title,
       description: formData.description,
-      status: 'draft',
+      status: initialStatus,
+      approvalStatus,
       validUntil: formData.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       currency: formData.currency || 'USD',
       subtotal,
@@ -215,6 +256,20 @@ export function QuoteManagement({ companyId, userId, userRole }: QuoteManagement
       assignedTo: userId,
       files: [],
       activities: [],
+      approvals: requiresApproval ? [
+        {
+          id: `approval-${Date.now()}`,
+          quoteId: `quote-${Date.now()}`,
+          workflowId: 'workflow-001',
+          levelId: 'level-001',
+          approverId: 'manager-001',
+          approverName: 'Sales Manager',
+          approverRole: 'Sales Manager',
+          status: 'pending',
+          requestedAt: new Date(),
+          remindersSent: 0
+        }
+      ] : [],
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -223,7 +278,12 @@ export function QuoteManagement({ companyId, userId, userRole }: QuoteManagement
     setFormData({})
     setLineItems([])
     setShowQuoteForm(false)
-    toast.success('Quote created successfully')
+    
+    if (requiresApproval) {
+      toast.success('Quote created and sent for approval')
+    } else {
+      toast.success('Quote created successfully')
+    }
   }
 
   const handleUpdateQuote = (quoteId: string, updates: Partial<Quote>) => {
@@ -341,322 +401,363 @@ export function QuoteManagement({ companyId, userId, userRole }: QuoteManagement
 
   return (
     <div className="space-y-6">
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-            <Input
-              placeholder="Search quotes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              {quoteStatuses.map(status => (
-                <SelectItem key={status.value} value={status.value}>
-                  {status.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="quotes">Quotes</TabsTrigger>
+            <TabsTrigger value="workflows" className="flex items-center gap-2">
+              <FlowArrow size={16} />
+              Approval Workflows
+            </TabsTrigger>
+          </TabsList>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Button variant="outline">
-            <Download size={16} className="mr-2" />
-            Export
-          </Button>
-          <Dialog open={showQuoteForm} onOpenChange={setShowQuoteForm}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus size={16} className="mr-2" />
-                New Quote
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create New Quote</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6">
-                {/* Basic Information */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Quote Title *</Label>
-                    <Input
-                      value={formData.title || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Valid Until</Label>
-                    <Input
-                      type="date"
-                      value={formData.validUntil ? formData.validUntil.toISOString().split('T')[0] : ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, validUntil: new Date(e.target.value) }))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Currency</Label>
-                    <Select
-                      value={formData.currency || 'USD'}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Tax Rate (%)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={formData.taxRate || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, taxRate: Number(e.target.value) }))}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      value={formData.description || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    />
-                  </div>
-                </div>
 
-                {/* Line Items */}
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <Label className="text-lg">Line Items</Label>
-                    <Button type="button" variant="outline" onClick={addLineItem}>
-                      <Plus size={16} className="mr-2" />
-                      Add Item
-                    </Button>
-                  </div>
-                  
-                  {lineItems.length > 0 && (
-                    <div className="space-y-4">
-                      {lineItems.map((item, index) => (
-                        <div key={item.id} className="p-4 border rounded-lg">
-                          <div className="grid grid-cols-12 gap-2 items-end">
-                            <div className="col-span-4">
-                              <Label>Item Name</Label>
-                              <Input
-                                value={item.name}
-                                onChange={(e) => updateLineItem(index, { name: e.target.value })}
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <Label>Quantity</Label>
-                              <Input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => updateLineItem(index, { quantity: Number(e.target.value) })}
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <Label>Unit Price</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={item.unitPrice}
-                                onChange={(e) => updateLineItem(index, { unitPrice: Number(e.target.value) })}
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <Label>Discount (%)</Label>
-                              <Input
-                                type="number"
-                                value={item.discount}
-                                onChange={(e) => updateLineItem(index, { discount: Number(e.target.value) })}
-                              />
-                            </div>
-                            <div className="col-span-1">
-                              <Label>Total</Label>
-                              <div className="text-sm font-medium">
-                                {formatCurrency(item.lineTotal)}
+        <TabsContent value="quotes" className="space-y-6">
+          {/* Header Actions */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+                <Input
+                  placeholder="Search quotes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  {quoteStatuses.map(status => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button variant="outline">
+                <Download size={16} className="mr-2" />
+                Export
+              </Button>
+              <Dialog open={showQuoteForm} onOpenChange={setShowQuoteForm}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus size={16} className="mr-2" />
+                    New Quote
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Create New Quote</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-6">
+                    {/* Basic Information */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Quote Title *</Label>
+                        <Input
+                          value={formData.title || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>Valid Until</Label>
+                        <Input
+                          type="date"
+                          value={formData.validUntil ? formData.validUntil.toISOString().split('T')[0] : ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, validUntil: new Date(e.target.value) }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>Currency</Label>
+                        <Select
+                          value={formData.currency || 'USD'}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="GBP">GBP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Tax Rate (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={formData.taxRate || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, taxRate: Number(e.target.value) }))}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label>Description</Label>
+                        <Textarea
+                          value={formData.description || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Line Items */}
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <Label className="text-lg">Line Items</Label>
+                        <Button type="button" variant="outline" onClick={addLineItem}>
+                          <Plus size={16} className="mr-2" />
+                          Add Item
+                        </Button>
+                      </div>
+                      
+                      {lineItems.length > 0 && (
+                        <div className="space-y-4">
+                          {lineItems.map((item, index) => (
+                            <div key={item.id} className="p-4 border rounded-lg">
+                              <div className="grid grid-cols-12 gap-2 items-end">
+                                <div className="col-span-4">
+                                  <Label>Item Name</Label>
+                                  <Input
+                                    value={item.name}
+                                    onChange={(e) => updateLineItem(index, { name: e.target.value })}
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <Label>Quantity</Label>
+                                  <Input
+                                    type="number"
+                                    value={item.quantity}
+                                    onChange={(e) => updateLineItem(index, { quantity: Number(e.target.value) })}
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <Label>Unit Price</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={item.unitPrice}
+                                    onChange={(e) => updateLineItem(index, { unitPrice: Number(e.target.value) })}
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <Label>Discount (%)</Label>
+                                  <Input
+                                    type="number"
+                                    value={item.discount}
+                                    onChange={(e) => updateLineItem(index, { discount: Number(e.target.value) })}
+                                  />
+                                </div>
+                                <div className="col-span-1">
+                                  <Label>Total</Label>
+                                  <div className="text-sm font-medium">
+                                    {formatCurrency(item.lineTotal)}
+                                  </div>
+                                </div>
+                                <div className="col-span-1">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => removeLineItem(index)}
+                                  >
+                                    <Trash size={14} />
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="mt-2">
+                                <Label>Description</Label>
+                                <Input
+                                  value={item.description || ''}
+                                  onChange={(e) => updateLineItem(index, { description: e.target.value })}
+                                />
                               </div>
                             </div>
-                            <div className="col-span-1">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeLineItem(index)}
-                              >
-                                <Trash size={14} />
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="mt-2">
-                            <Label>Description</Label>
-                            <Input
-                              value={item.description || ''}
-                              onChange={(e) => updateLineItem(index, { description: e.target.value })}
-                            />
-                          </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Terms and Notes */}
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label>Terms and Conditions</Label>
-                    <Textarea
-                      value={formData.terms || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Notes</Label>
-                    <Textarea
-                      value={formData.notes || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2 mt-6">
-                <Button variant="outline" onClick={() => setShowQuoteForm(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateQuote}>
-                  Create Quote
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Quotes Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quotes ({filteredQuotes.length})</CardTitle>
-          <CardDescription>
-            Manage sales quotes and proposals
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Quote</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Valid Until</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredQuotes.map((quote) => (
-                <TableRow key={quote.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium flex items-center gap-2">
-                        {getStatusIcon(quote.status)}
-                        {quote.quoteNumber}
+                    {/* Terms and Notes */}
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <Label>Terms and Conditions</Label>
+                        <Textarea
+                          value={formData.terms || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
+                        />
                       </div>
-                      <div className="text-sm text-muted-foreground">{quote.title}</div>
-                      {quote.description && (
-                        <div className="text-xs text-muted-foreground mt-1">{quote.description}</div>
-                      )}
+                      <div>
+                        <Label>Notes</Label>
+                        <Textarea
+                          value={formData.notes || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                        />
+                      </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {getStatusBadge(quote.status)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium">
-                      {formatCurrency(quote.totalAmount, quote.currency)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {quote.lineItems.length} items
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className={`text-sm ${new Date() > quote.validUntil ? 'text-red-500' : ''}`}>
-                      {formatDate(quote.validUntil)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {formatDate(quote.createdAt)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {quote.status === 'draft' && (
-                        <Button size="sm" variant="outline" onClick={() => handleSendQuote(quote.id)}>
-                          <Send size={14} className="mr-1" />
-                          Send
-                        </Button>
-                      )}
-                      {quote.status === 'sent' && (
-                        <>
-                          <Button size="sm" variant="outline" onClick={() => handleAcceptQuote(quote.id)}>
-                            <CheckCircle size={14} />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleRejectQuote(quote.id)}>
-                            <XCircle size={14} />
-                          </Button>
-                        </>
-                      )}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="sm" variant="ghost">
-                            <MoreVertical size={14} />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => setSelectedQuote(quote)}>
-                            <Eye size={14} className="mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit size={14} className="mr-2" />
-                            Edit Quote
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Download size={14} className="mr-2" />
-                            Download PDF
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteQuote(quote.id)}>
-                            <Trash size={14} className="mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  </div>
+                  
+                  <div className="flex justify-end gap-2 mt-6">
+                    <Button variant="outline" onClick={() => setShowQuoteForm(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateQuote}>
+                      Create Quote
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
 
-      {/* Quote Detail Dialog */}
+          {/* Quotes Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quotes ({filteredQuotes.length})</CardTitle>
+              <CardDescription>
+                Manage sales quotes and proposals with approval workflows
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Quote</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Approval</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Valid Until</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredQuotes.map((quote) => (
+                    <TableRow key={quote.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium flex items-center gap-2">
+                            {getStatusIcon(quote.status)}
+                            {quote.quoteNumber}
+                          </div>
+                          <div className="text-sm text-muted-foreground">{quote.title}</div>
+                          {quote.description && (
+                            <div className="text-xs text-muted-foreground mt-1">{quote.description}</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(quote.status)}
+                      </TableCell>
+                      <TableCell>
+                        {quote.approvalStatus && quote.approvalStatus !== 'not_required' ? (
+                          <div className="flex items-center gap-2">
+                            {quote.approvalStatus === 'pending' && <Clock size={14} className="text-yellow-500" />}
+                            {quote.approvalStatus === 'approved' && <CheckCircle size={14} className="text-green-500" />}
+                            {quote.approvalStatus === 'rejected' && <XCircle size={14} className="text-red-500" />}
+                            <span className="text-sm capitalize">{quote.approvalStatus}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Not required</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">
+                          {formatCurrency(quote.totalAmount, quote.currency)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {quote.lineItems.length} items
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className={`text-sm ${new Date() > quote.validUntil ? 'text-red-500' : ''}`}>
+                          {formatDate(quote.validUntil)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {formatDate(quote.createdAt)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {quote.status === 'draft' && (
+                            <Button size="sm" variant="outline" onClick={() => handleSendQuote(quote.id)}>
+                              <Send size={14} className="mr-1" />
+                              Send
+                            </Button>
+                          )}
+                          {quote.status === 'sent' && (
+                            <>
+                              <Button size="sm" variant="outline" onClick={() => handleAcceptQuote(quote.id)}>
+                                <CheckCircle size={14} />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => handleRejectQuote(quote.id)}>
+                                <XCircle size={14} />
+                              </Button>
+                            </>
+                          )}
+                          {quote.approvals && quote.approvals.length > 0 && (
+                            <Button size="sm" variant="outline" onClick={() => setSelectedQuote(quote)}>
+                              <Shield size={14} className="mr-1" />
+                              Approvals
+                            </Button>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="ghost">
+                                <MoreVertical size={14} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem onClick={() => setSelectedQuote(quote)}>
+                                <Eye size={14} className="mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Edit size={14} className="mr-2" />
+                                Edit Quote
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Download size={14} className="mr-2" />
+                                Download PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteQuote(quote.id)}>
+                                <Trash size={14} className="mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="workflows" className="space-y-6">
+          <QuoteApprovalWorkflowManager 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Quote Detail Dialog with Approval Dashboard */}
       {selectedQuote && (
         <Dialog open={!!selectedQuote} onOpenChange={() => setSelectedQuote(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText size={20} />
@@ -664,6 +765,24 @@ export function QuoteManagement({ companyId, userId, userRole }: QuoteManagement
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-6">
+              {/* Approval Dashboard */}
+              {selectedQuote.approvals && selectedQuote.approvals.length > 0 && (
+                <QuoteApprovalDashboard
+                  companyId={companyId}
+                  userId={userId}
+                  userRole={userRole}
+                  quote={selectedQuote}
+                  onApprovalUpdate={(approval) => {
+                    // Update the quote with the new approval status
+                    handleUpdateQuote(selectedQuote.id, {
+                      approvals: selectedQuote.approvals?.map(a => 
+                        a.id === approval.id ? approval : a
+                      )
+                    })
+                  }}
+                />
+              )}
+
               {/* Quote Header */}
               <div className="grid grid-cols-2 gap-6 p-4 bg-muted rounded-lg">
                 <div>
