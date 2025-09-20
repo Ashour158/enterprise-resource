@@ -11,7 +11,8 @@ import { CRMDashboard } from '@/components/crm/CRMDashboard'
 import { SalesReportingDashboard } from '@/components/crm/SalesReportingDashboard'
 import { ContactManagement } from '@/components/crm/ContactManagement'
 import { DealPipeline } from '@/components/crm/DealPipeline'
-import { LeadManagement } from '@/components/crm/LeadManagement'
+import { AIEnhancedLeadManagement } from '@/components/crm/enhanced/AIEnhancedLeadManagement'
+import { AIEnhancedDealPipeline } from '@/components/crm/enhanced/AIEnhancedDealPipeline'
 import { AccountManagement } from '@/components/crm/AccountManagement'
 import { QuoteManagement } from '@/components/crm/QuoteManagement'
 import { ActivityManagement } from '@/components/crm/ActivityManagement'
@@ -412,7 +413,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         </TabsContent>
 
         <TabsContent value="leads" className="space-y-6">
-          <LeadManagement 
+          <AIEnhancedLeadManagement 
             companyId={companyId}
             userId={userId}
             userRole={userRole}
@@ -438,7 +439,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         </TabsContent>
 
         <TabsContent value="pipeline" className="space-y-6">
-          <DealPipeline 
+          <AIEnhancedDealPipeline 
             companyId={companyId}
             userId={userId}
             userRole={userRole}
