@@ -15,6 +15,7 @@ import { AIEnhancedLeadManagement } from '@/components/crm/enhanced/AIEnhancedLe
 import { AIEnhancedDealPipeline } from '@/components/crm/enhanced/AIEnhancedDealPipeline'
 import { AccountManagement } from '@/components/crm/AccountManagement'
 import { QuoteManagement } from '@/components/crm/QuoteManagement'
+import { EnhancedQuoteManagement } from '@/components/crm/enhanced/EnhancedQuoteManagement'
 import { ActivityManagement } from '@/components/crm/ActivityManagement'
 import { ForecastManagement } from '@/components/crm/ForecastManagement'
 import { CustomerJourneyMapping } from '@/components/crm/CustomerJourneyMapping'
@@ -472,7 +473,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         </TabsContent>
 
         <TabsContent value="quotes" className="space-y-6">
-          <QuoteManagement 
+          <EnhancedQuoteManagement 
             companyId={companyId}
             userId={userId}
             userRole={userRole}

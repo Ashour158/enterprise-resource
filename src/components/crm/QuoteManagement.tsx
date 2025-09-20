@@ -57,6 +57,7 @@ const mockQuotes: Quote[] = [
     totalAmount: 49680,
     terms: 'Net 30 payment terms. Quote valid for 30 days.',
     notes: 'Includes setup and first year support',
+    customFields: {},
     lineItems: [
       {
         id: 'item-001',
@@ -110,6 +111,7 @@ const mockQuotes: Quote[] = [
     discountAmount: 1500,
     totalAmount: 14775,
     terms: 'Net 15 payment terms. Quote valid for 45 days.',
+    customFields: {},
     lineItems: [
       {
         id: 'item-003',
@@ -208,6 +210,7 @@ export function QuoteManagement({ companyId, userId, userRole }: QuoteManagement
       terms: formData.terms || 'Net 30 payment terms',
       notes: formData.notes,
       lineItems,
+      customFields: {},
       createdBy: userId,
       assignedTo: userId,
       files: [],

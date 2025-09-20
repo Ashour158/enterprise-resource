@@ -70,6 +70,8 @@ export interface Quote {
   terms: string
   notes?: string
   lineItems: QuoteLineItem[]
+  templateId?: string
+  customFields: Record<string, any>
   createdBy: string
   assignedTo?: string
   sentDate?: Date
@@ -79,8 +81,89 @@ export interface Quote {
   rejectionReason?: string
   files: CRMFile[]
   activities: QuoteActivity[]
+  emailSettings?: QuoteEmailSettings
+  numberingConfig?: QuoteNumberingConfig
+  customActions?: QuoteCustomAction[]
   createdAt: Date
   updatedAt: Date
+}
+
+export interface QuoteTemplate {
+  id: string
+  companyId: string
+  name: string
+  description?: string
+  type: 'ai_generated' | 'custom_upload' | 'system_default'
+  format: 'docx' | 'pdf' | 'html' | 'csv'
+  templateData: string // Base64 encoded template content
+  variables: QuoteTemplateVariable[]
+  isActive: boolean
+  isDefault: boolean
+  aiPrompt?: string // For AI-generated templates
+  createdBy: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface QuoteTemplateVariable {
+  id: string
+  name: string
+  label: string
+  type: 'text' | 'number' | 'date' | 'currency' | 'boolean' | 'image' | 'table'
+  required: boolean
+  defaultValue?: any
+  options?: string[] // For dropdown variables
+}
+
+export interface QuoteEmailSettings {
+  subject: string
+  body: string
+  ccEmails: string[]
+  bccEmails: string[]
+  attachPdf: boolean
+  sendReminders: boolean
+  reminderDays: number[]
+}
+
+export interface QuoteNumberingConfig {
+  prefix: string
+  suffix: string
+  digitCount: number
+  startNumber: number
+  resetPeriod: 'never' | 'yearly' | 'monthly'
+  lastNumber: number
+  lastResetDate?: Date
+}
+
+export interface QuoteCustomAction {
+  id: string
+  label: string
+  icon: string
+  color: string
+  position: 'header' | 'row' | 'detail'
+  visibility: 'always' | 'status_dependent' | 'role_dependent'
+  conditions?: {
+    statuses?: string[]
+    roles?: string[]
+  }
+  action: {
+    type: 'webhook' | 'email' | 'status_change' | 'export' | 'custom'
+    config: Record<string, any>
+  }
+  isActive: boolean
+}
+
+export interface QuoteExportConfig {
+  format: 'pdf' | 'docx' | 'excel' | 'csv'
+  templateId?: string
+  includeAttachments: boolean
+  watermark?: string
+  password?: string
+  emailDelivery?: {
+    recipients: string[]
+    subject: string
+    body: string
+  }
 }
 
 export interface QuoteLineItem {
