@@ -27,6 +27,9 @@ import { CRMImportExportSystem } from '@/components/shared/CRMImportExportSystem
 import { CRMHistoryTracker, useCRMHistory } from '@/components/shared/CRMHistoryTracker'
 import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { HolidayCalendarManager } from '@/components/HolidayCalendarManager'
+import { EmailIntegrationSystem } from '@/components/crm/email/EmailIntegrationSystem'
+import { CalendarSchedulingSystem } from '@/components/crm/calendar/CalendarSchedulingSystem'
+import { CommunicationIntegration } from '@/components/crm/CommunicationIntegration'
 import { RegionalBusinessRulesDemo } from '@/components/crm/RegionalBusinessRulesDemo'
 import { ComprehensiveLeadManagement } from '@/components/lead-management/ComprehensiveLeadManagement'
 import { LeadTimelineManager } from '@/components/lead-management/LeadTimelineManager'
@@ -123,6 +126,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
       icon: <Mail size={16} />,
       label: 'Send Email',
       action: () => {
+        setActiveTab('communication')
         toast.success('Email composer opened')
         // Would integrate with email system
       }
@@ -131,7 +135,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
       icon: <Video size={16} />,
       label: 'Schedule Meeting',
       action: () => {
-        setActiveTab('activities')
+        setActiveTab('communication')
         toast.success('Meeting scheduler opened')
       }
     },
@@ -410,6 +414,18 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
               <FileIcon size={16} />
               <span className="hidden sm:inline">Files</span>
             </TabsTrigger>
+            <TabsTrigger value="communication" className="flex items-center gap-2">
+              <Mail size={16} />
+              <span className="hidden sm:inline">Communication Hub</span>
+            </TabsTrigger>
+            <TabsTrigger value="email" className="flex items-center gap-2">
+              <Mail size={16} />
+              <span className="hidden sm:inline">Email</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar-scheduling" className="flex items-center gap-2">
+              <Calendar size={16} />
+              <span className="hidden sm:inline">Scheduling</span>
+            </TabsTrigger>
             <TabsTrigger value="calendar-integration" className="flex items-center gap-2">
               <Calendar size={16} />
               <span className="hidden sm:inline">Calendar</span>
@@ -643,6 +659,30 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="communication" className="space-y-6">
+          <CommunicationIntegration 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+          />
+        </TabsContent>
+
+        <TabsContent value="email" className="space-y-6">
+          <EmailIntegrationSystem 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+          />
+        </TabsContent>
+
+        <TabsContent value="calendar-scheduling" className="space-y-6">
+          <CalendarSchedulingSystem 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+          />
         </TabsContent>
 
         <TabsContent value="calendar-integration" className="space-y-6">
