@@ -29,6 +29,7 @@ import { DataVisualizationDashboard } from '@/components/DataVisualizationDashbo
 import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { WebhookManagementSystem } from '@/components/WebhookManagementSystem'
 import { CRMModule } from '@/components/CRMModule'
+import { SystemTestingSuite } from '@/components/SystemTestingSuite'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -43,7 +44,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple, UserCirclePlus, FlowArrow, GraduationCap, Calendar } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple, UserCirclePlus, FlowArrow, GraduationCap, Calendar, TestTube } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -219,6 +220,7 @@ function App() {
                  activeView === 'onboarding-workflows' ? 'Onboarding Workflow Builder' :
                  activeView === 'employee-onboarding' ? 'My Onboarding Progress' :
                  activeView === 'calendar' ? 'Smart Calendar Integration' :
+                 activeView === 'testing' ? 'System Testing Suite' :
                  'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
@@ -256,6 +258,8 @@ function App() {
                   ? 'Smart calendar integration with automated scheduling for onboarding meetings and deadlines'
                   : activeView === 'crm'
                   ? 'Comprehensive customer relationship management with lead tracking, deal pipeline, customer service, and regional business rules for quote approvals'
+                  : activeView === 'testing'
+                  ? 'Comprehensive system testing suite for validating all ERP components, features, and integrations'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -326,6 +330,10 @@ function App() {
                 <TabsTrigger value="crm" className="flex items-center gap-2">
                   <Users size={16} />
                   CRM
+                </TabsTrigger>
+                <TabsTrigger value="testing" className="flex items-center gap-2">
+                  <TestTube size={16} />
+                  System Testing
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -586,6 +594,13 @@ function App() {
               companyId={currentCompany.id}
               userId={mockUser.id}
               userRole="company_admin"
+            />
+          </TabsContent>
+
+          <TabsContent value="testing" className="space-y-6">
+            <SystemTestingSuite 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
             />
           </TabsContent>
         </Tabs>
