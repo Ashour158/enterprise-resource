@@ -30,6 +30,10 @@ import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { WebhookManagementSystem } from '@/components/WebhookManagementSystem'
 import { CRMModule } from '@/components/CRMModule'
 import { CRMProfileDemo } from '@/components/CRMProfileDemo'
+import { CRMClickableDataTest } from '@/components/CRMClickableDataTest'
+import { CRMWorkflowDemo } from '@/components/CRMWorkflowDemo'
+import { ClickableDataTestReport } from '@/components/ClickableDataTestReport'
+import { CRMProductivitySummary } from '@/components/CRMProductivitySummary'
 import { SystemTestingSuite } from '@/components/SystemTestingSuite'
 import { ClickableDataShowcase } from '@/components/shared/ClickableDataShowcase'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -263,6 +267,8 @@ function App() {
                   ? 'Comprehensive customer relationship management with lead tracking, deal pipeline, customer service, and regional business rules for quote approvals'
                   : activeView === 'crm-profiles'
                   ? 'Experience comprehensive full-page lead and contact profiles with AI insights, activity timelines, and collaborative team notes'
+                  : activeView === 'clickable-data'
+                  ? 'Test and analyze clickable data elements that enhance productivity across all CRM workflows with interactive demos, performance testing, and detailed analytics'
                   : activeView === 'testing'
                   ? 'Comprehensive system testing suite for validating all ERP components, features, and integrations'
                   : 'Manage access and switch between multiple companies'
@@ -346,7 +352,7 @@ function App() {
                 </TabsTrigger>
                 <TabsTrigger value="clickable-data" className="flex items-center gap-2">
                   <ChartLine size={16} />
-                  Clickable Data
+                  Clickable Data Test
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -618,10 +624,39 @@ function App() {
           </TabsContent>
 
           <TabsContent value="clickable-data" className="space-y-6">
-            <ClickableDataShowcase 
-              companyId={currentCompany.id}
-              userId={mockUser.id}
-            />
+            <Tabs defaultValue="summary" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="summary">Executive Summary</TabsTrigger>
+                <TabsTrigger value="workflow-demo">Interactive Demo</TabsTrigger>
+                <TabsTrigger value="performance-test">Performance Tests</TabsTrigger>
+                <TabsTrigger value="analytics-report">Analytics Report</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="summary">
+                <CRMProductivitySummary />
+              </TabsContent>
+              
+              <TabsContent value="workflow-demo">
+                <CRMWorkflowDemo 
+                  companyId={currentCompany.id}
+                  userId={mockUser.id}
+                />
+              </TabsContent>
+              
+              <TabsContent value="performance-test">
+                <CRMClickableDataTest 
+                  companyId={currentCompany.id}
+                  userId={mockUser.id}
+                />
+              </TabsContent>
+              
+              <TabsContent value="analytics-report">
+                <ClickableDataTestReport 
+                  companyId={currentCompany.id}
+                  userId={mockUser.id}
+                />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="testing" className="space-y-6">
