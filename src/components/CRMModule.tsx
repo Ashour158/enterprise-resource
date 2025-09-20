@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { CRMDashboard } from '@/components/crm/CRMDashboard'
 import { SalesReportingDashboard } from '@/components/crm/SalesReportingDashboard'
 import { ContactManagement } from '@/components/crm/ContactManagement'
@@ -15,6 +16,10 @@ import { AccountManagement } from '@/components/crm/AccountManagement'
 import { QuoteManagement } from '@/components/crm/QuoteManagement'
 import { ActivityManagement } from '@/components/crm/ActivityManagement'
 import { ForecastManagement } from '@/components/crm/ForecastManagement'
+import { FileAttachmentSystem } from '@/components/shared/FileAttachmentSystem'
+import { CRMImportExportSystem } from '@/components/shared/CRMImportExportSystem'
+import { CRMHistoryTracker, useCRMHistory } from '@/components/shared/CRMHistoryTracker'
+import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
 import { CRMAnalytics as CRMAnalyticsType, CRMSettings } from '@/types/crm'
 import { 
@@ -41,7 +46,10 @@ import {
   Receipt,
   PresentationChart,
   Export,
-  Download as Import
+  Download as Import,
+  Database,
+  ClockCounterClockwise as History,
+  File as FileIcon
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -61,6 +69,11 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
     overdueActivities: 0,
     openTickets: 0
   })
+  const [showImportExport, setShowImportExport] = useState(false)
+  const [selectedEntityForHistory, setSelectedEntityForHistory] = useState<{type?: string, id?: string}>({})
+
+  // Initialize CRM history tracking
+  const { addEntry: addHistoryEntry } = useCRMHistory(companyId, userId, 'Current User')
 
   // Simulated real-time updates
   useEffect(() => {
@@ -184,10 +197,32 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
 
   const handleScheduleMeeting = (entityId: string) => {
     // Integration with smart calendar
+    addHistoryEntry({
+      entityType: 'activity',
+      entityId: `meeting-${Date.now()}`,
+      entityName: 'Meeting Scheduled',
+      action: 'created',
+      description: `Meeting scheduled for entity ${entityId}`,
+      metadata: {
+        companyId,
+        relatedEntities: [{ type: 'lead', id: entityId, name: 'Related Entity' }]
+      }
+    })
     toast.success('Meeting scheduled and added to calendar')
   }
 
   const handleCreateDeal = (leadId: string) => {
+    addHistoryEntry({
+      entityType: 'deal',
+      entityId: `deal-${Date.now()}`,
+      entityName: 'New Deal from Lead',
+      action: 'created',
+      description: `Deal created from lead conversion`,
+      metadata: {
+        companyId,
+        relatedEntities: [{ type: 'lead', id: leadId, name: 'Converted Lead' }]
+      }
+    })
     setActiveTab('pipeline')
     toast.success('Lead converted to deal opportunity')
   }
@@ -320,17 +355,44 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
               <FileText size={16} />
               <span className="hidden sm:inline">Reports</span>
             </TabsTrigger>
+            <TabsTrigger value="files" className="flex items-center gap-2">
+              <FileIcon size={16} />
+              <span className="hidden sm:inline">Files</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar-integration" className="flex items-center gap-2">
+              <Calendar size={16} />
+              <span className="hidden sm:inline">Calendar</span>
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleBulkExport}>
+            <Button variant="outline" onClick={() => setShowImportExport(true)}>
               <Export size={16} className="mr-2" />
               Export All
             </Button>
-            <Button variant="outline" onClick={handleBulkImport}>
+            <Button variant="outline" onClick={() => setShowImportExport(true)}>
               <Import size={16} className="mr-2" />
               Import Data
             </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <History size={16} className="mr-2" />
+                  View History
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>CRM Activity History</DialogTitle>
+                </DialogHeader>
+                <CRMHistoryTracker
+                  companyId={companyId}
+                  userId={userId}
+                  entityType={selectedEntityForHistory.type as any}
+                  entityId={selectedEntityForHistory.id}
+                />
+              </DialogContent>
+            </Dialog>
             <Badge variant="outline" className="hidden sm:flex">
               Company: {companyId}
             </Badge>
@@ -427,7 +489,110 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             userRole={userRole}
           />
         </TabsContent>
+
+        <TabsContent value="files" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>CRM File Management</CardTitle>
+                <CardDescription>
+                  Centralized file storage for all CRM entities with smart categorization
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FileAttachmentSystem
+                  entityId="crm-global"
+                  entityType="account"
+                  companyId={companyId}
+                  userId={userId}
+                  allowedTypes={['*']}
+                  maxFileSize={50 * 1024 * 1024} // 50MB
+                  maxFiles={100}
+                  showPreview={true}
+                />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent CRM Activity</CardTitle>
+                <CardDescription>
+                  Track all changes and interactions across CRM entities
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CRMHistoryTracker
+                  companyId={companyId}
+                  userId={userId}
+                  showFilters={false}
+                  maxEntries={20}
+                  compact={true}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="calendar-integration" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <SmartCalendarIntegration
+                companyId={companyId}
+                userId={userId}
+                departmentId="sales"
+                onboardingEmployeeId={userId}
+              />
+            </div>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Calendar Integration</CardTitle>
+                  <CardDescription>
+                    Seamlessly sync CRM activities with your calendar
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-3 border rounded-lg">
+                    <h4 className="font-medium text-sm">Automatic Scheduling</h4>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Meetings, calls, and follow-ups are automatically scheduled based on CRM activities
+                    </p>
+                  </div>
+                  <div className="p-3 border rounded-lg">
+                    <h4 className="font-medium text-sm">Smart Reminders</h4>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Get intelligent reminders for important customer interactions
+                    </p>
+                  </div>
+                  <div className="p-3 border rounded-lg">
+                    <h4 className="font-medium text-sm">Team Coordination</h4>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Coordinate team activities and avoid scheduling conflicts
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* Import/Export Modal */}
+      {showImportExport && (
+        <Dialog open={showImportExport} onOpenChange={setShowImportExport}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>CRM Data Import/Export System</DialogTitle>
+            </DialogHeader>
+            <CRMImportExportSystem
+              companyId={companyId}
+              userId={userId}
+              userRole={userRole}
+              onClose={() => setShowImportExport(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
