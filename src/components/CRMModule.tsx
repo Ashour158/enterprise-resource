@@ -26,7 +26,7 @@ import { CRMHistoryTracker, useCRMHistory } from '@/components/shared/CRMHistory
 import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { HolidayCalendarManager } from '@/components/HolidayCalendarManager'
 import { RegionalBusinessRulesDemo } from '@/components/crm/RegionalBusinessRulesDemo'
-import { LeadManagementSystem } from '@/components/LeadManagementSystem'
+import { LeadManagementSystem } from '@/components/lead-management/LeadManagementSystem'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
 import { CRMAnalytics as CRMAnalyticsType, CRMSettings } from '@/types/crm'
 import { 
