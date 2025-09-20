@@ -21,6 +21,7 @@ import { PermissionInheritanceManager } from '@/components/PermissionInheritance
 import { SecurityDashboard } from '@/components/SecurityDashboard'
 import { BiometricAuthenticationSystem } from '@/components/BiometricAuthenticationSystem'
 import { APIManagementDashboard } from '@/components/APIManagementDashboard'
+import { DepartmentManagement } from '@/components/DepartmentManagement'
 import { DataVisualizationDashboard } from '@/components/DataVisualizationDashboard'
 import { WebhookManagementSystem } from '@/components/WebhookManagementSystem'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -208,7 +209,7 @@ function App() {
                  activeView === 'user-management' ? 'Advanced User Management' :
                  activeView === 'invitations' ? 'Company Invitations' :
                  activeView === 'biometric' ? 'Biometric Authentication' :
-                 activeView === 'webhooks' ? 'Webhook Management' :
+                 activeView === 'departments' ? 'Department Management' :
                  'Multi-Company Management'}
               </h1>
               <p className="text-muted-foreground">
@@ -264,6 +265,10 @@ function App() {
                 <TabsTrigger value="profile" className="flex items-center gap-2">
                   <User size={16} />
                   Profile
+                </TabsTrigger>
+                <TabsTrigger value="departments" className="flex items-center gap-2">
+                  <Buildings size={16} />
+                  Departments
                 </TabsTrigger>
                 <TabsTrigger value="companies" className="flex items-center gap-2">
                   <Buildings size={16} />
@@ -467,6 +472,14 @@ function App() {
 
           <TabsContent value="profile" className="space-y-6">
             <UserProfileManager userId={mockUser.id} />
+          </TabsContent>
+
+          <TabsContent value="departments" className="space-y-6">
+            <DepartmentManagement 
+              companyId={currentCompany.id} 
+              currentUserId={mockUser.id}
+              userRole="company_admin" // This would come from your RBAC system
+            />
           </TabsContent>
 
           <TabsContent value="companies" className="space-y-6">
