@@ -67,7 +67,7 @@ export interface Deal {
   description?: string
   value: number
   currency: string
-  stage: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
+  stage: string // Changed to string to support custom stages
   probability: number
   source: string
   type: 'new_business' | 'existing_business' | 'renewal' | 'upsell' | 'cross_sell'
@@ -91,6 +91,18 @@ export interface Deal {
   lastActivityDate?: string
   nextAction?: string
   nextActionDate?: string
+  // Additional pipeline-specific fields
+  stageChangedAt?: string
+  stageHistory: {
+    stage: string
+    changedAt: string
+    changedBy: string
+    reason?: string
+  }[]
+  temperature: 'cold' | 'warm' | 'hot'
+  forecast: boolean
+  estimatedRevenue: number
+  weightedValue: number
 }
 
 export interface Activity {
@@ -272,6 +284,55 @@ export interface CRMAnalytics {
   }[]
 }
 
+// Pipeline-specific types
+export interface PipelineStage {
+  id: string
+  name: string
+  order: number
+  probability: number
+  isActive: boolean
+  color: string
+  isWon: boolean
+  isLost: boolean
+  requirements?: string[]
+  exitCriteria?: string[]
+}
+
+export interface PipelineSettings {
+  stages: PipelineStage[]
+  autoMove: boolean
+  requireReason: boolean
+  forecastInclude: string[]
+}
+
+export interface DealPipeline {
+  id: string
+  companyId: string
+  name: string
+  description?: string
+  stages: PipelineStage[]
+  deals: Deal[]
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
+  createdBy: string
+}
+
+export interface PipelineMetrics {
+  totalValue: number
+  weightedValue: number
+  averageDealSize: number
+  conversionRate: number
+  averageSalesVelocity: number
+  stageMetrics: {
+    stageId: string
+    count: number
+    value: number
+    averageTimeInStage: number
+    conversionRate: number
+  }[]
+}
+
 export interface CRMSettings {
   companyId: string
   dealStages: {
@@ -281,6 +342,7 @@ export interface CRMSettings {
     probability: number
     isActive: boolean
   }[]
+  pipelineSettings: PipelineSettings
   leadSources: string[]
   industries: string[]
   accountTypes: string[]

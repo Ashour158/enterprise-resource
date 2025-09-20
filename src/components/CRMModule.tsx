@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CRMDashboard } from '@/components/crm/CRMDashboard'
 import { ContactManagement } from '@/components/crm/ContactManagement'
+import { DealPipeline } from '@/components/crm/DealPipeline'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
 import { CRMAnalytics as CRMAnalyticsType, CRMSettings } from '@/types/crm'
 import { 
@@ -309,15 +310,11 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         </TabsContent>
 
         <TabsContent value="pipeline" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Deal Pipeline</CardTitle>
-              <CardDescription>Manage sales opportunities and deal progression</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Deal pipeline interface will be implemented here.</p>
-            </CardContent>
-          </Card>
+          <DealPipeline 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+          />
         </TabsContent>
 
         <TabsContent value="activities" className="space-y-6">

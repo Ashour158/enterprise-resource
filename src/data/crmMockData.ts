@@ -93,6 +93,127 @@ export const mockContacts: Contact[] = [
     lastContactDate: '2024-01-22T13:45:00Z',
     nextFollowUpDate: '2024-01-26T10:00:00Z',
     notes: 'New startup, very interested but needs to see ROI data.'
+  },
+  {
+    id: 'contact-004',
+    companyId: 'comp-001',
+    firstName: 'Michael',
+    lastName: 'Chen',
+    email: 'michael.chen@globaltech.com',
+    phone: '+1-555-0456',
+    jobTitle: 'CTO',
+    department: 'Technology',
+    accountId: 'account-004',
+    leadSource: 'cold_call',
+    leadScore: 45,
+    status: 'prospect',
+    tags: ['enterprise', 'technical', 'decision-maker'],
+    socialProfiles: {
+      linkedin: 'https://linkedin.com/in/michaelchen-cto'
+    },
+    customFields: {
+      techFocus: 'Enterprise Architecture',
+      teamSize: 150,
+      budget: 'TBD'
+    },
+    createdAt: '2024-01-20T08:00:00Z',
+    updatedAt: '2024-01-22T10:30:00Z',
+    createdBy: 'user-002',
+    assignedTo: 'user-002',
+    lastContactDate: '2024-01-22T10:30:00Z',
+    nextFollowUpDate: '2024-01-26T15:00:00Z',
+    notes: 'Technical decision maker, interested in scalability and integration capabilities.'
+  },
+  {
+    id: 'contact-005',
+    companyId: 'comp-001',
+    firstName: 'Rachel',
+    lastName: 'Martinez',
+    email: 'rachel.martinez@startupflow.io',
+    phone: '+1-555-0567',
+    jobTitle: 'VP Operations',
+    department: 'Operations',
+    accountId: 'account-005',
+    leadSource: 'website',
+    leadScore: 78,
+    status: 'qualified',
+    tags: ['startup', 'operations', 'growth'],
+    socialProfiles: {
+      linkedin: 'https://linkedin.com/in/rachelmartinez-ops',
+      twitter: '@rachel_ops'
+    },
+    customFields: {
+      previousCRM: 'Spreadsheets',
+      urgency: 'High',
+      teamGrowth: '3x in 6 months'
+    },
+    createdAt: '2024-01-18T11:20:00Z',
+    updatedAt: '2024-01-23T09:45:00Z',
+    createdBy: 'user-003',
+    assignedTo: 'user-003',
+    lastContactDate: '2024-01-23T09:45:00Z',
+    nextFollowUpDate: '2024-01-25T14:00:00Z',
+    notes: 'Very motivated to move off spreadsheets. Ready to demo and move quickly.'
+  },
+  {
+    id: 'contact-006',
+    companyId: 'comp-001',
+    firstName: 'David',
+    lastName: 'Thompson',
+    email: 'david.thompson@midcorp.com',
+    phone: '+1-555-0678',
+    jobTitle: 'IT Director',
+    department: 'Information Technology',
+    accountId: 'account-006',
+    leadSource: 'referral',
+    leadScore: 92,
+    status: 'customer',
+    tags: ['customer', 'upgrade', 'expansion'],
+    socialProfiles: {
+      linkedin: 'https://linkedin.com/in/davidthompson-it'
+    },
+    customFields: {
+      currentPackage: 'Professional',
+      satisfactionScore: 8.5,
+      renewalDate: '2024-12-01'
+    },
+    createdAt: '2023-06-15T10:00:00Z',
+    updatedAt: '2024-01-14T16:30:00Z',
+    createdBy: 'user-002',
+    assignedTo: 'user-002',
+    lastContactDate: '2024-01-14T16:30:00Z',
+    nextFollowUpDate: '2024-02-01T09:00:00Z',
+    notes: 'Existing customer looking to upgrade due to team growth. Very satisfied with current service.'
+  },
+  {
+    id: 'contact-007',
+    companyId: 'comp-001',
+    firstName: 'Jennifer',
+    lastName: 'Banks',
+    email: 'jennifer.banks@regionalbank.com',
+    phone: '+1-555-0789',
+    jobTitle: 'VP Technology',
+    department: 'Technology',
+    accountId: 'account-007',
+    leadSource: 'referral',
+    leadScore: 25,
+    status: 'churned',
+    tags: ['banking', 'compliance', 'lost-deal'],
+    socialProfiles: {
+      linkedin: 'https://linkedin.com/in/jenniferbanks-vp'
+    },
+    customFields: {
+      complianceNeeds: 'SOX, Basel III',
+      decisionProcess: 'Committee',
+      competitorChosen: 'Salesforce Financial Services'
+    },
+    createdAt: '2023-11-15T09:00:00Z',
+    updatedAt: '2024-01-10T17:00:00Z',
+    createdBy: 'user-004',
+    assignedTo: 'user-004',
+    lastContactDate: '2024-01-10T17:00:00Z',
+    nextFollowUpDate: '2024-06-01T10:00:00Z',
+    notes: 'Lost deal due to compliance requirements. Chose Salesforce Financial Services. Keep for future opportunities.'
   }
 ]
 
@@ -195,6 +316,138 @@ export const mockAccounts: Account[] = [
     totalRevenue: 0,
     lastActivityDate: '2024-01-22T13:45:00Z',
     nextReviewDate: '2024-02-22T10:00:00Z'
+  },
+  {
+    id: 'account-004',
+    companyId: 'comp-001',
+    name: 'GlobalTech Solutions',
+    website: 'https://globaltech.com',
+    industry: 'Technology',
+    size: 'large',
+    revenue: 50000000,
+    employees: 1200,
+    address: {
+      street: '789 Enterprise Way',
+      city: 'Seattle',
+      state: 'WA',
+      country: 'USA',
+      zipCode: '98101'
+    },
+    phone: '+1-555-0400',
+    description: 'Enterprise technology solutions for global markets.',
+    accountType: 'prospect',
+    status: 'active',
+    owner: 'user-002',
+    tags: ['enterprise', 'technology', 'global'],
+    customFields: {
+      decisionMakers: 5,
+      currentSolution: 'Legacy System',
+      budgetApproved: false
+    },
+    createdAt: '2024-01-20T08:00:00Z',
+    updatedAt: '2024-01-22T10:30:00Z',
+    totalRevenue: 0,
+    lastActivityDate: '2024-01-22T10:30:00Z',
+    nextReviewDate: '2024-03-20T09:00:00Z'
+  },
+  {
+    id: 'account-005',
+    companyId: 'comp-001',
+    name: 'StartupFlow Inc',
+    website: 'https://startupflow.io',
+    industry: 'SaaS',
+    size: 'small',
+    revenue: 2000000,
+    employees: 45,
+    address: {
+      street: '321 Innovation Drive',
+      city: 'Palo Alto',
+      state: 'CA',
+      country: 'USA',
+      zipCode: '94301'
+    },
+    phone: '+1-555-0500',
+    description: 'B2B SaaS platform for workflow automation.',
+    accountType: 'prospect',
+    status: 'active',
+    owner: 'user-003',
+    tags: ['startup', 'saas', 'automation'],
+    customFields: {
+      fundingStage: 'Series A',
+      teamGrowth: '200% YoY',
+      techStack: 'Modern'
+    },
+    createdAt: '2024-01-18T11:20:00Z',
+    updatedAt: '2024-01-23T09:45:00Z',
+    totalRevenue: 0,
+    lastActivityDate: '2024-01-23T09:45:00Z',
+    nextReviewDate: '2024-02-18T14:00:00Z'
+  },
+  {
+    id: 'account-006',
+    companyId: 'comp-001',
+    name: 'MidCorp Industries',
+    website: 'https://midcorp.com',
+    industry: 'Manufacturing',
+    size: 'medium',
+    revenue: 25000000,
+    employees: 500,
+    address: {
+      street: '654 Industrial Blvd',
+      city: 'Detroit',
+      state: 'MI',
+      country: 'USA',
+      zipCode: '48201'
+    },
+    phone: '+1-555-0600',
+    description: 'Mid-size manufacturing company with nationwide operations.',
+    accountType: 'customer',
+    status: 'active',
+    owner: 'user-002',
+    tags: ['customer', 'manufacturing', 'upgrade'],
+    customFields: {
+      currentPackage: 'Professional',
+      yearlySpend: 50000,
+      satisfactionScore: 8.5
+    },
+    createdAt: '2023-06-15T10:00:00Z',
+    updatedAt: '2024-01-14T16:30:00Z',
+    totalRevenue: 150000,
+    lastActivityDate: '2024-01-14T16:30:00Z',
+    nextReviewDate: '2024-07-15T10:00:00Z'
+  },
+  {
+    id: 'account-007',
+    companyId: 'comp-001',
+    name: 'RegionalBank Corp',
+    website: 'https://regionalbank.com',
+    industry: 'Financial Services',
+    size: 'large',
+    revenue: 500000000,
+    employees: 2500,
+    address: {
+      street: '999 Financial Plaza',
+      city: 'Charlotte',
+      state: 'NC',
+      country: 'USA',
+      zipCode: '28202'
+    },
+    phone: '+1-555-0700',
+    description: 'Regional banking institution with strict compliance requirements.',
+    accountType: 'prospect',
+    status: 'inactive',
+    owner: 'user-004',
+    tags: ['banking', 'compliance', 'lost'],
+    customFields: {
+      complianceLevel: 'SOX, Basel III',
+      decisionTimeline: '6 months',
+      competitorChosen: 'Salesforce Financial'
+    },
+    createdAt: '2023-11-15T09:00:00Z',
+    updatedAt: '2024-01-10T17:00:00Z',
+    totalRevenue: 0,
+    lastActivityDate: '2024-01-10T17:00:00Z',
+    nextReviewDate: '2024-12-01T10:00:00Z'
   }
 ]
 
@@ -242,7 +495,32 @@ export const mockDeals: Deal[] = [
     updatedAt: '2024-01-20T14:45:00Z',
     lastActivityDate: '2024-01-18T09:15:00Z',
     nextAction: 'Send updated proposal with security addendum',
-    nextActionDate: '2024-01-25T10:00:00Z'
+    nextActionDate: '2024-01-25T10:00:00Z',
+    stageChangedAt: '2024-01-18T09:15:00Z',
+    stageHistory: [
+      {
+        stage: 'prospecting',
+        changedAt: '2024-01-15T10:30:00Z',
+        changedBy: 'user-002',
+        reason: 'Initial qualification'
+      },
+      {
+        stage: 'qualification',
+        changedAt: '2024-01-16T14:20:00Z',
+        changedBy: 'user-002',
+        reason: 'Budget confirmed'
+      },
+      {
+        stage: 'proposal',
+        changedAt: '2024-01-18T09:15:00Z',
+        changedBy: 'user-002',
+        reason: 'Proposal submitted'
+      }
+    ],
+    temperature: 'hot',
+    forecast: true,
+    estimatedRevenue: 250000,
+    weightedValue: 187500
   },
   {
     id: 'deal-002',
@@ -287,7 +565,306 @@ export const mockDeals: Deal[] = [
     updatedAt: '2024-01-20T11:15:00Z',
     lastActivityDate: '2024-01-19T11:00:00Z',
     nextAction: 'Finalize contract terms',
-    nextActionDate: '2024-01-24T14:00:00Z'
+    nextActionDate: '2024-01-24T14:00:00Z',
+    stageChangedAt: '2024-01-19T11:00:00Z',
+    stageHistory: [
+      {
+        stage: 'prospecting',
+        changedAt: '2024-01-05T14:20:00Z',
+        changedBy: 'user-003',
+        reason: 'Upsell opportunity identified'
+      },
+      {
+        stage: 'qualification',
+        changedAt: '2024-01-10T09:30:00Z',
+        changedBy: 'user-003',
+        reason: 'Requirements confirmed'
+      },
+      {
+        stage: 'proposal',
+        changedAt: '2024-01-15T16:45:00Z',
+        changedBy: 'user-003',
+        reason: 'Proposal accepted'
+      },
+      {
+        stage: 'negotiation',
+        changedAt: '2024-01-19T11:00:00Z',
+        changedBy: 'user-003',
+        reason: 'Contract negotiations started'
+      }
+    ],
+    temperature: 'hot',
+    forecast: true,
+    estimatedRevenue: 85000,
+    weightedValue: 76500
+  },
+  {
+    id: 'deal-003',
+    companyId: 'comp-001',
+    accountId: 'account-003',
+    contactId: 'contact-003',
+    name: 'GlobalTech CRM Implementation',
+    description: 'Full CRM system implementation with data migration',
+    value: 450000,
+    currency: 'USD',
+    stage: 'prospecting',
+    probability: 15,
+    source: 'Cold Outreach',
+    type: 'new_business',
+    closeDate: '2024-04-30T00:00:00Z',
+    owner: 'user-002',
+    team: ['user-002', 'user-004'],
+    competitors: ['Microsoft Dynamics', 'Zoho'],
+    products: [
+      {
+        id: 'prod-004',
+        name: 'Enterprise CRM Suite',
+        quantity: 1000,
+        unitPrice: 350,
+        discount: 0.1
+      },
+      {
+        id: 'prod-005',
+        name: 'Data Migration Service',
+        quantity: 1,
+        unitPrice: 100000,
+        discount: 0
+      }
+    ],
+    tags: ['enterprise', 'implementation', 'migration'],
+    customFields: {
+      currentProvider: 'Legacy System',
+      migrationComplexity: 'High',
+      decisionTimeframe: 'Q2 2024'
+    },
+    createdAt: '2024-01-20T08:00:00Z',
+    updatedAt: '2024-01-22T10:30:00Z',
+    lastActivityDate: '2024-01-22T10:30:00Z',
+    nextAction: 'Discovery call with IT team',
+    nextActionDate: '2024-01-26T15:00:00Z',
+    stageChangedAt: '2024-01-20T08:00:00Z',
+    stageHistory: [
+      {
+        stage: 'prospecting',
+        changedAt: '2024-01-20T08:00:00Z',
+        changedBy: 'user-002',
+        reason: 'Initial contact made'
+      }
+    ],
+    temperature: 'warm',
+    forecast: false,
+    estimatedRevenue: 450000,
+    weightedValue: 67500
+  },
+  {
+    id: 'deal-004',
+    companyId: 'comp-001',
+    accountId: 'account-004',
+    contactId: 'contact-004',
+    name: 'StartupFlow CRM License',
+    description: 'Small business CRM package for growing startup',
+    value: 25000,
+    currency: 'USD',
+    stage: 'qualification',
+    probability: 30,
+    source: 'Website',
+    type: 'new_business',
+    closeDate: '2024-03-01T00:00:00Z',
+    owner: 'user-003',
+    team: ['user-003'],
+    competitors: ['HubSpot', 'Pipedrive'],
+    products: [
+      {
+        id: 'prod-006',
+        name: 'Startup CRM Package',
+        quantity: 50,
+        unitPrice: 500,
+        discount: 0
+      }
+    ],
+    tags: ['startup', 'small-business', 'growth'],
+    customFields: {
+      companyStage: 'Series A',
+      growthRate: '200% YoY',
+      teamSize: '45'
+    },
+    createdAt: '2024-01-18T11:20:00Z',
+    updatedAt: '2024-01-23T09:45:00Z',
+    lastActivityDate: '2024-01-23T09:45:00Z',
+    nextAction: 'Product demo presentation',
+    nextActionDate: '2024-01-25T14:00:00Z',
+    stageChangedAt: '2024-01-23T09:45:00Z',
+    stageHistory: [
+      {
+        stage: 'prospecting',
+        changedAt: '2024-01-18T11:20:00Z',
+        changedBy: 'user-003',
+        reason: 'Inbound lead from website'
+      },
+      {
+        stage: 'qualification',
+        changedAt: '2024-01-23T09:45:00Z',
+        changedBy: 'user-003',
+        reason: 'Budget and timeline confirmed'
+      }
+    ],
+    temperature: 'hot',
+    forecast: true,
+    estimatedRevenue: 25000,
+    weightedValue: 7500
+  },
+  {
+    id: 'deal-005',
+    companyId: 'comp-001',
+    accountId: 'account-005',
+    contactId: 'contact-005',
+    name: 'MidCorp System Upgrade',
+    description: 'Upgrade from basic to enterprise package',
+    value: 150000,
+    currency: 'USD',
+    stage: 'closed_won',
+    probability: 100,
+    source: 'Existing Customer',
+    type: 'upsell',
+    closeDate: '2024-01-15T00:00:00Z',
+    actualCloseDate: '2024-01-14T00:00:00Z',
+    owner: 'user-002',
+    team: ['user-002', 'user-003'],
+    competitors: [],
+    products: [
+      {
+        id: 'prod-007',
+        name: 'Enterprise Upgrade Package',
+        quantity: 200,
+        unitPrice: 750,
+        discount: 0
+      }
+    ],
+    tags: ['upsell', 'existing-customer', 'closed-won'],
+    customFields: {
+      previousPackage: 'Professional',
+      upgradeReason: 'Team Growth',
+      satisfactionScore: 9
+    },
+    createdAt: '2024-01-01T10:00:00Z',
+    updatedAt: '2024-01-14T16:30:00Z',
+    lastActivityDate: '2024-01-14T16:30:00Z',
+    nextAction: 'Implementation kickoff',
+    nextActionDate: '2024-01-20T10:00:00Z',
+    stageChangedAt: '2024-01-14T16:30:00Z',
+    stageHistory: [
+      {
+        stage: 'prospecting',
+        changedAt: '2024-01-01T10:00:00Z',
+        changedBy: 'user-002',
+        reason: 'Upsell opportunity identified'
+      },
+      {
+        stage: 'qualification',
+        changedAt: '2024-01-03T14:00:00Z',
+        changedBy: 'user-002',
+        reason: 'Requirements confirmed'
+      },
+      {
+        stage: 'proposal',
+        changedAt: '2024-01-08T11:00:00Z',
+        changedBy: 'user-002',
+        reason: 'Proposal submitted'
+      },
+      {
+        stage: 'negotiation',
+        changedAt: '2024-01-12T15:30:00Z',
+        changedBy: 'user-002',
+        reason: 'Contract negotiations'
+      },
+      {
+        stage: 'closed_won',
+        changedAt: '2024-01-14T16:30:00Z',
+        changedBy: 'user-002',
+        reason: 'Contract signed'
+      }
+    ],
+    temperature: 'hot',
+    forecast: true,
+    estimatedRevenue: 150000,
+    weightedValue: 150000
+  },
+  {
+    id: 'deal-006',
+    companyId: 'comp-001',
+    accountId: 'account-006',
+    contactId: 'contact-006',
+    name: 'RegionalBank Integration',
+    description: 'Banking sector CRM with compliance features',
+    value: 750000,
+    currency: 'USD',
+    stage: 'closed_lost',
+    probability: 0,
+    source: 'Referral',
+    type: 'new_business',
+    closeDate: '2024-01-10T00:00:00Z',
+    actualCloseDate: '2024-01-10T00:00:00Z',
+    owner: 'user-004',
+    team: ['user-004', 'user-002'],
+    competitors: ['Salesforce Financial Services'],
+    products: [
+      {
+        id: 'prod-008',
+        name: 'Banking CRM Suite',
+        quantity: 1,
+        unitPrice: 750000,
+        discount: 0
+      }
+    ],
+    lossReason: 'Compliance requirements not met',
+    tags: ['banking', 'compliance', 'closed-lost'],
+    customFields: {
+      complianceLevel: 'SOX, Basel III',
+      integrationComplexity: 'Very High',
+      competitorChosen: 'Salesforce'
+    },
+    createdAt: '2023-11-15T09:00:00Z',
+    updatedAt: '2024-01-10T17:00:00Z',
+    lastActivityDate: '2024-01-10T17:00:00Z',
+    nextAction: 'Post-mortem analysis',
+    nextActionDate: '2024-01-15T10:00:00Z',
+    stageChangedAt: '2024-01-10T17:00:00Z',
+    stageHistory: [
+      {
+        stage: 'prospecting',
+        changedAt: '2023-11-15T09:00:00Z',
+        changedBy: 'user-004',
+        reason: 'Referral from partner'
+      },
+      {
+        stage: 'qualification',
+        changedAt: '2023-11-20T14:00:00Z',
+        changedBy: 'user-004',
+        reason: 'Initial requirements gathered'
+      },
+      {
+        stage: 'proposal',
+        changedAt: '2023-12-10T11:00:00Z',
+        changedBy: 'user-004',
+        reason: 'Detailed proposal submitted'
+      },
+      {
+        stage: 'negotiation',
+        changedAt: '2023-12-20T15:30:00Z',
+        changedBy: 'user-004',
+        reason: 'Compliance discussions ongoing'
+      },
+      {
+        stage: 'closed_lost',
+        changedAt: '2024-01-10T17:00:00Z',
+        changedBy: 'user-004',
+        reason: 'Unable to meet compliance requirements'
+      }
+    ],
+    temperature: 'cold',
+    forecast: false,
+    estimatedRevenue: 0,
+    weightedValue: 0
   }
 ]
 
@@ -536,6 +1113,19 @@ export const mockCRMSettings: CRMSettings = {
     { id: 'closed_won', name: 'Closed Won', order: 5, probability: 100, isActive: true },
     { id: 'closed_lost', name: 'Closed Lost', order: 6, probability: 0, isActive: true }
   ],
+  pipelineSettings: {
+    stages: [
+      { id: 'prospecting', name: 'Prospecting', order: 1, probability: 10, isActive: true, color: '#94A3B8', isWon: false, isLost: false },
+      { id: 'qualification', name: 'Qualification', order: 2, probability: 25, isActive: true, color: '#3B82F6', isWon: false, isLost: false },
+      { id: 'proposal', name: 'Proposal', order: 3, probability: 50, isActive: true, color: '#F59E0B', isWon: false, isLost: false },
+      { id: 'negotiation', name: 'Negotiation', order: 4, probability: 75, isActive: true, color: '#F97316', isWon: false, isLost: false },
+      { id: 'closed_won', name: 'Closed Won', order: 5, probability: 100, isActive: true, color: '#10B981', isWon: true, isLost: false },
+      { id: 'closed_lost', name: 'Closed Lost', order: 6, probability: 0, isActive: true, color: '#EF4444', isWon: false, isLost: true }
+    ],
+    autoMove: false,
+    requireReason: true,
+    forecastInclude: ['qualification', 'proposal', 'negotiation']
+  },
   leadSources: ['Website', 'Referral', 'Cold Call', 'Email', 'Social Media', 'Event', 'Partner', 'Other'],
   industries: ['Technology', 'Healthcare', 'Finance', 'Manufacturing', 'Retail', 'Education', 'Government', 'Other'],
   accountTypes: ['Prospect', 'Customer', 'Partner', 'Vendor', 'Competitor'],
