@@ -54,14 +54,30 @@ interface NotificationRule {
   name: string
   description: string
   isActive: boolean
-  triggerType: 'quote_pending' | 'approval_overdue' | 'escalation_due' | 'approval_timeout' | 'quote_rejected' | 'quote_approved'
+  triggerType: 'quote_pending' | 'approval_overdue' | 'escalation_due' | 'approval_timeout' | 'quote_rejected' | 'quote_approved' | 'quote_created' | 'quote_modified'
   conditions: {
-    quoteAmount?: { min?: number; max?: number }
+    quoteAmount?: { 
+      min?: number; 
+      max?: number;
+      currency?: string;
+      operator?: 'greater_than' | 'less_than' | 'between' | 'equals'
+    }
     approvalLevel?: string[]
     department?: string[]
     userRole?: string[]
+    customerType?: string[]
+    productCategory?: string[]
     timeThreshold: number // hours
     priority: 'low' | 'medium' | 'high' | 'critical'
+    businessHoursOnly?: boolean
+    excludeWeekends?: boolean
+    customTimeouts?: {
+      initial: number
+      reminder1: number
+      reminder2: number
+      escalation: number
+      final: number
+    }
   }
   notifications: NotificationChannel[]
   escalationChain: EscalationLevel[]
@@ -70,6 +86,8 @@ interface NotificationRule {
     intervals: number[] // hours
     maxReminders: number
     escalateOnMaxReminders: boolean
+    smartTiming: boolean // Adjust timing based on business hours
+    urgencyMultiplier: number // Speed up for high-value quotes
   }
   createdBy: string
   createdAt: Date
@@ -138,9 +156,21 @@ const mockNotificationRules: NotificationRule[] = [
     isActive: true,
     triggerType: 'approval_overdue',
     conditions: {
-      quoteAmount: { min: 50000 },
+      quoteAmount: { 
+        min: 50000,
+        operator: 'greater_than',
+        currency: 'USD'
+      },
       timeThreshold: 24,
-      priority: 'high'
+      priority: 'high',
+      businessHoursOnly: true,
+      customTimeouts: {
+        initial: 2,
+        reminder1: 12,
+        reminder2: 24,
+        escalation: 36,
+        final: 48
+      }
     },
     notifications: [
       {
@@ -192,7 +222,9 @@ const mockNotificationRules: NotificationRule[] = [
       enabled: true,
       intervals: [12, 24, 36],
       maxReminders: 3,
-      escalateOnMaxReminders: true
+      escalateOnMaxReminders: true,
+      smartTiming: true,
+      urgencyMultiplier: 1.5
     },
     createdBy: 'user-001',
     createdAt: new Date('2024-01-15'),
@@ -206,8 +238,22 @@ const mockNotificationRules: NotificationRule[] = [
     isActive: true,
     triggerType: 'quote_pending',
     conditions: {
+      quoteAmount: {
+        min: 1000,
+        max: 50000,
+        operator: 'between',
+        currency: 'USD'
+      },
       timeThreshold: 12,
-      priority: 'medium'
+      priority: 'medium',
+      businessHoursOnly: false,
+      customTimeouts: {
+        initial: 4,
+        reminder1: 24,
+        reminder2: 48,
+        escalation: 72,
+        final: 96
+      }
     },
     notifications: [
       {
@@ -225,7 +271,219 @@ const mockNotificationRules: NotificationRule[] = [
       enabled: true,
       intervals: [24, 48],
       maxReminders: 2,
-      escalateOnMaxReminders: false
+      escalateOnMaxReminders: false,
+      smartTiming: false,
+      urgencyMultiplier: 1.0
+    },
+    createdBy: 'user-001',
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-15')
+  },
+  {
+    id: 'rule-003',
+    companyId: 'comp-001',
+    name: 'Critical Enterprise Quotes',
+    description: 'Immediate escalation for enterprise quotes over $250,000',
+    isActive: true,
+    triggerType: 'quote_created',
+    conditions: {
+      quoteAmount: {
+        min: 250000,
+        operator: 'greater_than',
+        currency: 'USD'
+      },
+      customerType: ['enterprise'],
+      timeThreshold: 1,
+      priority: 'critical',
+      businessHoursOnly: false,
+      customTimeouts: {
+        initial: 1,
+        reminder1: 4,
+        reminder2: 8,
+        escalation: 12,
+        final: 16
+      }
+    },
+    notifications: [
+      {
+        id: 'notif-004',
+        type: 'email',
+        enabled: true,
+        config: {
+          template: 'enterprise_quote_alert',
+          priority: 'urgent'
+        }
+      },
+      {
+        id: 'notif-005',
+        type: 'sms',
+        enabled: true,
+        config: {
+          priority: 'urgent'
+        }
+      },
+      {
+        id: 'notif-006',
+        type: 'slack',
+        enabled: true,
+        config: {
+          channel: '#executive-alerts',
+          priority: 'urgent'
+        }
+      }
+    ],
+    escalationChain: [
+      {
+        id: 'esc-003',
+        order: 1,
+        name: 'VP Sales',
+        triggerAfterHours: 4,
+        escalateTo: [
+          { type: 'role', roleId: 'vp_sales' }
+        ],
+        notificationChannels: ['notif-004', 'notif-005'],
+        requiresAcknowledgment: true,
+        autoAssign: true
+      },
+      {
+        id: 'esc-004',
+        order: 2,
+        name: 'CEO',
+        triggerAfterHours: 12,
+        escalateTo: [
+          { type: 'role', roleId: 'ceo' }
+        ],
+        notificationChannels: ['notif-004', 'notif-005', 'notif-006'],
+        requiresAcknowledgment: true,
+        autoAssign: true
+      }
+    ],
+    reminderSettings: {
+      enabled: true,
+      intervals: [2, 4, 6],
+      maxReminders: 5,
+      escalateOnMaxReminders: true,
+      smartTiming: true,
+      urgencyMultiplier: 2.0
+    },
+    createdBy: 'user-001',
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-15')
+  },
+  {
+    id: 'rule-004',
+    companyId: 'comp-001',
+    name: 'Small Quote Fast Track',
+    description: 'Quick approval process for quotes under $5,000',
+    isActive: true,
+    triggerType: 'quote_pending',
+    conditions: {
+      quoteAmount: {
+        max: 5000,
+        operator: 'less_than',
+        currency: 'USD'
+      },
+      timeThreshold: 6,
+      priority: 'low',
+      businessHoursOnly: true,
+      customTimeouts: {
+        initial: 2,
+        reminder1: 6,
+        reminder2: 12,
+        escalation: 24,
+        final: 48
+      }
+    },
+    notifications: [
+      {
+        id: 'notif-007',
+        type: 'email',
+        enabled: true,
+        config: {
+          template: 'quick_approval_needed',
+          priority: 'normal'
+        }
+      }
+    ],
+    escalationChain: [
+      {
+        id: 'esc-005',
+        order: 1,
+        name: 'Team Lead',
+        triggerAfterHours: 12,
+        escalateTo: [
+          { type: 'role', roleId: 'team_lead' }
+        ],
+        notificationChannels: ['notif-007'],
+        requiresAcknowledgment: false,
+        autoAssign: true
+      }
+    ],
+    reminderSettings: {
+      enabled: true,
+      intervals: [6, 12],
+      maxReminders: 2,
+      escalateOnMaxReminders: true,
+      smartTiming: true,
+      urgencyMultiplier: 0.8
+    },
+    createdBy: 'user-001',
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-15')
+  },
+  {
+    id: 'rule-005',
+    companyId: 'comp-001',
+    name: 'Government Contract Timeouts',
+    description: 'Extended approval timeframes for government contracts',
+    isActive: true,
+    triggerType: 'approval_overdue',
+    conditions: {
+      customerType: ['government'],
+      timeThreshold: 72,
+      priority: 'medium',
+      businessHoursOnly: true,
+      excludeWeekends: true,
+      customTimeouts: {
+        initial: 8,
+        reminder1: 72,
+        reminder2: 120,
+        escalation: 168,
+        final: 240
+      }
+    },
+    notifications: [
+      {
+        id: 'notif-008',
+        type: 'email',
+        enabled: true,
+        config: {
+          template: 'government_contract_reminder',
+          priority: 'normal'
+        }
+      }
+    ],
+    escalationChain: [
+      {
+        id: 'esc-006',
+        order: 1,
+        name: 'Government Sales Specialist',
+        triggerAfterHours: 168,
+        escalateTo: [
+          { type: 'role', roleId: 'gov_sales_specialist' }
+        ],
+        notificationChannels: ['notif-008'],
+        requiresAcknowledgment: true,
+        autoAssign: false
+      }
+    ],
+    reminderSettings: {
+      enabled: true,
+      intervals: [72, 120, 168],
+      maxReminders: 3,
+      escalateOnMaxReminders: false,
+      smartTiming: true,
+      urgencyMultiplier: 0.7
     },
     createdBy: 'user-001',
     createdAt: new Date('2024-01-15'),
@@ -323,7 +581,9 @@ export function AutomatedNotificationSystem({ companyId, userId, userRole }: Aut
         enabled: true,
         intervals: [24],
         maxReminders: 2,
-        escalateOnMaxReminders: false
+        escalateOnMaxReminders: false,
+        smartTiming: true,
+        urgencyMultiplier: 1.0
       },
       createdBy: userId,
       createdAt: new Date(),
@@ -449,60 +709,437 @@ export function AutomatedNotificationSystem({ companyId, userId, userRole }: Aut
                 New Rule
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Notification Rule</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Rule Name</Label>
-                    <Input
-                      value={formData.name || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Enter rule name"
-                    />
-                  </div>
-                  <div>
-                    <Label>Trigger Type</Label>
-                    <Select
-                      value={formData.triggerType || ''}
-                      onValueChange={(value) => setFormData(prev => ({ 
-                        ...prev, 
-                        triggerType: value as NotificationRule['triggerType'] 
-                      }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select trigger" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="quote_pending">Quote Pending</SelectItem>
-                        <SelectItem value="approval_overdue">Approval Overdue</SelectItem>
-                        <SelectItem value="escalation_due">Escalation Due</SelectItem>
-                        <SelectItem value="approval_timeout">Approval Timeout</SelectItem>
-                        <SelectItem value="quote_rejected">Quote Rejected</SelectItem>
-                        <SelectItem value="quote_approved">Quote Approved</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label>Description</Label>
-                  <Textarea
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe when this rule should trigger"
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setShowRuleForm(false)}>
-                    Cancel
+              
+              {/* Quick Template Selection */}
+              <div className="mb-6">
+                <Label className="text-base font-semibold">Quick Templates</Label>
+                <p className="text-sm text-muted-foreground mb-3">Start with a pre-configured template</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-start"
+                    onClick={() => {
+                      setFormData({
+                        name: 'High Value Enterprise Quotes',
+                        triggerType: 'quote_created',
+                        description: 'Immediate attention for enterprise quotes over $100k',
+                        conditions: {
+                          quoteAmount: { min: 100000, operator: 'greater_than', currency: 'USD' },
+                          customerType: ['enterprise'],
+                          priority: 'critical',
+                          timeThreshold: 2,
+                          businessHoursOnly: false,
+                          customTimeouts: { initial: 1, reminder1: 4, reminder2: 8, escalation: 12, final: 24 }
+                        }
+                      })
+                    }}
+                  >
+                    <div className="font-medium">Enterprise Critical</div>
+                    <div className="text-xs text-muted-foreground">High-value immediate escalation</div>
                   </Button>
-                  <Button onClick={handleCreateRule}>
-                    Create Rule
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-start"
+                    onClick={() => {
+                      setFormData({
+                        name: 'Standard Business Quotes',
+                        triggerType: 'quote_pending',
+                        description: 'Regular reminders for business quotes',
+                        conditions: {
+                          quoteAmount: { min: 5000, max: 50000, operator: 'between', currency: 'USD' },
+                          priority: 'medium',
+                          timeThreshold: 24,
+                          businessHoursOnly: true,
+                          customTimeouts: { initial: 4, reminder1: 24, reminder2: 48, escalation: 72, final: 96 }
+                        }
+                      })
+                    }}
+                  >
+                    <div className="font-medium">Standard Business</div>
+                    <div className="text-xs text-muted-foreground">Regular approval workflow</div>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-start"
+                    onClick={() => {
+                      setFormData({
+                        name: 'Quick Approval Needed',
+                        triggerType: 'quote_pending',
+                        description: 'Fast track for small quotes',
+                        conditions: {
+                          quoteAmount: { max: 5000, operator: 'less_than', currency: 'USD' },
+                          priority: 'low',
+                          timeThreshold: 6,
+                          businessHoursOnly: true,
+                          customTimeouts: { initial: 2, reminder1: 6, reminder2: 12, escalation: 24, final: 48 }
+                        }
+                      })
+                    }}
+                  >
+                    <div className="font-medium">Small Quote Fast Track</div>
+                    <div className="text-xs text-muted-foreground">Quick approval for small amounts</div>
                   </Button>
                 </div>
               </div>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Rule Name</Label>
+                      <Input
+                        value={formData.name || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Enter rule name"
+                      />
+                    </div>
+                    <div>
+                      <Label>Trigger Type</Label>
+                      <Select
+                        value={formData.triggerType || ''}
+                        onValueChange={(value) => setFormData(prev => ({ 
+                          ...prev, 
+                          triggerType: value as NotificationRule['triggerType'] 
+                        }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select trigger" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="quote_pending">Quote Pending</SelectItem>
+                          <SelectItem value="approval_overdue">Approval Overdue</SelectItem>
+                          <SelectItem value="escalation_due">Escalation Due</SelectItem>
+                          <SelectItem value="approval_timeout">Approval Timeout</SelectItem>
+                          <SelectItem value="quote_rejected">Quote Rejected</SelectItem>
+                          <SelectItem value="quote_approved">Quote Approved</SelectItem>
+                          <SelectItem value="quote_created">Quote Created</SelectItem>
+                          <SelectItem value="quote_modified">Quote Modified</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Description</Label>
+                    <Textarea
+                      value={formData.description || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Describe when this rule should trigger"
+                    />
+                  </div>
+
+                  {/* Quote Value Conditions */}
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">Quote Value Conditions</Label>
+                    <div className="grid grid-cols-4 gap-3">
+                      <div>
+                        <Label className="text-sm">Operator</Label>
+                        <Select
+                          value={formData.conditions?.quoteAmount?.operator || 'greater_than'}
+                          onValueChange={(value) => setFormData(prev => ({
+                            ...prev,
+                            conditions: {
+                              ...prev.conditions,
+                              quoteAmount: {
+                                ...prev.conditions?.quoteAmount,
+                                operator: value as 'greater_than' | 'less_than' | 'between' | 'equals'
+                              }
+                            }
+                          }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="greater_than">Greater Than</SelectItem>
+                            <SelectItem value="less_than">Less Than</SelectItem>
+                            <SelectItem value="between">Between</SelectItem>
+                            <SelectItem value="equals">Equals</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm">Min Amount</Label>
+                        <Input
+                          type="number"
+                          value={formData.conditions?.quoteAmount?.min || ''}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            conditions: {
+                              ...prev.conditions,
+                              quoteAmount: {
+                                ...prev.conditions?.quoteAmount,
+                                min: Number(e.target.value)
+                              }
+                            }
+                          }))}
+                          placeholder="Minimum value"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Max Amount</Label>
+                        <Input
+                          type="number"
+                          value={formData.conditions?.quoteAmount?.max || ''}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            conditions: {
+                              ...prev.conditions,
+                              quoteAmount: {
+                                ...prev.conditions?.quoteAmount,
+                                max: Number(e.target.value)
+                              }
+                            }
+                          }))}
+                          placeholder="Maximum value"
+                          disabled={formData.conditions?.quoteAmount?.operator !== 'between'}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Currency</Label>
+                        <Select
+                          value={formData.conditions?.quoteAmount?.currency || 'USD'}
+                          onValueChange={(value) => setFormData(prev => ({
+                            ...prev,
+                            conditions: {
+                              ...prev.conditions,
+                              quoteAmount: {
+                                ...prev.conditions?.quoteAmount,
+                                currency: value
+                              }
+                            }
+                          }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="GBP">GBP</SelectItem>
+                            <SelectItem value="JPY">JPY</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Timeout Configuration */}
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">Timeout Configuration</Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-sm">Priority Level</Label>
+                        <Select
+                          value={formData.conditions?.priority || 'medium'}
+                          onValueChange={(value) => setFormData(prev => ({
+                            ...prev,
+                            conditions: {
+                              ...prev.conditions,
+                              priority: value as 'low' | 'medium' | 'high' | 'critical'
+                            }
+                          }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="critical">Critical</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm">Initial Timeout (hours)</Label>
+                        <Input
+                          type="number"
+                          value={formData.conditions?.timeThreshold || 24}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            conditions: {
+                              ...prev.conditions,
+                              timeThreshold: Number(e.target.value)
+                            }
+                          }))}
+                          placeholder="24"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 pt-6">
+                        <Switch
+                          checked={formData.conditions?.businessHoursOnly || false}
+                          onCheckedChange={(checked) => setFormData(prev => ({
+                            ...prev,
+                            conditions: {
+                              ...prev.conditions,
+                              businessHoursOnly: checked
+                            }
+                          }))}
+                        />
+                        <Label className="text-sm">Business Hours Only</Label>
+                      </div>
+                    </div>
+
+                    {/* Custom Timeout Configuration */}
+                    <div className="border rounded-lg p-4 space-y-3">
+                      <Label className="text-sm font-medium">Custom Timeout Stages</Label>
+                      <div className="grid grid-cols-5 gap-3">
+                        <div>
+                          <Label className="text-xs">Initial (hrs)</Label>
+                          <Input
+                            type="number"
+                            value={formData.conditions?.customTimeouts?.initial || 2}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              conditions: {
+                                ...prev.conditions,
+                                customTimeouts: {
+                                  ...prev.conditions?.customTimeouts,
+                                  initial: Number(e.target.value)
+                                }
+                              }
+                            }))}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Reminder 1 (hrs)</Label>
+                          <Input
+                            type="number"
+                            value={formData.conditions?.customTimeouts?.reminder1 || 24}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              conditions: {
+                                ...prev.conditions,
+                                customTimeouts: {
+                                  ...prev.conditions?.customTimeouts,
+                                  reminder1: Number(e.target.value)
+                                }
+                              }
+                            }))}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Reminder 2 (hrs)</Label>
+                          <Input
+                            type="number"
+                            value={formData.conditions?.customTimeouts?.reminder2 || 48}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              conditions: {
+                                ...prev.conditions,
+                                customTimeouts: {
+                                  ...prev.conditions?.customTimeouts,
+                                  reminder2: Number(e.target.value)
+                                }
+                              }
+                            }))}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Escalation (hrs)</Label>
+                          <Input
+                            type="number"
+                            value={formData.conditions?.customTimeouts?.escalation || 72}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              conditions: {
+                                ...prev.conditions,
+                                customTimeouts: {
+                                  ...prev.conditions?.customTimeouts,
+                                  escalation: Number(e.target.value)
+                                }
+                              }
+                            }))}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Final (hrs)</Label>
+                          <Input
+                            type="number"
+                            value={formData.conditions?.customTimeouts?.final || 96}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              conditions: {
+                                ...prev.conditions,
+                                customTimeouts: {
+                                  ...prev.conditions?.customTimeouts,
+                                  final: Number(e.target.value)
+                                }
+                              }
+                            }))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Filters */}
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">Additional Filters</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-sm">Customer Type</Label>
+                        <Select
+                          value={formData.conditions?.customerType?.[0] || 'all'}
+                          onValueChange={(value) => setFormData(prev => ({
+                            ...prev,
+                            conditions: {
+                              ...prev.conditions,
+                              customerType: value === 'all' ? undefined : [value]
+                            }
+                          }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All customer types" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Customer Types</SelectItem>
+                            <SelectItem value="enterprise">Enterprise</SelectItem>
+                            <SelectItem value="smb">Small/Medium Business</SelectItem>
+                            <SelectItem value="startup">Startup</SelectItem>
+                            <SelectItem value="government">Government</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm">Department</Label>
+                        <Select
+                          value={formData.conditions?.department?.[0] || 'all'}
+                          onValueChange={(value) => setFormData(prev => ({
+                            ...prev,
+                            conditions: {
+                              ...prev.conditions,
+                              department: value === 'all' ? undefined : [value]
+                            }
+                          }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All departments" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Departments</SelectItem>
+                            <SelectItem value="sales">Sales</SelectItem>
+                            <SelectItem value="marketing">Marketing</SelectItem>
+                            <SelectItem value="finance">Finance</SelectItem>
+                            <SelectItem value="operations">Operations</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setShowRuleForm(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateRule}>
+                      Create Rule
+                    </Button>
+                  </div>
+                </div>
             </DialogContent>
           </Dialog>
         </div>
@@ -570,6 +1207,7 @@ export function AutomatedNotificationSystem({ companyId, userId, userRole }: Aut
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="rules">Notification Rules</TabsTrigger>
+          <TabsTrigger value="analytics">Rule Performance</TabsTrigger>
           <TabsTrigger value="escalations">Escalation Chains</TabsTrigger>
           <TabsTrigger value="logs">Activity Logs</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
@@ -635,7 +1273,7 @@ export function AutomatedNotificationSystem({ companyId, userId, userRole }: Aut
                         <p className="text-sm text-muted-foreground">{rule.description}</p>
                       )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                           <Label className="text-xs font-medium">Trigger</Label>
                           <div className="flex items-center gap-2 mt-1">
@@ -644,8 +1282,36 @@ export function AutomatedNotificationSystem({ companyId, userId, userRole }: Aut
                           </div>
                         </div>
                         <div>
-                          <Label className="text-xs font-medium">Time Threshold</Label>
-                          <div className="text-sm mt-1">{rule.conditions.timeThreshold} hours</div>
+                          <Label className="text-xs font-medium">Quote Value</Label>
+                          <div className="text-sm mt-1">
+                            {rule.conditions.quoteAmount ? (
+                              <>
+                                {rule.conditions.quoteAmount.operator === 'greater_than' && 
+                                  `> ${rule.conditions.quoteAmount.currency || 'USD'} ${rule.conditions.quoteAmount.min?.toLocaleString()}`}
+                                {rule.conditions.quoteAmount.operator === 'less_than' && 
+                                  `< ${rule.conditions.quoteAmount.currency || 'USD'} ${rule.conditions.quoteAmount.max?.toLocaleString()}`}
+                                {rule.conditions.quoteAmount.operator === 'between' && 
+                                  `${rule.conditions.quoteAmount.currency || 'USD'} ${rule.conditions.quoteAmount.min?.toLocaleString()} - ${rule.conditions.quoteAmount.max?.toLocaleString()}`}
+                                {rule.conditions.quoteAmount.operator === 'equals' && 
+                                  `= ${rule.conditions.quoteAmount.currency || 'USD'} ${rule.conditions.quoteAmount.min?.toLocaleString()}`}
+                              </>
+                            ) : (
+                              'Any value'
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs font-medium">Timeout Strategy</Label>
+                          <div className="text-sm mt-1">
+                            {rule.conditions.customTimeouts ? (
+                              <div className="space-y-1">
+                                <div>Initial: {rule.conditions.customTimeouts.initial}h</div>
+                                <div>Escalation: {rule.conditions.customTimeouts.escalation}h</div>
+                              </div>
+                            ) : (
+                              `${rule.conditions.timeThreshold} hours`
+                            )}
+                          </div>
                         </div>
                         <div>
                           <Label className="text-xs font-medium">Channels</Label>
@@ -658,6 +1324,40 @@ export function AutomatedNotificationSystem({ companyId, userId, userRole }: Aut
                             ))}
                           </div>
                         </div>
+                      </div>
+
+                      {/* Advanced Configuration Display */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {rule.conditions.customerType && (
+                          <div>
+                            <Label className="text-xs font-medium">Customer Types</Label>
+                            <div className="flex gap-1 mt-1">
+                              {rule.conditions.customerType.map((type) => (
+                                <Badge key={type} variant="outline" className="text-xs">
+                                  {type}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {rule.conditions.businessHoursOnly && (
+                          <div>
+                            <Label className="text-xs font-medium">Business Hours</Label>
+                            <Badge variant="outline" className="mt-1">
+                              <Clock size={12} className="mr-1" />
+                              Business hours only
+                            </Badge>
+                          </div>
+                        )}
+                        {rule.reminderSettings.smartTiming && (
+                          <div>
+                            <Label className="text-xs font-medium">Smart Timing</Label>
+                            <Badge variant="outline" className="mt-1">
+                              <Brain size={12} className="mr-1" />
+                              Urgency: {rule.reminderSettings.urgencyMultiplier}x
+                            </Badge>
+                          </div>
+                        )}
                       </div>
 
                       {rule.reminderSettings.enabled && (
@@ -718,6 +1418,151 @@ export function AutomatedNotificationSystem({ companyId, userId, userRole }: Aut
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Rule Performance</CardTitle>
+                <CardDescription>
+                  How effective are your notification rules at driving approvals?
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {notificationRules && notificationRules.length > 0 ? (
+                    notificationRules.slice(0, 5).map((rule) => {
+                      const successRate = Math.floor(Math.random() * 40) + 60 // Mock 60-100%
+                      const avgResponseTime = Math.floor(Math.random() * 20) + 2 // Mock 2-22 hours
+                      const triggeredCount = Math.floor(Math.random() * 50) + 10 // Mock 10-60 times
+                      
+                      return (
+                        <div key={rule.id} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="font-medium">{rule.name}</div>
+                            <Badge variant={successRate > 80 ? "default" : successRate > 60 ? "secondary" : "destructive"}>
+                              {successRate}% success
+                            </Badge>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <div className="text-muted-foreground">Triggered</div>
+                              <div className="font-medium">{triggeredCount} times</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">Avg Response</div>
+                              <div className="font-medium">{avgResponseTime}h</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">Priority</div>
+                              <div>{getPriorityBadge(rule.conditions.priority)}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3">
+                            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                              <span>Approval Rate</span>
+                              <span>{successRate}%</span>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${
+                                  successRate > 80 ? 'bg-green-500' : 
+                                  successRate > 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${successRate}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="text-center py-8">
+                      <ChartLine size={48} className="mx-auto mb-4 text-muted-foreground" />
+                      <h3 className="text-lg font-semibold mb-2">No performance data</h3>
+                      <p className="text-muted-foreground">
+                        Analytics will appear once notification rules are triggered
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+                    <Card>
+              <CardHeader>
+                <CardTitle>Quote Value Impact</CardTitle>
+                <CardDescription>
+                  How quote values affect approval times and success rates
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="font-medium">Small Quotes (&lt; $5K)</div>
+                      <Badge variant="default">94% success</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="text-muted-foreground">Avg Approval Time</div>
+                        <div className="font-medium">4.2 hours</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Volume</div>
+                        <div className="font-medium">156 quotes</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="font-medium">Medium Quotes ($5K - $50K)</div>
+                      <Badge variant="secondary">78% success</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="text-muted-foreground">Avg Approval Time</div>
+                        <div className="font-medium">18.5 hours</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Volume</div>
+                        <div className="font-medium">89 quotes</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="font-medium">Large Quotes (&gt; $50K)</div>
+                      <Badge variant="destructive">65% success</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="text-muted-foreground">Avg Approval Time</div>
+                        <div className="font-medium">42.3 hours</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Volume</div>
+                        <div className="font-medium">34 quotes</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Alert>
+                    <Lightning className="h-4 w-4" />
+                    <AlertTitle>Optimization Suggestion</AlertTitle>
+                    <AlertDescription>
+                      Large quotes show slower approval rates. Consider reducing timeout thresholds or adding more aggressive escalation for quotes over $50K.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="escalations" className="space-y-4">
