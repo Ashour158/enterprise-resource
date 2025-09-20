@@ -1,1820 +1,654 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Slider } from '@/components/ui/slider'
-import { FileAttachmentSystem } from '@/components/shared/FileAttachmentSystem'
+import { EnhancedClickableDataTable, ClickableTableColumn, ClickableTableRow } from '@/components/shared/EnhancedClickableDataTable'
+import { ClickableDataElement, ClickableDataGroup } from '@/components/shared/ClickableDataElements'
 import { mockLeads } from '@/data/crmMockData'
-import { Lead, LeadStatus, LeadSource } from '@/types/crm'
+import { Lead } from '@/types/crm'
 import { 
   Plus, 
-  Pencil, 
-  Trash, 
   UserPlus, 
-  Phone, 
-  EnvelopeSimple as Mail, 
-  Calendar,
-  TrendUp,
-  MagnifyingGlass as Search,
-  Filter,
-  SortAscending as Sort,
-  Eye,
-  Star,
-  Target,
+  TrendUp, 
+  Star, 
+  Target, 
+  Brain, 
   Clock,
-  Activity,
-  CheckCircle,
-  XCircle,
-  Warning as AlertTriangle,
-  Brain,
-  Robot,
-  Lightbulb,
-  ChartLine,
-  ArrowRight,
-  Download,
-  Share,
-  Flag,
+  Phone,
+  EnvelopeSimple as Mail,
+  Calendar,
   MapPin,
-  Briefcase,
-  Globe,
-  Lightning,
-  Magic,
-  Sparkle,
-  ChatText,
-  PersonSimpleRun as PersonIcon,
   Buildings,
-  CurrencyDollar,
-  ThumbsUp,
-  ThumbsDown,
-  ClockCounterClockwise,
-  Confetti,
-  ShieldCheck,
-  Checks,
-  Timer,
-  CalendarX,
-  Warning as AlertTriangleIcon
+  ChartLine,
+  Warning,
+  CheckCircle
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { differenceInDays, format } from 'date-fns'
 
 interface EnhancedLeadManagementProps {
   companyId: string
   userId: string
   userRole: string
-  onScheduleMeeting?: (leadId: string) => void
-  onCreateDeal?: (leadId: string) => void
 }
 
-interface AIInsight {
-  id: string
-  type: 'prediction' | 'recommendation' | 'alert' | 'optimization'
-  title: string
-  description: string
-  confidence: number
-  actionable: boolean
-  action?: () => void
-  impact: 'high' | 'medium' | 'low'
-}
-
-interface LeadAIProfile {
-  buyingSignals: string[]
-  engagementScore: number
-  conversionProbability: number
-  nextBestAction: string
-  personalityProfile: string
-  communicationPreference: string
-  decisionMakerLikelihood: number
-  budgetProbability: number
-  timeframePrediction: string
-  competitorThreat: number
-  aiNotes: string[]
-}
-
-interface AgingAnalysis {
-  leadId: string
-  daysInPipeline: number
-  daysSinceLastContact: number
-  daysUntilNextFollowUp: number
-  agingCategory: 'new' | 'warm' | 'cold' | 'frozen' | 'stale'
-  riskLevel: 'low' | 'medium' | 'high' | 'critical'
-  recommendedAction: string
-  aiInsights: string[]
-  conversionProbability: number
-  urgencyScore: number
-}
-
-interface AgingRule {
-  id: string
-  name: string
-  description: string
-  category: 'new' | 'warm' | 'cold' | 'frozen' | 'stale'
-  minDays: number
-  maxDays: number
-  riskLevel: 'low' | 'medium' | 'high' | 'critical'
-  autoActions: string[]
-  notificationThreshold: number
-  isActive: boolean
-}
-
-export function EnhancedLeadManagement({ companyId, userId, userRole, onScheduleMeeting, onCreateDeal }: EnhancedLeadManagementProps) {
-  const [leads, setLeads] = useKV<Lead[]>(`enhanced-leads-${companyId}`, mockLeads)
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
-  const [viewMode, setViewMode] = useState<'table' | 'cards' | 'kanban'>('cards')
-  const [showLeadForm, setShowLeadForm] = useState(false)
-  const [showAIInsights, setShowAIInsights] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [sourceFilter, setSourceFilter] = useState('all')
-  const [scoreFilter, setScoreFilter] = useState([0, 100])
-  const [formData, setFormData] = useState<Partial<Lead>>({})
-  const [aiInsights, setAIInsights] = useState<AIInsight[]>([])
-  const [leadAIProfiles, setLeadAIProfiles] = useKV<Record<string, LeadAIProfile>>(`lead-ai-profiles-${companyId}`, {})
-  const [aiProcessing, setAIProcessing] = useState(false)
-  const [bulkOperations, setBulkOperations] = useState<string[]>([])
+export function EnhancedLeadManagement({ companyId, userId, userRole }: EnhancedLeadManagementProps) {
+  const [leads, setLeads] = useKV<Lead[]>(`leads-${companyId}`, mockLeads)
   
-  // Lead aging state
-  const [agingAnalyses, setAgingAnalyses] = useState<AgingAnalysis[]>([])
-  const [agingRules, setAgingRules] = useKV<AgingRule[]>(`aging-rules-${companyId}`, [
+  const safeLeads = leads || mockLeads
+
+  // Define table columns with clickable configuration
+  const columns: ClickableTableColumn[] = [
     {
-      id: 'rule-new',
-      name: 'New Leads',
-      description: 'Recently created leads requiring immediate attention',
-      category: 'new',
-      minDays: 0,
-      maxDays: 2,
-      riskLevel: 'medium',
-      autoActions: ['send_welcome_email', 'assign_to_rep'],
-      notificationThreshold: 1,
-      isActive: true
+      key: 'name',
+      label: 'Lead Name',
+      clickable: true,
+      sortable: true,
+      render: (value, row) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
+            <span className="text-xs font-medium text-primary">
+              {row.firstName?.[0]}{row.lastName?.[0]}
+            </span>
+          </div>
+          <div>
+            <ClickableDataElement
+              type="name"
+              value={`${row.firstName} ${row.lastName}`}
+              entityId={row.id}
+              entityType="lead"
+              companyId={companyId}
+              userId={userId}
+              className="font-medium hover:text-primary"
+            />
+            {row.jobTitle && (
+              <div className="text-xs text-muted-foreground">{row.jobTitle}</div>
+            )}
+          </div>
+        </div>
+      )
     },
     {
-      id: 'rule-warm',
-      name: 'Warm Leads', 
-      description: 'Engaged leads in active conversation',
-      category: 'warm',
-      minDays: 3,
-      maxDays: 14,
-      riskLevel: 'low',
-      autoActions: ['schedule_follow_up'],
-      notificationThreshold: 7,
-      isActive: true
+      key: 'company',
+      label: 'Company',
+      clickable: true,
+      sortable: true,
+      render: (value, row) => value ? (
+        <div className="flex items-center gap-2">
+          <Buildings size={14} className="text-muted-foreground" />
+          <ClickableDataElement
+            type="company"
+            value={value}
+            entityId={row.id}
+            entityType="lead"
+            companyId={companyId}
+            userId={userId}
+            className="text-sm"
+          />
+        </div>
+      ) : (
+        <span className="text-muted-foreground text-sm">No company</span>
+      )
     },
     {
-      id: 'rule-cold',
-      name: 'Cold Leads',
-      description: 'Leads with reduced engagement',
-      category: 'cold',
-      minDays: 15,
-      maxDays: 30,
-      riskLevel: 'medium',
-      autoActions: ['nurture_campaign', 'manager_review'],
-      notificationThreshold: 21,
-      isActive: true
+      key: 'contact',
+      label: 'Contact Info',
+      render: (value, row) => (
+        <div className="space-y-1">
+          {row.email && (
+            <div className="flex items-center gap-1">
+              <Mail size={12} className="text-muted-foreground" />
+              <ClickableDataElement
+                type="email"
+                value={row.email}
+                entityId={row.id}
+                entityType="lead"
+                companyId={companyId}
+                userId={userId}
+                className="text-xs"
+              />
+            </div>
+          )}
+          {row.phone && (
+            <div className="flex items-center gap-1">
+              <Phone size={12} className="text-muted-foreground" />
+              <ClickableDataElement
+                type="phone"
+                value={row.phone}
+                entityId={row.id}
+                entityType="lead"
+                companyId={companyId}
+                userId={userId}
+                className="text-xs"
+              />
+            </div>
+          )}
+        </div>
+      )
     },
     {
-      id: 'rule-frozen',
-      name: 'Frozen Leads',
-      description: 'Long-term prospects with minimal activity',
-      category: 'frozen',
-      minDays: 31,
-      maxDays: 90,
-      riskLevel: 'high',
-      autoActions: ['quarterly_review', 'special_offer'],
-      notificationThreshold: 60,
-      isActive: true
+      key: 'status',
+      label: 'Status',
+      type: 'status',
+      sortable: true,
+      filterable: true,
+      render: (value, row) => (
+        <Badge className={getStatusColor(value)}>
+          {value}
+        </Badge>
+      )
     },
     {
-      id: 'rule-stale',
-      name: 'Stale Leads',
-      description: 'Inactive leads requiring cleanup decision',
-      category: 'stale',
-      minDays: 91,
-      maxDays: 365,
-      riskLevel: 'critical',
-      autoActions: ['archive_review', 'final_attempt'],
-      notificationThreshold: 120,
-      isActive: true
-    }
-  ])
-
-  // AI-powered lead scoring and insights
-  useEffect(() => {
-    generateAIInsights()
-    updateLeadScores()
-    analyzeLeadAging()
-  }, [leads])
-
-  const generateAIInsights = async () => {
-    if (!leads?.length) return
-
-    setAIProcessing(true)
-    try {
-      // Simulate AI analysis
-      const insights: AIInsight[] = [
-        {
-          id: 'insight-1',
-          type: 'prediction',
-          title: 'High-Value Lead Identified',
-          description: `${leads.find(l => l.estimatedValue > 40000)?.firstName || 'John'} Smith shows 85% conversion probability based on engagement patterns`,
-          confidence: 85,
-          actionable: true,
-          action: () => setSelectedLead(leads.find(l => l.estimatedValue > 40000) || leads[0]),
-          impact: 'high'
-        },
-        {
-          id: 'insight-2',
-          type: 'recommendation',
-          title: 'Optimal Contact Time',
-          description: 'Tuesday 2-4 PM shows 40% higher response rates for enterprise leads',
-          confidence: 78,
-          actionable: true,
-          impact: 'medium'
-        },
-        {
-          id: 'insight-3',
-          type: 'alert',
-          title: 'Follow-up Required',
-          description: `${leads.filter(l => l.nextFollowUpDate && l.nextFollowUpDate < new Date()).length} leads need immediate follow-up`,
-          confidence: 100,
-          actionable: true,
-          impact: 'high'
-        },
-        {
-          id: 'insight-4',
-          type: 'optimization',
-          title: 'Email Subject Line Optimization',
-          description: 'Personalized subject lines increase open rates by 26% for your industry',
-          confidence: 92,
-          actionable: true,
-          impact: 'medium'
-        }
-      ]
-      setAIInsights(insights)
-    } catch (error) {
-      console.error('AI insights generation failed:', error)
-    } finally {
-      setAIProcessing(false)
-    }
-  }
-
-  const updateLeadScores = async () => {
-    if (!leads?.length) return
-
-    const updatedProfiles: Record<string, LeadAIProfile> = {}
-
-    leads.forEach(lead => {
-      // AI-generated lead profile
-      const profile: LeadAIProfile = {
-        buyingSignals: [
-          'Downloaded pricing guide',
-          'Visited enterprise features page',
-          'Opened 3+ emails'
-        ],
-        engagementScore: Math.floor(Math.random() * 40) + 60,
-        conversionProbability: Math.floor(Math.random() * 30) + 70,
-        nextBestAction: getNextBestAction(lead),
-        personalityProfile: getPersonalityProfile(),
-        communicationPreference: getCommunicationPreference(),
-        decisionMakerLikelihood: Math.floor(Math.random() * 40) + 60,
-        budgetProbability: Math.floor(Math.random() * 30) + 70,
-        timeframePrediction: getTimeframePrediction(),
-        competitorThreat: Math.floor(Math.random() * 50) + 25,
-        aiNotes: [
-          'Shows strong buying intent based on website behavior',
-          'Company is in growth phase - good timing',
-          'Previous interactions suggest price sensitivity'
-        ]
-      }
-      updatedProfiles[lead.id] = profile
-    })
-
-    setLeadAIProfiles(updatedProfiles)
-  }
-
-  const getNextBestAction = (lead: Lead): string => {
-    const actions = [
-      'Send personalized demo invitation',
-      'Schedule discovery call',
-      'Share case study relevant to their industry',
-      'Send competitive comparison guide',
-      'Follow up on pricing discussion'
-    ]
-    return actions[Math.floor(Math.random() * actions.length)]
-  }
-
-  const getPersonalityProfile = (): string => {
-    const profiles = [
-      'Analytical - prefers data-driven decisions',
-      'Relationship-focused - values trust and connection',
-      'Results-oriented - focuses on ROI and outcomes',
-      'Innovation-driven - interested in cutting-edge solutions'
-    ]
-    return profiles[Math.floor(Math.random() * profiles.length)]
-  }
-
-  const getCommunicationPreference = (): string => {
-    const preferences = ['Email', 'Phone calls', 'Video meetings', 'In-person meetings', 'Text messages']
-    return preferences[Math.floor(Math.random() * preferences.length)]
-  }
-
-  const getTimeframePrediction = (): string => {
-    const timeframes = ['0-30 days', '1-3 months', '3-6 months', '6+ months']
-    return timeframes[Math.floor(Math.random() * timeframes.length)]
-  }
-
-  const generateAIRecommendation = async (leadId: string) => {
-    const lead = leads?.find(l => l.id === leadId)
-    if (!lead) return
-
-    const prompt = spark.llmPrompt`
-    Analyze this lead and provide personalized recommendations:
-    
-    Lead: ${lead.firstName} ${lead.lastName}
-    Company: ${lead.company}
-    Title: ${lead.title}
-    Source: ${lead.source}
-    Current Score: ${lead.score}
-    Estimated Value: $${lead.estimatedValue}
-    Notes: ${lead.notes}
-    
-    Provide specific recommendations for:
-    1. Next best action
-    2. Email subject line
-    3. Meeting talking points
-    4. Potential objections to prepare for
-    `
-
-    try {
-      setAIProcessing(true)
-      const recommendation = await spark.llm(prompt, 'gpt-4o-mini')
-      
-      toast.success('AI recommendation generated', {
-        description: 'Check the AI insights panel for detailed recommendations',
-        action: {
-          label: 'View',
-          onClick: () => setShowAIInsights(true)
-        }
-      })
-
-      // Add to AI insights
-      setAIInsights(prev => [...prev, {
-        id: `rec-${Date.now()}`,
-        type: 'recommendation',
-        title: `AI Recommendation for ${lead.firstName} ${lead.lastName}`,
-        description: recommendation.slice(0, 150) + '...',
-        confidence: 88,
-        actionable: true,
-        impact: 'high'
-      }])
-    } catch (error) {
-      toast.error('Failed to generate AI recommendation')
-    } finally {
-      setAIProcessing(false)
-    }
-  }
-
-  const generateLeadEmail = async (leadId: string, type: 'follow-up' | 'introduction' | 'demo') => {
-    const lead = leads?.find(l => l.id === leadId)
-    if (!lead) return
-
-    const prompt = spark.llmPrompt`
-    Generate a personalized ${type} email for this lead:
-    
-    Lead: ${lead.firstName} ${lead.lastName}
-    Company: ${lead.company}
-    Title: ${lead.title}
-    Industry: ${lead.customFields?.industry || 'Unknown'}
-    Notes: ${lead.notes}
-    
-    Write a professional, engaging email that:
-    1. Addresses their specific needs
-    2. References their industry context
-    3. Includes a clear call-to-action
-    4. Maintains a conversational tone
-    
-    Include subject line and email body.
-    `
-
-    try {
-      setAIProcessing(true)
-      const emailContent = await spark.llm(prompt, 'gpt-4o-mini')
-      
-      // In real implementation, this would open email composer
-      toast.success('AI-generated email ready', {
-        description: 'Email draft has been created with personalized content',
-        action: {
-          label: 'Copy',
-          onClick: () => navigator.clipboard.writeText(emailContent)
-        }
-      })
-    } catch (error) {
-      toast.error('Failed to generate email content')
-    } finally {
-      setAIProcessing(false)
-    }
-  }
-
-  const predictLeadConversion = async (leadId: string) => {
-    const lead = leads?.find(l => l.id === leadId)
-    const profile = leadAIProfiles[leadId]
-    if (!lead || !profile) return
-
-    const factors = {
-      score: lead.score,
-      engagementScore: profile.engagementScore,
-      estimatedValue: lead.estimatedValue,
-      source: lead.source,
-      daysSinceCreated: Math.floor((new Date().getTime() - lead.createdAt.getTime()) / (1000 * 60 * 60 * 24))
-    }
-
-    // Simulate ML prediction
-    const prediction = Math.min(95, Math.max(15, 
-      (factors.score * 0.3) + 
-      (factors.engagementScore * 0.25) +
-      (factors.estimatedValue > 30000 ? 15 : 5) +
-      (factors.source === 'Referral' ? 20 : 10) -
-      (factors.daysSinceCreated > 30 ? 10 : 0)
-    ))
-
-    toast.success(`Conversion Probability: ${prediction.toFixed(1)}%`, {
-      description: `Based on AI analysis of engagement patterns and lead characteristics`
-    })
-
-    return prediction
-  }
-
-  // Lead Aging Analysis Functions
-  const analyzeLeadAging = async () => {
-    if (!leads?.length) return
-
-    const now = new Date()
-    const analyses: AgingAnalysis[] = []
-
-    for (const lead of leads) {
-      const daysInPipeline = differenceInDays(now, lead.createdAt)
-      const daysSinceLastContact = lead.lastContactDate 
-        ? differenceInDays(now, lead.lastContactDate)
-        : daysInPipeline
-      const daysUntilNextFollowUp = lead.nextFollowUpDate
-        ? differenceInDays(lead.nextFollowUpDate, now)
-        : 0
-
-      // Determine aging category based on rules
-      const agingCategory = determineAgingCategory(daysInPipeline, daysSinceLastContact)
-      const riskLevel = determineRiskLevel(agingCategory, daysSinceLastContact, lead)
-      
-      // Generate AI insights
-      const aiInsights = await generateAgingInsights(lead, daysInPipeline, daysSinceLastContact)
-      
-      // Calculate conversion probability based on aging
-      const conversionProbability = calculateConversionProbability(lead, daysInPipeline, daysSinceLastContact)
-      
-      // Calculate urgency score
-      const urgencyScore = calculateUrgencyScore(lead, daysInPipeline, daysSinceLastContact, riskLevel)
-
-      const analysis: AgingAnalysis = {
-        leadId: lead.id,
-        daysInPipeline,
-        daysSinceLastContact,
-        daysUntilNextFollowUp,
-        agingCategory,
-        riskLevel,
-        recommendedAction: getRecommendedAction(agingCategory, riskLevel, lead),
-        aiInsights,
-        conversionProbability,
-        urgencyScore
-      }
-
-      analyses.push(analysis)
-    }
-
-    setAgingAnalyses(analyses)
-  }
-
-  const determineAgingCategory = (daysInPipeline: number, daysSinceLastContact: number): AgingAnalysis['agingCategory'] => {
-    const relevantDays = Math.max(daysInPipeline, daysSinceLastContact)
-    
-    if (relevantDays <= 2) return 'new'
-    if (relevantDays <= 14) return 'warm'
-    if (relevantDays <= 30) return 'cold'
-    if (relevantDays <= 90) return 'frozen'
-    return 'stale'
-  }
-
-  const determineRiskLevel = (category: AgingAnalysis['agingCategory'], daysSinceLastContact: number, lead: Lead): AgingAnalysis['riskLevel'] => {
-    const rule = agingRules.find(r => r.category === category)
-    if (!rule) return 'medium'
-
-    // Adjust risk based on lead value and engagement
-    let adjustedRisk = rule.riskLevel
-    
-    if (lead.estimatedValue > 50000 && daysSinceLastContact > 7) {
-      adjustedRisk = adjustedRisk === 'low' ? 'medium' : adjustedRisk === 'medium' ? 'high' : 'critical'
-    }
-    
-    if (lead.score > 80 && daysSinceLastContact > 5) {
-      adjustedRisk = adjustedRisk === 'low' ? 'medium' : 'high'
-    }
-
-    return adjustedRisk
-  }
-
-  const generateAgingInsights = async (lead: Lead, daysInPipeline: number, daysSinceLastContact: number): Promise<string[]> => {
-    try {
-      const prompt = spark.llmPrompt`
-      Analyze this lead's aging pattern and provide insights:
-      
-      Lead: ${lead.firstName} ${lead.lastName} at ${lead.company}
-      Days in pipeline: ${daysInPipeline}
-      Days since last contact: ${daysSinceLastContact}
-      Lead score: ${lead.score}
-      Estimated value: $${lead.estimatedValue}
-      Current status: ${lead.status}
-      Source: ${lead.source}
-      
-      Provide 2-3 specific insights about:
-      1. Risk factors
-      2. Opportunity indicators
-      3. Recommended timing for next contact
-      
-      Keep each insight under 50 words.
-      `
-
-      const response = await spark.llm(prompt, 'gpt-4o-mini')
-      return response.split('\n').filter(line => line.trim()).slice(0, 3)
-    } catch (error) {
-      return [
-        'Consider immediate follow-up due to aging',
-        'Review engagement history for patterns',
-        'Assess if lead criteria still match'
-      ]
-    }
-  }
-
-  const calculateConversionProbability = (lead: Lead, daysInPipeline: number, daysSinceLastContact: number): number => {
-    let baseProbability = lead.score * 0.8 // Start with lead score
-
-    // Adjust for aging
-    if (daysInPipeline <= 7) baseProbability += 10 // Fresh leads
-    else if (daysInPipeline <= 30) baseProbability += 5
-    else if (daysInPipeline <= 60) baseProbability -= 5
-    else baseProbability -= 15 // Old leads
-
-    // Adjust for contact recency
-    if (daysSinceLastContact <= 3) baseProbability += 15
-    else if (daysSinceLastContact <= 7) baseProbability += 5
-    else if (daysSinceLastContact <= 14) baseProbability -= 5
-    else baseProbability -= 10
-
-    // Adjust for lead value
-    if (lead.estimatedValue > 50000) baseProbability += 10
-    else if (lead.estimatedValue > 20000) baseProbability += 5
-
-    // Adjust for source quality
-    if (lead.source === 'Referral') baseProbability += 15
-    else if (lead.source === 'Website') baseProbability += 10
-    else if (lead.source === 'LinkedIn') baseProbability += 5
-
-    return Math.max(5, Math.min(95, baseProbability))
-  }
-
-  const calculateUrgencyScore = (lead: Lead, daysInPipeline: number, daysSinceLastContact: number, riskLevel: string): number => {
-    let urgency = 0
-
-    // Base urgency on aging
-    urgency += Math.min(50, daysInPipeline * 2)
-    urgency += Math.min(30, daysSinceLastContact * 3)
-
-    // Adjust for risk level
-    const riskMultiplier = {
-      'low': 0.8,
-      'medium': 1.0,
-      'high': 1.3,
-      'critical': 1.6
-    }
-    urgency *= riskMultiplier[riskLevel as keyof typeof riskMultiplier]
-
-    // Adjust for lead value
-    if (lead.estimatedValue > 50000) urgency *= 1.4
-    else if (lead.estimatedValue > 20000) urgency *= 1.2
-
-    // Adjust for lead score
-    if (lead.score > 80) urgency *= 1.3
-    else if (lead.score > 60) urgency *= 1.1
-
-    return Math.min(100, Math.max(0, urgency))
-  }
-
-  const getRecommendedAction = (category: AgingAnalysis['agingCategory'], riskLevel: AgingAnalysis['riskLevel'], lead: Lead): string => {
-    const actions = {
-      new: {
-        low: 'Schedule introduction call within 24 hours',
-        medium: 'Send personalized welcome email immediately',
-        high: 'Assign to senior rep for immediate contact',
-        critical: 'Priority assignment with same-day contact'
-      },
-      warm: {
-        low: 'Continue regular follow-up sequence',
-        medium: 'Schedule product demo or consultation',
-        high: 'Escalate to manager for review',
-        critical: 'Immediate intervention required'
-      },
-      cold: {
-        low: 'Re-engage with value-added content',
-        medium: 'Personal outreach with specific offer',
-        high: 'Multi-channel re-engagement campaign',
-        critical: 'Executive involvement in outreach'
-      },
-      frozen: {
-        low: 'Add to long-term nurture sequence',
-        medium: 'Quarterly check-in with industry updates',
-        high: 'Special promotion or event invitation',
-        critical: 'Final qualification attempt before archiving'
-      },
-      stale: {
-        low: 'Archive with periodic newsletter inclusion',
-        medium: 'One final personalized attempt',
-        high: 'Manager review for archive decision',
-        critical: 'Immediate archive or final executive outreach'
-      }
-    }
-
-    return actions[category][riskLevel] || 'Review and determine next steps'
-  }
-
-  const generateAIActionPlan = async (analysis: AgingAnalysis) => {
-    const lead = leads?.find(l => l.id === analysis.leadId)
-    if (!lead) return
-
-    setAIProcessing(true)
-    try {
-      const prompt = spark.llmPrompt`
-      Create a detailed action plan for this aging lead:
-      
-      Lead: ${lead.firstName} ${lead.lastName}
-      Aging Category: ${analysis.agingCategory}
-      Risk Level: ${analysis.riskLevel}
-      Days in Pipeline: ${analysis.daysInPipeline}
-      Days Since Contact: ${analysis.daysSinceLastContact}
-      Conversion Probability: ${analysis.conversionProbability}%
-      
-      Create a 3-step action plan with:
-      1. Immediate action (next 24-48 hours)
-      2. Short-term strategy (next week)
-      3. Long-term approach (next month)
-      
-      Include specific messaging suggestions and timing.
-      `
-
-      const actionPlan = await spark.llm(prompt, 'gpt-4o-mini')
-      
-      toast.success('AI Action Plan Generated', {
-        description: 'Detailed recommendations created',
-        action: {
-          label: 'Copy',
-          onClick: () => navigator.clipboard.writeText(actionPlan)
-        }
-      })
-    } catch (error) {
-      toast.error('Failed to generate action plan')
-    } finally {
-      setAIProcessing(false)
-    }
-  }
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'new': return 'bg-green-100 text-green-800 border-green-200'
-      case 'warm': return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'cold': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'frozen': return 'bg-orange-100 text-orange-800 border-orange-200'
-      case 'stale': return 'bg-red-100 text-red-800 border-red-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case 'low': return 'text-green-600'
-      case 'medium': return 'text-yellow-600'
-      case 'high': return 'text-orange-600'
-      case 'critical': return 'text-red-600'
-      default: return 'text-gray-600'
-    }
-  }
-
-  const filteredLeads = (leads || []).filter(lead => {
-    const matchesSearch = 
-      lead.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.company.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = statusFilter === 'all' || lead.status === statusFilter
-    const matchesSource = sourceFilter === 'all' || lead.source === sourceFilter
-    const matchesScore = lead.score >= scoreFilter[0] && lead.score <= scoreFilter[1]
-    
-    return matchesSearch && matchesStatus && matchesSource && matchesScore
-  })
-
-  const handleBulkAction = (action: string) => {
-    if (bulkOperations.length === 0) {
-      toast.error('Please select leads first')
-      return
-    }
-
-    switch (action) {
-      case 'qualify':
-        setLeads(current => 
-          current?.map(lead => 
-            bulkOperations.includes(lead.id) 
-              ? { ...lead, status: 'qualified' as LeadStatus, updatedAt: new Date() }
-              : lead
-          ) || []
+      key: 'priority',
+      label: 'Priority',
+      sortable: true,
+      filterable: true,
+      render: (value, row) => (
+        <div className="flex items-center gap-1">
+          {getPriorityIcon(value)}
+          <span className="text-sm capitalize">{value}</span>
+        </div>
+      )
+    },
+    {
+      key: 'leadScore',
+      label: 'AI Score',
+      type: 'number',
+      sortable: true,
+      render: (value, row) => (
+        <div className="flex items-center gap-2">
+          <Brain size={14} className="text-primary" />
+          <span className={`font-semibold ${getScoreColor(value)}`}>
+            {value}
+          </span>
+          <div className="flex">
+            {Array.from({ length: 5 }, (_, i) => (
+              <Star
+                key={i}
+                size={10}
+                className={i < Math.floor(value / 20) ? 'text-yellow-400 fill-current' : 'text-gray-300'}
+              />
+            ))}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'estimatedValue',
+      label: 'Est. Value',
+      type: 'currency',
+      clickable: true,
+      sortable: true,
+      render: (value, row) => value ? (
+        <ClickableDataElement
+          type="currency"
+          value={value.toString()}
+          displayValue={`$${value.toLocaleString()}`}
+          entityId={row.id}
+          entityType="lead"
+          companyId={companyId}
+          userId={userId}
+          className="font-medium text-green-600"
+        />
+      ) : (
+        <span className="text-muted-foreground text-sm">Not set</span>
+      )
+    },
+    {
+      key: 'source',
+      label: 'Source',
+      sortable: true,
+      filterable: true,
+      render: (value, row) => (
+        <Badge variant="outline" className="text-xs">
+          {value}
+        </Badge>
+      )
+    },
+    {
+      key: 'nextFollowUp',
+      label: 'Next Follow-up',
+      type: 'date',
+      clickable: true,
+      sortable: true,
+      render: (value, row) => {
+        if (!value) return <span className="text-muted-foreground text-sm">Not scheduled</span>
+        
+        const followUpDate = new Date(value)
+        const isOverdue = followUpDate < new Date()
+        const isToday = followUpDate.toDateString() === new Date().toDateString()
+        
+        return (
+          <div className="flex items-center gap-1">
+            <Calendar size={12} className={isOverdue ? 'text-red-500' : isToday ? 'text-orange-500' : 'text-muted-foreground'} />
+            <ClickableDataElement
+              type="date"
+              value={value}
+              displayValue={followUpDate.toLocaleDateString()}
+              entityId={row.id}
+              entityType="lead"
+              companyId={companyId}
+              userId={userId}
+              className={`text-xs ${isOverdue ? 'text-red-600 font-medium' : isToday ? 'text-orange-600 font-medium' : ''}`}
+            />
+            {isOverdue && <Warning size={12} className="text-red-500" />}
+            {isToday && <Clock size={12} className="text-orange-500" />}
+          </div>
         )
-        toast.success(`${bulkOperations.length} leads qualified`)
+      }
+    },
+    {
+      key: 'tags',
+      label: 'Tags',
+      render: (value, row) => value && value.length > 0 ? (
+        <div className="flex flex-wrap gap-1">
+          {value.slice(0, 2).map((tag: string, index: number) => (
+            <ClickableDataElement
+              key={index}
+              type="tag"
+              value={tag}
+              entityId={row.id}
+              entityType="lead"
+              companyId={companyId}
+              userId={userId}
+            />
+          ))}
+          {value.length > 2 && (
+            <Badge variant="outline" className="text-xs">
+              +{value.length - 2}
+            </Badge>
+          )}
+        </div>
+      ) : null
+    }
+  ]
+
+  // Convert leads to table rows
+  const tableData: ClickableTableRow[] = safeLeads.map(lead => ({
+    id: lead.id,
+    entityType: 'lead' as const,
+    name: `${lead.firstName} ${lead.lastName}`,
+    firstName: lead.firstName,
+    lastName: lead.lastName,
+    email: lead.email,
+    phone: lead.phone,
+    company: lead.company,
+    jobTitle: lead.jobTitle,
+    status: lead.status,
+    priority: lead.priority,
+    leadScore: lead.leadScore,
+    estimatedValue: lead.estimatedValue,
+    source: lead.source,
+    nextFollowUp: lead.nextFollowUp,
+    tags: lead.tags,
+    createdAt: lead.createdAt,
+    updatedAt: lead.updatedAt
+  }))
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'new':
+        return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'contacted':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case 'qualified':
+        return 'bg-green-100 text-green-800 border-green-200'
+      case 'unqualified':
+        return 'bg-red-100 text-red-800 border-red-200'
+      case 'converted':
+        return 'bg-purple-100 text-purple-800 border-purple-200'
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  const getPriorityIcon = (priority: string) => {
+    switch (priority?.toLowerCase()) {
+      case 'high':
+        return <Star className="text-red-500 fill-current" size={14} />
+      case 'medium':
+        return <Star className="text-yellow-500 fill-current" size={14} />
+      case 'low':
+        return <Star className="text-green-500" size={14} />
+      default:
+        return <Star className="text-gray-400" size={14} />
+    }
+  }
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-600'
+    if (score >= 60) return 'text-yellow-600'
+    return 'text-red-600'
+  }
+
+  const getLeadStats = () => {
+    const totalLeads = safeLeads.length
+    const newLeads = safeLeads.filter(l => l.status === 'new').length
+    const qualifiedLeads = safeLeads.filter(l => l.status === 'qualified').length
+    const convertedLeads = safeLeads.filter(l => l.status === 'converted').length
+    const avgScore = totalLeads > 0 
+      ? Math.round(safeLeads.reduce((sum, l) => sum + l.leadScore, 0) / totalLeads)
+      : 0
+    const totalValue = safeLeads.reduce((sum, l) => sum + (l.estimatedValue || 0), 0)
+
+    return [
+      {
+        label: 'Total Leads',
+        value: totalLeads.toString(),
+        icon: <UserPlus size={20} />,
+        color: 'text-blue-600'
+      },
+      {
+        label: 'New Leads',
+        value: newLeads.toString(),
+        icon: <Star size={20} />,
+        color: 'text-orange-600'
+      },
+      {
+        label: 'Qualified',
+        value: qualifiedLeads.toString(),
+        icon: <CheckCircle size={20} />,
+        color: 'text-green-600'
+      },
+      {
+        label: 'Converted',
+        value: convertedLeads.toString(),
+        icon: <Target size={20} />,
+        color: 'text-purple-600'
+      },
+      {
+        label: 'Avg Score',
+        value: avgScore.toString(),
+        icon: <Brain size={20} />,
+        color: getScoreColor(avgScore)
+      },
+      {
+        label: 'Pipeline Value',
+        value: `$${(totalValue / 1000).toFixed(0)}K`,
+        icon: <ChartLine size={20} />,
+        color: 'text-green-600'
+      }
+    ]
+  }
+
+  const handleAction = (action: string, data: any) => {
+    switch (action) {
+      case 'call':
+        toast.success(`Initiating call to ${data.phone}`)
+        // Integrate with phone system
         break
-      case 'assign':
-        toast.info('Bulk assignment dialog would open here')
+      case 'email':
+        toast.success(`Opening email composer for ${data.email}`)
+        // Integrate with email system
         break
-      case 'tag':
-        toast.info('Bulk tagging dialog would open here')
+      case 'meeting':
+        toast.success(`Scheduling meeting with ${data.name}`)
+        // Integrate with calendar
+        break
+      case 'view_company':
+        toast.info(`Opening company profile: ${data.company}`)
+        // Navigate to company view
+        break
+      case 'filter_by_tag':
+        toast.info(`Filtering leads by tag: ${data.tag}`)
+        // Apply tag filter
+        break
+      case 'view_calendar':
+        toast.info(`Opening calendar for: ${data.date}`)
+        // Open calendar view
+        break
+      case 'financial':
+        toast.info(`Opening financial details for $${data.amount}`)
+        // Open financial breakdown
+        break
+      default:
+        toast.info(`Action: ${action}`)
+    }
+  }
+
+  const handleBulkAction = (action: string, selectedRows: ClickableTableRow[]) => {
+    switch (action) {
+      case 'delete':
+        toast.success(`Deleted ${selectedRows.length} leads`)
+        // Implement bulk delete
         break
       case 'export':
-        toast.success(`Exporting ${bulkOperations.length} selected leads`)
+        toast.success(`Exported ${selectedRows.length} leads`)
+        // Implement bulk export
         break
+      case 'qualify':
+        toast.success(`Qualified ${selectedRows.length} leads`)
+        // Implement bulk qualification
+        break
+      case 'assign':
+        toast.success(`Assigned ${selectedRows.length} leads`)
+        // Implement bulk assignment
+        break
+      default:
+        toast.info(`Bulk action: ${action} on ${selectedRows.length} leads`)
     }
-    setBulkOperations([])
   }
 
-  const LeadCard = ({ lead }: { lead: Lead }) => {
-    const profile = leadAIProfiles[lead.id]
-    const aging = agingAnalyses.find(a => a.leadId === lead.id)
-    const isSelected = bulkOperations.includes(lead.id)
-
-    return (
-      <Card 
-        className={`cursor-pointer transition-all hover:shadow-md ${isSelected ? 'ring-2 ring-primary' : ''}`}
-        onClick={() => setSelectedLead(lead)}
-      >
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <Checkbox 
-                checked={isSelected}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setBulkOperations(prev => [...prev, lead.id])
-                  } else {
-                    setBulkOperations(prev => prev.filter(id => id !== lead.id))
-                  }
-                }}
-                onClick={(e) => e.stopPropagation()}
-              />
-              <div>
-                <CardTitle className="text-lg">{lead.firstName} {lead.lastName}</CardTitle>
-                <CardDescription>{lead.title} at {lead.company}</CardDescription>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">{lead.source}</Badge>
-              <Badge variant={lead.status === 'qualified' ? 'default' : 'secondary'}>
-                {lead.status}
-              </Badge>
-              {aging && (
-                <Badge className={getCategoryColor(aging.agingCategory)}>
-                  {aging.agingCategory}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Star className="text-yellow-500" size={16} />
-              <span className="font-medium">{lead.score}/100</span>
-            </div>
-            <div className="text-right">
-              <div className="font-medium">${lead.estimatedValue.toLocaleString()}</div>
-              <div className="text-sm text-muted-foreground">Est. Value</div>
-            </div>
-          </div>
-
-          {/* Aging Information */}
-          {aging && (
-            <div className="space-y-2 border-t pt-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-1">
-                  <Timer size={14} />
-                  Days in Pipeline
-                </span>
-                <span className="font-medium">{aging.daysInPipeline}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-1">
-                  <ClockCounterClockwise size={14} />
-                  Last Contact
-                </span>
-                <span className="font-medium">
-                  {aging.daysSinceLastContact === 0 ? 'Today' : `${aging.daysSinceLastContact} days ago`}
-                </span>
-              </div>
-              {aging.riskLevel !== 'low' && (
-                <div className="flex items-center gap-2 text-sm">
-                  <AlertTriangleIcon className={getRiskColor(aging.riskLevel)} size={14} />
-                  <span className={`font-medium ${getRiskColor(aging.riskLevel)}`}>
-                    {aging.riskLevel.charAt(0).toUpperCase() + aging.riskLevel.slice(1)} Risk
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {profile && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Conversion Probability</span>
-                <span className="font-medium">{profile.conversionProbability}%</span>
-              </div>
-              <Progress value={profile.conversionProbability} className="h-2" />
-              
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Brain size={14} />
-                <span>{profile.nextBestAction}</span>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between pt-2 border-t">
-            <div className="flex items-center gap-1">
-              <Button 
-                size="sm" 
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  generateLeadEmail(lead.id, 'follow-up')
-                }}
-              >
-                <Mail size={14} />
-              </Button>
-              <Button 
-                size="sm" 
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onScheduleMeeting?.(lead.id)
-                }}
-              >
-                <Calendar size={14} />
-              </Button>
-              <Button 
-                size="sm" 
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  generateAIRecommendation(lead.id)
-                }}
-              >
-                <Brain size={14} />
-              </Button>
-            </div>
-            <Button 
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                onCreateDeal?.(lead.id)
-              }}
-            >
-              Convert
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
+  const handleCreateLead = () => {
+    toast.info('Opening new lead form')
+    // Open lead creation form
   }
 
   return (
     <div className="space-y-6">
+      {/* Header Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        {getLeadStats().map((stat, index) => (
+          <Card key={index}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+                  <p className="text-xl font-bold">{stat.value}</p>
+                </div>
+                <div className={stat.color}>
+                  {stat.icon}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* AI Insights Panel */}
-      {showAIInsights && (
-        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="text-primary" size={20} />
-                AI Insights & Recommendations
-                {aiProcessing && <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />}
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setShowAIInsights(false)}>
-                ×
-              </Button>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain size={20} className="text-primary" />
+              AI Lead Insights
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {aiInsights.map((insight) => (
-                <Alert key={insight.id} className={`
-                  ${insight.impact === 'high' ? 'border-red-200 bg-red-50' : 
-                    insight.impact === 'medium' ? 'border-yellow-200 bg-yellow-50' : 
-                    'border-blue-200 bg-blue-50'}
-                `}>
-                  <div className="flex items-start gap-3">
-                    <div className={`
-                      ${insight.type === 'prediction' ? 'text-purple-600' :
-                        insight.type === 'recommendation' ? 'text-blue-600' :
-                        insight.type === 'alert' ? 'text-red-600' :
-                        'text-green-600'}
-                    `}>
-                      {insight.type === 'prediction' ? <ChartLine size={16} /> :
-                       insight.type === 'recommendation' ? <Lightbulb size={16} /> :
-                       insight.type === 'alert' ? <AlertTriangle size={16} /> :
-                       <Magic size={16} />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium text-sm">{insight.title}</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {insight.confidence}% confidence
-                        </Badge>
-                      </div>
-                      <AlertDescription className="text-sm">
-                        {insight.description}
-                      </AlertDescription>
-                      {insight.actionable && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="mt-2"
-                          onClick={insight.action}
-                        >
-                          Take Action
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </Alert>
-              ))}
+          <CardContent className="space-y-4">
+            <div className="p-3 bg-green-50 rounded-lg">
+              <h4 className="font-medium text-green-900 text-sm">High-Quality Leads</h4>
+              <p className="text-green-700 text-sm mt-1">
+                {safeLeads.filter(l => l.leadScore >= 80).length} leads with score ≥80 ready for immediate follow-up
+              </p>
+            </div>
+            <div className="p-3 bg-orange-50 rounded-lg">
+              <h4 className="font-medium text-orange-900 text-sm">Overdue Follow-ups</h4>
+              <p className="text-orange-700 text-sm mt-1">
+                {safeLeads.filter(l => l.nextFollowUp && new Date(l.nextFollowUp) < new Date()).length} leads have overdue follow-up activities
+              </p>
+            </div>
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <h4 className="font-medium text-blue-900 text-sm">Today's Priority</h4>
+              <p className="text-blue-700 text-sm mt-1">
+                {safeLeads.filter(l => l.nextFollowUp && new Date(l.nextFollowUp).toDateString() === new Date().toDateString()).length} leads scheduled for today
+              </p>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Enhanced Filters & Controls */}
-      <div className="flex flex-col lg:flex-row gap-4 justify-between">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
-            <Input
-              placeholder="Search leads..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="new">New</SelectItem>
-              <SelectItem value="contacted">Contacted</SelectItem>
-              <SelectItem value="qualified">Qualified</SelectItem>
-              <SelectItem value="converted">Converted</SelectItem>
-              <SelectItem value="lost">Lost</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={sourceFilter} onValueChange={setSourceFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Source" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sources</SelectItem>
-              <SelectItem value="Website">Website</SelectItem>
-              <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-              <SelectItem value="Cold Call">Cold Call</SelectItem>
-              <SelectItem value="Referral">Referral</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex items-center gap-2">
-            <Label className="text-sm">Score:</Label>
-            <div className="w-32">
-              <Slider
-                value={scoreFilter}
-                onValueChange={setScoreFilter}
-                min={0}
-                max={100}
-                step={5}
-                className="w-full"
-              />
-            </div>
-            <span className="text-sm text-muted-foreground">
-              {scoreFilter[0]}-{scoreFilter[1]}
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button 
-              size="sm" 
-              variant={viewMode === 'cards' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('cards')}
-            >
-              Cards
-            </Button>
-            <Button 
-              size="sm" 
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('table')}
-            >
-              Table
-            </Button>
-            <Button 
-              size="sm" 
-              variant={viewMode === 'kanban' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('kanban')}
-            >
-              Kanban
-            </Button>
-          </div>
-          
-          {bulkOperations.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">{bulkOperations.length} selected</Badge>
-              <Button size="sm" variant="outline" onClick={() => handleBulkAction('qualify')}>
-                <Checks size={14} className="mr-1" />
-                Qualify
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Quick Actions & Tools</CardTitle>
+            <CardDescription>
+              Common lead management actions and automation tools
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Button onClick={handleCreateLead} className="h-16 flex-col gap-2">
+                <Plus size={20} />
+                <span className="text-sm">Add Lead</span>
               </Button>
-              <Button size="sm" variant="outline" onClick={() => handleBulkAction('export')}>
-                <Download size={14} className="mr-1" />
-                Export
+              
+              <Button variant="outline" className="h-16 flex-col gap-2" onClick={() => toast.info('Opening import wizard')}>
+                <UserPlus size={20} />
+                <span className="text-sm">Import Leads</span>
+              </Button>
+              
+              <Button variant="outline" className="h-16 flex-col gap-2" onClick={() => toast.info('Starting bulk qualification')}>
+                <CheckCircle size={20} />
+                <span className="text-sm">Bulk Qualify</span>
+              </Button>
+              
+              <Button variant="outline" className="h-16 flex-col gap-2" onClick={() => toast.info('Opening assignment tool')}>
+                <Target size={20} />
+                <span className="text-sm">Auto Assign</span>
               </Button>
             </div>
-          )}
-          
-          <Button onClick={() => setShowLeadForm(true)}>
-            <Plus size={16} className="mr-2" />
-            New Lead
-          </Button>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Leads Display */}
-      {viewMode === 'cards' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLeads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} />
-          ))}
-        </div>
-      )}
+      {/* Main Lead Table */}
+      <EnhancedClickableDataTable
+        title="Lead Management"
+        description="Interactive lead management with AI-powered insights and clickable data elements"
+        columns={columns}
+        data={tableData}
+        companyId={companyId}
+        userId={userId}
+        pageSize={20}
+        showSearch={true}
+        showFilters={true}
+        showBulkActions={true}
+        onAction={handleAction}
+        onBulkAction={handleBulkAction}
+        className="w-full"
+      />
 
-      {/* Enhanced Lead Detail Modal */}
-      {selectedLead && (
-        <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-3">
-                <PersonIcon size={24} />
-                {selectedLead.firstName} {selectedLead.lastName}
-                <Badge variant="outline">{selectedLead.status}</Badge>
-                <div className="flex items-center gap-1 ml-auto">
-                  <Star className="text-yellow-500" size={16} />
-                  <span>{selectedLead.score}/100</span>
-                </div>
-              </DialogTitle>
-            </DialogHeader>
-            
-            <Tabs defaultValue="overview" className="h-[75vh]">
-              <TabsList className="grid w-full grid-cols-7">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="aging">Lead Aging</TabsTrigger>
-                <TabsTrigger value="ai-profile">AI Profile</TabsTrigger>
-                <TabsTrigger value="activities">Activities</TabsTrigger>
-                <TabsTrigger value="communications">Communications</TabsTrigger>
-                <TabsTrigger value="files">Files</TabsTrigger>
-                <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              </TabsList>
-              
-              <div className="overflow-y-auto h-full mt-4">
-                <TabsContent value="overview" className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Contact Information</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-sm font-medium">Name</Label>
-                            <p className="text-sm">{selectedLead.firstName} {selectedLead.lastName}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">Title</Label>
-                            <p className="text-sm">{selectedLead.title}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">Email</Label>
-                            <p className="text-sm">{selectedLead.email}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">Phone</Label>
-                            <p className="text-sm">{selectedLead.phone}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">Company</Label>
-                            <p className="text-sm">{selectedLead.company}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">Source</Label>
-                            <Badge variant="outline">{selectedLead.source}</Badge>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Lead Metrics</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-3">
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Lead Score</span>
-                              <span>{selectedLead.score}/100</span>
-                            </div>
-                            <Progress value={selectedLead.score} className="h-2" />
-                          </div>
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Estimated Value</span>
-                              <span>${selectedLead.estimatedValue.toLocaleString()}</span>
-                            </div>
-                          </div>
-                          {leadAIProfiles[selectedLead.id] && (
-                            <div>
-                              <div className="flex justify-between text-sm mb-1">
-                                <span>Conversion Probability</span>
-                                <span>{leadAIProfiles[selectedLead.id].conversionProbability}%</span>
-                              </div>
-                              <Progress value={leadAIProfiles[selectedLead.id].conversionProbability} className="h-2" />
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+      {/* Recent High-Priority Leads */}
+      <Card>
+        <CardHeader>
+          <CardTitle>High-Priority Leads Requiring Attention</CardTitle>
+          <CardDescription>
+            Leads with high scores or overdue follow-ups that need immediate action
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {safeLeads
+              .filter(lead => 
+                lead.leadScore >= 75 || 
+                (lead.nextFollowUp && new Date(lead.nextFollowUp) <= new Date()) ||
+                lead.priority === 'high'
+              )
+              .sort((a, b) => b.leadScore - a.leadScore)
+              .slice(0, 6)
+              .map((lead) => (
+                <div key={lead.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-primary">
+                      {lead.firstName[0]}{lead.lastName[0]}
+                    </span>
                   </div>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Lightning className="text-yellow-500" size={20} />
-                        Quick Actions
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <Button 
-                          variant="outline" 
-                          className="h-auto p-4 flex-col gap-2"
-                          onClick={() => generateLeadEmail(selectedLead.id, 'follow-up')}
-                        >
-                          <Mail size={20} />
-                          <span className="text-sm">Send Email</span>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="h-auto p-4 flex-col gap-2"
-                          onClick={() => onScheduleMeeting?.(selectedLead.id)}
-                        >
-                          <Calendar size={20} />
-                          <span className="text-sm">Schedule Meeting</span>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="h-auto p-4 flex-col gap-2"
-                          onClick={() => generateAIRecommendation(selectedLead.id)}
-                        >
-                          <Brain size={20} />
-                          <span className="text-sm">AI Recommendation</span>
-                        </Button>
-                        <Button 
-                          className="h-auto p-4 flex-col gap-2"
-                          onClick={() => onCreateDeal?.(selectedLead.id)}
-                        >
-                          <Target size={20} />
-                          <span className="text-sm">Convert to Deal</span>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="aging" className="space-y-6">
-                  {(() => {
-                    const aging = agingAnalyses.find(a => a.leadId === selectedLead.id)
-                    if (!aging) {
-                      return (
-                        <Card>
-                          <CardContent className="py-12 text-center">
-                            <Timer className="mx-auto mb-4 text-muted-foreground" size={48} />
-                            <h3 className="text-lg font-medium mb-2">Lead Aging Analysis</h3>
-                            <p className="text-muted-foreground mb-4">Analyzing lead aging patterns...</p>
-                            <Button onClick={analyzeLeadAging}>
-                              <Clock size={16} className="mr-2" />
-                              Analyze Lead Aging
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      )
-                    }
-
-                    return (
-                      <div className="space-y-6">
-                        {/* Aging Overview */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <Card>
-                            <CardContent className="p-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Days in Pipeline</p>
-                                  <p className="text-2xl font-bold">{aging.daysInPipeline}</p>
-                                </div>
-                                <Timer className="text-blue-600" size={24} />
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          <Card>
-                            <CardContent className="p-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Days Since Contact</p>
-                                  <p className="text-2xl font-bold">{aging.daysSinceLastContact}</p>
-                                </div>
-                                <ClockCounterClockwise className="text-orange-600" size={24} />
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          <Card>
-                            <CardContent className="p-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Urgency Score</p>
-                                  <p className="text-2xl font-bold">{Math.round(aging.urgencyScore)}/100</p>
-                                </div>
-                                <AlertTriangleIcon className={getRiskColor(aging.riskLevel)} size={24} />
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-
-                        {/* Aging Category and Risk */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <Card>
-                            <CardHeader>
-                              <CardTitle>Aging Category</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-4">
-                                <div className={`p-4 rounded-lg border ${getCategoryColor(aging.agingCategory)}`}>
-                                  <div className="text-center">
-                                    <div className="text-xl font-bold capitalize mb-1">{aging.agingCategory}</div>
-                                    <div className="text-sm">Lead Category</div>
-                                  </div>
-                                </div>
-                                
-                                <div className="space-y-2">
-                                  <div className="flex justify-between text-sm">
-                                    <span>Risk Level</span>
-                                    <Badge variant="outline" className={getRiskColor(aging.riskLevel)}>
-                                      {aging.riskLevel}
-                                    </Badge>
-                                  </div>
-                                  <div className="flex justify-between text-sm">
-                                    <span>Conversion Probability</span>
-                                    <span className="font-medium">{aging.conversionProbability}%</span>
-                                  </div>
-                                  <Progress value={aging.conversionProbability} className="h-2" />
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          <Card>
-                            <CardHeader>
-                              <CardTitle>Recommended Action</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <Alert className="border-blue-200 bg-blue-50 mb-4">
-                                <Lightbulb className="text-blue-600" size={16} />
-                                <AlertDescription>
-                                  <div className="font-medium text-blue-800 mb-1">Next Steps:</div>
-                                  <div className="text-blue-700">{aging.recommendedAction}</div>
-                                </AlertDescription>
-                              </Alert>
-
-                              <div className="space-y-3">
-                                <Button 
-                                  className="w-full"
-                                  onClick={() => generateAIActionPlan(aging)}
-                                  disabled={aiProcessing}
-                                >
-                                  <Brain size={16} className="mr-2" />
-                                  Generate AI Action Plan
-                                </Button>
-                                
-                                <Button 
-                                  variant="outline" 
-                                  className="w-full"
-                                  onClick={() => generateLeadEmail(selectedLead.id, 'follow-up')}
-                                >
-                                  <Mail size={16} className="mr-2" />
-                                  Send Follow-up Email
-                                </Button>
-                                
-                                <Button 
-                                  variant="outline" 
-                                  className="w-full"
-                                  onClick={() => onScheduleMeeting?.(selectedLead.id)}
-                                >
-                                  <Calendar size={16} className="mr-2" />
-                                  Schedule Meeting
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-
-                        {/* AI Insights */}
-                        {aging.aiInsights.length > 0 && (
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="flex items-center gap-2">
-                                <Brain className="text-purple-500" size={20} />
-                                AI Aging Insights
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-3">
-                                {aging.aiInsights.map((insight, index) => (
-                                  <Alert key={index} className="border-purple-200 bg-purple-50">
-                                    <Star className="text-purple-600" size={16} />
-                                    <AlertDescription className="text-purple-700">
-                                      {insight}
-                                    </AlertDescription>
-                                  </Alert>
-                                ))}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )}
-
-                        {/* Aging Timeline */}
-                        <Card>
-                          <CardHeader>
-                            <CardTitle>Lead Timeline</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                <div className="flex-1">
-                                  <div className="flex justify-between items-center">
-                                    <span className="font-medium">Lead Created</span>
-                                    <span className="text-sm text-muted-foreground">
-                                      {format(selectedLead.createdAt, 'PPP')}
-                                    </span>
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {aging.daysInPipeline} days ago
-                                  </div>
-                                </div>
-                              </div>
-
-                              {selectedLead.lastContactDate && (
-                                <div className="flex items-center gap-3">
-                                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                  <div className="flex-1">
-                                    <div className="flex justify-between items-center">
-                                      <span className="font-medium">Last Contact</span>
-                                      <span className="text-sm text-muted-foreground">
-                                        {format(selectedLead.lastContactDate, 'PPP')}
-                                      </span>
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">
-                                      {aging.daysSinceLastContact} days ago
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-
-                              {selectedLead.nextFollowUpDate && (
-                                <div className="flex items-center gap-3">
-                                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                  <div className="flex-1">
-                                    <div className="flex justify-between items-center">
-                                      <span className="font-medium">Next Follow-up</span>
-                                      <span className="text-sm text-muted-foreground">
-                                        {format(selectedLead.nextFollowUpDate, 'PPP')}
-                                      </span>
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">
-                                      {aging.daysUntilNextFollowUp > 0 
-                                        ? `In ${aging.daysUntilNextFollowUp} days`
-                                        : aging.daysUntilNextFollowUp === 0
-                                        ? 'Today'
-                                        : `${Math.abs(aging.daysUntilNextFollowUp)} days overdue`
-                                      }
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    )
-                  })()}
-                </TabsContent>
-
-                <TabsContent value="ai-profile" className="space-y-6">
-                  {leadAIProfiles[selectedLead.id] ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Brain className="text-purple-500" size={20} />
-                            AI Profile Analysis
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div>
-                            <Label className="text-sm font-medium">Personality Profile</Label>
-                            <p className="text-sm text-muted-foreground">{leadAIProfiles[selectedLead.id].personalityProfile}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">Communication Preference</Label>
-                            <p className="text-sm text-muted-foreground">{leadAIProfiles[selectedLead.id].communicationPreference}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">Predicted Timeframe</Label>
-                            <p className="text-sm text-muted-foreground">{leadAIProfiles[selectedLead.id].timeframePrediction}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">Next Best Action</Label>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Lightbulb className="text-yellow-500" size={16} />
-                              <p className="text-sm font-medium">{leadAIProfiles[selectedLead.id].nextBestAction}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Predictive Scores</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Decision Maker Likelihood</span>
-                              <span>{leadAIProfiles[selectedLead.id].decisionMakerLikelihood}%</span>
-                            </div>
-                            <Progress value={leadAIProfiles[selectedLead.id].decisionMakerLikelihood} className="h-2" />
-                          </div>
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Budget Probability</span>
-                              <span>{leadAIProfiles[selectedLead.id].budgetProbability}%</span>
-                            </div>
-                            <Progress value={leadAIProfiles[selectedLead.id].budgetProbability} className="h-2" />
-                          </div>
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Competitor Threat</span>
-                              <span>{leadAIProfiles[selectedLead.id].competitorThreat}%</span>
-                            </div>
-                            <Progress value={leadAIProfiles[selectedLead.id].competitorThreat} className="h-2 bg-red-100" />
-                          </div>
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Engagement Score</span>
-                              <span>{leadAIProfiles[selectedLead.id].engagementScore}%</span>
-                            </div>
-                            <Progress value={leadAIProfiles[selectedLead.id].engagementScore} className="h-2" />
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="md:col-span-2">
-                        <CardHeader>
-                          <CardTitle>Buying Signals & AI Notes</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div>
-                            <Label className="text-sm font-medium">Detected Buying Signals</Label>
-                            <div className="mt-2 space-y-2">
-                              {leadAIProfiles[selectedLead.id].buyingSignals.map((signal, index) => (
-                                <div key={index} className="flex items-center gap-2 text-sm">
-                                  <CheckCircle className="text-green-500" size={16} />
-                                  <span>{signal}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          <Separator />
-                          <div>
-                            <Label className="text-sm font-medium">AI-Generated Notes</Label>
-                            <div className="mt-2 space-y-2">
-                              {leadAIProfiles[selectedLead.id].aiNotes.map((note, index) => (
-                                <div key={index} className="flex items-start gap-2 text-sm">
-                                  <Robot className="text-blue-500 mt-0.5" size={16} />
-                                  <span className="text-muted-foreground">{note}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                  
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <ClickableDataElement
+                        type="name"
+                        value={`${lead.firstName} ${lead.lastName}`}
+                        entityId={lead.id}
+                        entityType="lead"
+                        companyId={companyId}
+                        userId={userId}
+                        className="font-medium"
+                      />
+                      {getPriorityIcon(lead.priority)}
+                      <Badge className={getStatusColor(lead.status)} variant="outline">
+                        {lead.status}
+                      </Badge>
+                      <span className={`font-semibold ${getScoreColor(lead.leadScore)}`}>
+                        Score: {lead.leadScore}
+                      </span>
                     </div>
-                  ) : (
-                    <Card>
-                      <CardContent className="py-12 text-center">
-                        <Brain className="mx-auto mb-4 text-muted-foreground" size={48} />
-                        <h3 className="text-lg font-medium mb-2">AI Profile Analysis</h3>
-                        <p className="text-muted-foreground mb-4">Generate AI-powered insights for this lead</p>
-                        <Button onClick={() => updateLeadScores()}>
-                          <Sparkle size={16} className="mr-2" />
-                          Generate AI Profile
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="activities">
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      <Activity className="mx-auto mb-4 text-muted-foreground" size={48} />
-                      <h3 className="text-lg font-medium mb-2">Activity Timeline</h3>
-                      <p className="text-muted-foreground mb-4">Track all interactions and touchpoints</p>
-                      <Button>
-                        <Plus size={16} className="mr-2" />
-                        Log Activity
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="communications">
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      <ChatText className="mx-auto mb-4 text-muted-foreground" size={48} />
-                      <h3 className="text-lg font-medium mb-2">Communication History</h3>
-                      <p className="text-muted-foreground mb-4">All emails, calls, and messages in one place</p>
-                      <div className="flex gap-2 justify-center">
-                        <Button onClick={() => generateLeadEmail(selectedLead.id, 'follow-up')}>
-                          <Mail size={16} className="mr-2" />
-                          AI Email
-                        </Button>
-                        <Button variant="outline">
-                          <Phone size={16} className="mr-2" />
-                          Log Call
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="files">
-                  <FileAttachmentSystem
-                    entityId={selectedLead.id}
-                    entityType="lead"
-                    companyId={companyId}
-                    userId={userId}
-                    allowedTypes={['*']}
-                    maxFileSize={50 * 1024 * 1024}
-                    maxFiles={50}
-                    showPreview={true}
-                  />
-                </TabsContent>
-
-                <TabsContent value="analytics">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Lead Journey</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                            <div className="text-sm">
-                              <div className="font-medium">Lead Created</div>
-                              <div className="text-muted-foreground">{selectedLead.createdAt.toLocaleDateString()}</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                            <div className="text-sm">
-                              <div className="font-medium">First Contact</div>
-                              <div className="text-muted-foreground">
-                                {selectedLead.lastContactDate?.toLocaleDateString() || 'Not contacted'}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                            <div className="text-sm">
-                              <div className="font-medium">Qualification</div>
-                              <div className="text-muted-foreground">Pending</div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Performance Metrics</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div className="flex justify-between">
-                            <span className="text-sm">Days in Pipeline</span>
-                            <span className="text-sm font-medium">
-                              {Math.floor((new Date().getTime() - selectedLead.createdAt.getTime()) / (1000 * 60 * 60 * 24))}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm">Touchpoints</span>
-                            <span className="text-sm font-medium">3</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm">Email Opens</span>
-                            <span className="text-sm font-medium">5</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm">Website Visits</span>
-                            <span className="text-sm font-medium">12</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    
+                    <div className="flex items-center gap-4 text-sm">
+                      {lead.company && (
+                        <ClickableDataElement
+                          type="company"
+                          value={lead.company}
+                          entityId={lead.id}
+                          entityType="lead"
+                          companyId={companyId}
+                          userId={userId}
+                          className="text-muted-foreground"
+                        />
+                      )}
+                      
+                      <ClickableDataElement
+                        type="email"
+                        value={lead.email}
+                        entityId={lead.id}
+                        entityType="lead"
+                        companyId={companyId}
+                        userId={userId}
+                        className="text-muted-foreground"
+                      />
+                      
+                      {lead.estimatedValue && (
+                        <ClickableDataElement
+                          type="currency"
+                          value={lead.estimatedValue.toString()}
+                          displayValue={`$${lead.estimatedValue.toLocaleString()}`}
+                          entityId={lead.id}
+                          entityType="lead"
+                          companyId={companyId}
+                          userId={userId}
+                          className="text-green-600 font-medium"
+                        />
+                      )}
+                      
+                      {lead.nextFollowUp && (
+                        <ClickableDataElement
+                          type="date"
+                          value={lead.nextFollowUp}
+                          displayValue={new Date(lead.nextFollowUp).toLocaleDateString()}
+                          entityId={lead.id}
+                          entityType="lead"
+                          companyId={companyId}
+                          userId={userId}
+                          className={new Date(lead.nextFollowUp) < new Date() ? 'text-red-600 font-medium' : 'text-muted-foreground'}
+                        />
+                      )}
+                    </div>
                   </div>
-                </TabsContent>
-              </div>
-            </Tabs>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Lead Creation Form */}
-      <Dialog open={showLeadForm} onOpenChange={setShowLeadForm}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Create New Lead</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>First Name *</Label>
-              <Input
-                value={formData.firstName || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Last Name *</Label>
-              <Input
-                value={formData.lastName || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Email *</Label>
-              <Input
-                type="email"
-                value={formData.email || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Phone</Label>
-              <Input
-                value={formData.phone || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Company</Label>
-              <Input
-                value={formData.company || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Title</Label>
-              <Input
-                value={formData.title || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Source</Label>
-              <Select
-                value={formData.source}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, source: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select source" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Website">Website</SelectItem>
-                  <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                  <SelectItem value="Cold Call">Cold Call</SelectItem>
-                  <SelectItem value="Referral">Referral</SelectItem>
-                  <SelectItem value="Trade Show">Trade Show</SelectItem>
-                  <SelectItem value="Email Campaign">Email Campaign</SelectItem>
-                  <SelectItem value="Social Media">Social Media</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Estimated Value</Label>
-              <Input
-                type="number"
-                value={formData.estimatedValue || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, estimatedValue: Number(e.target.value) }))}
-              />
-            </div>
-            <div className="col-span-2">
-              <Label>Notes</Label>
-              <Textarea
-                value={formData.notes || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              />
-            </div>
+                  
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => handleAction('call', { phone: lead.phone, name: `${lead.firstName} ${lead.lastName}` })}>
+                      <Phone size={14} />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleAction('email', { email: lead.email, name: `${lead.firstName} ${lead.lastName}` })}>
+                      <Mail size={14} />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleAction('meeting', { name: `${lead.firstName} ${lead.lastName}`, entityId: lead.id })}>
+                      <Calendar size={14} />
+                    </Button>
+                  </div>
+                </div>
+              ))}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLeadForm(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => {
-              if (!formData.firstName || !formData.lastName || !formData.email) {
-                toast.error('Please fill in required fields')
-                return
-              }
-
-              const newLead: Lead = {
-                id: `lead-${Date.now()}`,
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                email: formData.email,
-                phone: formData.phone || '',
-                company: formData.company || '',
-                title: formData.title || '',
-                source: formData.source || 'Manual',
-                status: 'new',
-                score: 0,
-                estimatedValue: formData.estimatedValue || 0,
-                assignedTo: userId,
-                tags: formData.tags || [],
-                notes: formData.notes || '',
-                customFields: formData.customFields || {},
-                activities: [],
-                files: [],
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                lastContactDate: null,
-                nextFollowUpDate: null
-              }
-
-              setLeads(current => [...(current || []), newLead])
-              setFormData({})
-              setShowLeadForm(false)
-              toast.success('Lead created successfully')
-            }}>
-              <Plus size={16} className="mr-2" />
-              Create Lead
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </CardContent>
+      </Card>
     </div>
   )
 }

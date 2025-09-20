@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { CRMDashboard } from '@/components/crm/CRMDashboard'
 import { SalesReportingDashboard } from '@/components/crm/SalesReportingDashboard'
 import { ContactManagement } from '@/components/crm/ContactManagement'
+import { EnhancedContactManagement } from '@/components/crm/EnhancedContactManagement'
+import { EnhancedLeadManagement } from '@/components/crm/EnhancedLeadManagement'
 import { DealPipeline } from '@/components/crm/DealPipeline'
 import { AIEnhancedLeadManagement } from '@/components/crm/enhanced/AIEnhancedLeadManagement'
 import { AIEnhancedDealPipeline } from '@/components/crm/enhanced/AIEnhancedDealPipeline'
@@ -466,14 +468,10 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         </TabsContent>
 
         <TabsContent value="leads" className="space-y-6">
-          <ComprehensiveLeadManagement 
+          <EnhancedLeadManagement 
             companyId={companyId}
             userId={userId}
             userRole={userRole}
-            onOpenTimeline={(leadId) => {
-              setSelectedLeadForTimeline(leadId)
-              setShowTimelineDialog(true)
-            }}
           />
         </TabsContent>
 
@@ -487,7 +485,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         </TabsContent>
 
         <TabsContent value="contacts" className="space-y-6">
-          <ContactManagement 
+          <EnhancedContactManagement 
             companyId={companyId}
             userId={userId}
             userRole={userRole}

@@ -29,7 +29,7 @@ import { DataVisualizationDashboard } from '@/components/DataVisualizationDashbo
 import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { WebhookManagementSystem } from '@/components/WebhookManagementSystem'
 import { CRMModule } from '@/components/CRMModule'
-import { SystemTestingSuite } from '@/components/SystemTestingSuite'
+import { ClickableDataShowcase } from '@/components/shared/ClickableDataShowcase'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -335,6 +335,10 @@ function App() {
                   <TestTube size={16} />
                   System Testing
                 </TabsTrigger>
+                <TabsTrigger value="clickable-data" className="flex items-center gap-2">
+                  <ChartLine size={16} />
+                  Clickable Data
+                </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
                 <WifiHigh size={12} className={isConnected ? 'text-green-500' : 'text-red-500'} />
@@ -594,6 +598,13 @@ function App() {
               companyId={currentCompany.id}
               userId={mockUser.id}
               userRole="company_admin"
+            />
+          </TabsContent>
+
+          <TabsContent value="clickable-data" className="space-y-6">
+            <ClickableDataShowcase 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
             />
           </TabsContent>
 
