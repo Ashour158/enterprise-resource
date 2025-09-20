@@ -25,6 +25,7 @@ import { CRMImportExportSystem } from '@/components/shared/CRMImportExportSystem
 import { CRMHistoryTracker, useCRMHistory } from '@/components/shared/CRMHistoryTracker'
 import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { HolidayCalendarManager } from '@/components/HolidayCalendarManager'
+import { RegionalBusinessRulesDemo } from '@/components/crm/RegionalBusinessRulesDemo'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
 import { CRMAnalytics as CRMAnalyticsType, CRMSettings } from '@/types/crm'
 import { 
@@ -381,6 +382,10 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
               <Calendar size={16} />
               <span className="hidden sm:inline">Holidays</span>
             </TabsTrigger>
+            <TabsTrigger value="regional-rules" className="flex items-center gap-2">
+              <Buildings size={16} />
+              <span className="hidden sm:inline">Regional Rules</span>
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex items-center gap-2">
@@ -631,6 +636,13 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             onRulesUpdate={(rules) => {
               toast.success(`Updated business rules for ${rules.length} locations`)
             }}
+          />
+        </TabsContent>
+
+        <TabsContent value="regional-rules" className="space-y-6">
+          <RegionalBusinessRulesDemo
+            companyId={companyId}
+            userId={userId}
           />
         </TabsContent>
       </Tabs>

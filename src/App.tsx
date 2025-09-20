@@ -255,7 +255,7 @@ function App() {
                   : activeView === 'calendar'
                   ? 'Smart calendar integration with automated scheduling for onboarding meetings and deadlines'
                   : activeView === 'crm'
-                  ? 'Comprehensive customer relationship management with lead tracking, deal pipeline, and customer service'
+                  ? 'Comprehensive customer relationship management with lead tracking, deal pipeline, customer service, and regional business rules for quote approvals'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>

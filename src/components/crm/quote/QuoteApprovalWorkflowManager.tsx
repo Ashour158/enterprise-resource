@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { useBusinessDayCalculator } from '@/hooks/useBusinessDayCalculator'
+import { BusinessDayCalculator, BusinessDayUtils } from '@/lib/businessDayCalculator'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,8 +50,12 @@ import {
   Building,
   Activity,
   ArrowUp,
-  Calendar
+  Calendar,
+  Globe,
+  MapPin,
+  Timer
 } from '@phosphor-icons/react'
+import { RegionalBusinessRulesManager } from '@/components/RegionalBusinessRulesManager'
 import { toast } from 'sonner'
 
 interface QuoteApprovalWorkflowManagerProps {
@@ -157,8 +162,13 @@ export function QuoteApprovalWorkflowManager({ companyId, userId, userRole }: Qu
   const [selectedWorkflow, setSelectedWorkflow] = useState<QuoteApprovalWorkflow | null>(null)
   const [showWorkflowForm, setShowWorkflowForm] = useState(false)
   const [showApprovalMatrix, setShowApprovalMatrix] = useState(false)
+  const [showRegionalRules, setShowRegionalRules] = useState(false)
   const [activeTab, setActiveTab] = useState('workflows')
   const [formData, setFormData] = useState<Partial<QuoteApprovalWorkflow>>({})
+
+  // Load office locations for business day calculations
+  const [offices, setOffices] = useKV<any[]>(`business-rules-offices-${companyId}`, [])
+  const [selectedOffice, setSelectedOffice] = useState<string>('')
 
   // Business day calculator for deadline management
   const {
@@ -168,6 +178,9 @@ export function QuoteApprovalWorkflowManager({ companyId, userId, userRole }: Qu
     getBusinessHoursInfo,
     isWithinBusinessHours
   } = useBusinessDayCalculator(companyId)
+
+  // Initialize regional business day calculator
+  const businessCalculator = offices.length > 0 ? new BusinessDayCalculator(offices) : null
 
   // Approval status summary
   const [pendingApprovals] = useKV<QuoteApproval[]>(`pending-approvals-${companyId}`, [])
@@ -254,6 +267,70 @@ export function QuoteApprovalWorkflowManager({ companyId, userId, userRole }: Qu
     }
     
     return deadline
+  }
+
+  // Regional business day calculation with office-specific rules
+  const calculateRegionalApprovalDeadline = (
+    timeoutHours: number, 
+    createdAt: Date = new Date(),
+    officeId?: string
+  ): { 
+    deadline: Date, 
+    adjustedDeadline: Date, 
+    wasAdjusted: boolean, 
+    reason?: string,
+    office?: any
+  } => {
+    // Convert hours to business days (assuming 8-hour work days)
+    const businessDays = Math.ceil(timeoutHours / 8)
+    
+    if (officeId && businessCalculator) {
+      // Use regional business day calculator
+      const deadline = businessCalculator.addBusinessDays(createdAt, businessDays, officeId)
+      const adjustment = businessCalculator.adjustDeadlineForBusinessRules(deadline, officeId)
+      const office = offices.find(o => o.id === officeId)
+      
+      return {
+        deadline,
+        adjustedDeadline: adjustment.adjustedDeadline,
+        wasAdjusted: adjustment.wasAdjusted,
+        reason: adjustment.reason,
+        office
+      }
+    } else {
+      // Fallback to basic calculation
+      const deadline = addBusinessDays(createdAt, businessDays)
+      return {
+        deadline,
+        adjustedDeadline: deadline,
+        wasAdjusted: false
+      }
+    }
+  }
+
+  const getRegionalBusinessDayInfo = (officeId: string, date: Date) => {
+    if (!officeId || !businessCalculator) return null
+    
+    const office = offices.find(o => o.id === officeId)
+    if (!office) return null
+    
+    const businessHours = businessCalculator.getBusinessHoursForDate(date, officeId)
+    const isBusinessDay = businessCalculator.isBusinessDay(date, office)
+    const isHoliday = businessCalculator.isHoliday(date, office)
+    
+    return {
+      office,
+      businessHours,
+      isBusinessDay,
+      isHoliday,
+      timezone: office.timezone
+    }
+  }
+
+  const findFallbackOfficeForApproval = (primaryOfficeId: string, deadline: Date) => {
+    if (!businessCalculator) return null
+    
+    return businessCalculator.findFallbackOffice(primaryOfficeId, deadline)
   }
 
   const checkForWeekendAndHolidayExtensions = (originalDeadline: Date): { 
@@ -437,6 +514,10 @@ export function QuoteApprovalWorkflowManager({ companyId, userId, userRole }: Qu
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="pending">Pending Approvals</TabsTrigger>
           <TabsTrigger value="business-days">Business Days</TabsTrigger>
+          <TabsTrigger value="regional-rules" className="flex items-center gap-2">
+            <Globe size={16} />
+            Regional Rules
+          </TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -915,6 +996,241 @@ export function QuoteApprovalWorkflowManager({ companyId, userId, userRole }: Qu
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="regional-rules" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Office Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin size={16} />
+                  Office Selection
+                </CardTitle>
+                <CardDescription>
+                  Select an office location to view regional business rules
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Active Office Location</Label>
+                  <Select value={selectedOffice} onValueChange={setSelectedOffice}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select office location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {offices.map((office) => (
+                        <SelectItem key={office.id} value={office.id}>
+                          <div className="flex items-center gap-2">
+                            <Building size={14} />
+                            {office.name} ({office.timezone})
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {offices.length === 0 && (
+                  <div className="text-center py-6">
+                    <Building size={32} className="mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-2">No office locations configured</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setShowRegionalRules(true)}
+                    >
+                      Set up Regional Rules
+                    </Button>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => setShowRegionalRules(true)}
+                  >
+                    <Gear size={16} className="mr-2" />
+                    Manage Regional Rules
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Regional Business Rules Impact */}
+            {selectedOffice && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock size={16} />
+                    Business Day Impact
+                  </CardTitle>
+                  <CardDescription>
+                    How regional rules affect approval deadlines
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {(() => {
+                    const office = offices.find(o => o.id === selectedOffice)
+                    if (!office) return <p className="text-sm text-muted-foreground">Office not found</p>
+
+                    const sampleDeadline = new Date()
+                    sampleDeadline.setDate(sampleDeadline.getDate() + 3)
+                    
+                    const regionalInfo = getRegionalBusinessDayInfo(selectedOffice, sampleDeadline)
+                    const deadlineCalc = calculateRegionalApprovalDeadline(48, new Date(), selectedOffice)
+
+                    return (
+                      <div className="space-y-3">
+                        <div className="p-3 bg-muted/30 rounded-lg">
+                          <h4 className="font-medium text-sm mb-2">{office.name}</h4>
+                          <div className="space-y-1 text-xs">
+                            <p><strong>Location:</strong> {office.city}, {office.country}</p>
+                            <p><strong>Timezone:</strong> {office.timezone}</p>
+                            <p><strong>Holidays:</strong> {office.holidays?.length || 0} configured</p>
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-2">
+                          <Label className="text-sm">Sample 48-hour Approval Deadline</Label>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span>Original Deadline:</span>
+                              <span>{deadlineCalc.deadline.toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span>Adjusted Deadline:</span>
+                              <span className={deadlineCalc.wasAdjusted ? 'text-amber-600' : 'text-green-600'}>
+                                {deadlineCalc.adjustedDeadline.toLocaleDateString()}
+                              </span>
+                            </div>
+                            {deadlineCalc.wasAdjusted && (
+                              <div className="flex items-start gap-2 p-2 bg-amber-50 rounded text-xs">
+                                <AlertTriangle size={12} className="text-amber-600 mt-0.5" />
+                                <span className="text-amber-700">{deadlineCalc.reason}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-2">
+                          <Label className="text-sm">Escalation Rules</Label>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span>Weekend Extensions:</span>
+                              <Badge variant={office.escalationRules?.extendDeadlinesOnWeekends ? 'default' : 'secondary'}>
+                                {office.escalationRules?.extendDeadlinesOnWeekends ? 'Enabled' : 'Disabled'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>Holiday Extensions:</span>
+                              <Badge variant={office.escalationRules?.extendDeadlinesOnHolidays ? 'default' : 'secondary'}>
+                                {office.escalationRules?.extendDeadlinesOnHolidays ? 'Enabled' : 'Disabled'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>Max Extension:</span>
+                              <span>{office.escalationRules?.maxExtensionDays || 5} days</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Fallback Offices */}
+            {selectedOffice && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target size={16} />
+                    Fallback Procedures
+                  </CardTitle>
+                  <CardDescription>
+                    Alternative offices for overflow handling
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {(() => {
+                    const office = offices.find(o => o.id === selectedOffice)
+                    if (!office) return null
+
+                    const fallbackOffices = office.escalationRules?.fallbackOffices || []
+                    
+                    if (fallbackOffices.length === 0) {
+                      return (
+                        <div className="text-center py-6">
+                          <Target size={32} className="mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">No fallback offices configured</p>
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        <Label className="text-sm">Available Fallback Offices</Label>
+                        {fallbackOffices.map((fallbackId) => {
+                          const fallbackOffice = offices.find(o => o.id === fallbackId)
+                          if (!fallbackOffice) return null
+
+                          const overlap = BusinessDayUtils.calculateOfficeOverlap(office, fallbackOffice)
+                          
+                          return (
+                            <div key={fallbackId} className="p-3 border rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-medium text-sm">{fallbackOffice.name}</h4>
+                                <Badge variant="outline">{overlap}% overlap</Badge>
+                              </div>
+                              <div className="text-xs text-muted-foreground space-y-1">
+                                <p><strong>Location:</strong> {fallbackOffice.city}, {fallbackOffice.country}</p>
+                                <p><strong>Timezone:</strong> {fallbackOffice.timezone}</p>
+                                <p><strong>Business Days:</strong> {fallbackOffice.businessHours?.standard?.filter(d => d.isWorkingDay).length || 0} days/week</p>
+                              </div>
+                            </div>
+                          )
+                        })}
+                        
+                        <div className="p-3 bg-blue-50 rounded-lg text-xs">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle size={12} className="text-blue-600 mt-0.5" />
+                            <div className="text-blue-700">
+                              <p className="font-medium mb-1">Automatic Failover</p>
+                              <p>When the primary office is unavailable, approvals will be automatically routed to the best available fallback office based on business day overlap and current availability.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Regional Rules Configuration Dialog */}
+          <Dialog open={showRegionalRules} onOpenChange={setShowRegionalRules}>
+            <DialogContent className="max-w-6xl">
+              <DialogHeader>
+                <DialogTitle>Regional Business Rules Configuration</DialogTitle>
+                <DialogDescription>
+                  Configure office locations, business hours, holidays, and escalation rules for quote approvals
+                </DialogDescription>
+              </DialogHeader>
+              <RegionalBusinessRulesManager 
+                companyId={companyId}
+                userId={userId}
+                userRole={userRole}
+              />
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
