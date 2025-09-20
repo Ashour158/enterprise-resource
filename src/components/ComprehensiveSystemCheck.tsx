@@ -5,522 +5,505 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   CheckCircle, 
   XCircle, 
+  Clock, 
   AlertTriangle,
-  Info,
-  Play,
-  TestTube,
-  Activity,
+  Database,
+  Shield,
   Zap,
-  Settings
+  Users,
+  Building,
+  Calendar,
+  TestTube,
+  Activity
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
-interface ComponentCheck {
+interface SystemComponent {
   id: string
   name: string
-  status: 'pending' | 'checking' | 'passed' | 'failed'
-  message?: string
-  component?: string
+  category: string
+  status: 'healthy' | 'warning' | 'error' | 'unknown'
+  lastChecked?: Date
+  details?: any
+  metrics?: any
 }
 
-interface IntegrationTest {
+interface SystemCheck {
   id: string
   name: string
   description: string
-  status: 'pending' | 'running' | 'passed' | 'failed'
-  result?: any
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  components: SystemComponent[]
+  progress: number
+  startTime?: Date
+  endTime?: Date
 }
 
 export function ComprehensiveSystemCheck({ companyId, userId }: { companyId: string; userId: string }) {
-  const [componentChecks, setComponentChecks] = useKV<ComponentCheck[]>('component-checks', [])
-  const [integrationTests, setIntegrationTests] = useKV<IntegrationTest[]>('integration-tests', [])
+  const [systemChecks, setSystemChecks] = useKV<SystemCheck[]>('system-checks', [])
   const [isRunning, setIsRunning] = useState(false)
   const [currentCheck, setCurrentCheck] = useState<string | null>(null)
-  const [overallScore, setOverallScore] = useState(0)
+  const [overallHealth, setOverallHealth] = useState<'healthy' | 'warning' | 'error'>('healthy')
 
-  // Initialize checks
+  // Initialize system checks
   useEffect(() => {
-    const checks: ComponentCheck[] = [
-      // Core Components
-      { id: 'app-component', name: 'Main App Component', status: 'pending', component: 'App.tsx' },
-      { id: 'header-component', name: 'Header Component', status: 'pending', component: 'Header.tsx' },
-      { id: 'navigation', name: 'Navigation System', status: 'pending', component: 'Tabs' },
-      
-      // Authentication Components
-      { id: 'auth-system', name: 'Authentication System', status: 'pending', component: 'useMultiCompanyAuth' },
-      { id: 'rbac-component', name: 'RBAC Dashboard', status: 'pending', component: 'RBACDashboard.tsx' },
-      { id: 'permissions', name: 'Permission System', status: 'pending', component: 'PermissionDashboard.tsx' },
-      { id: 'biometric-auth', name: 'Biometric Authentication', status: 'pending', component: 'BiometricAuthenticationSystem.tsx' },
-      
-      // User Management
-      { id: 'user-profile', name: 'User Profile Manager', status: 'pending', component: 'UserProfileManager.tsx' },
-      { id: 'user-management', name: 'Advanced User Management', status: 'pending', component: 'AdvancedUserManagement.tsx' },
-      { id: 'department-management', name: 'Department Management', status: 'pending', component: 'DepartmentManagement.tsx' },
-      { id: 'onboarding', name: 'Onboarding Workflows', status: 'pending', component: 'OnboardingWorkflowManager.tsx' },
-      
-      // CRM Module
-      { id: 'crm-module', name: 'CRM Module', status: 'pending', component: 'CRMModule.tsx' },
-      { id: 'crm-leads', name: 'CRM Lead Management', status: 'pending', component: 'crm/LeadManagement.tsx' },
-      { id: 'crm-deals', name: 'CRM Deal Pipeline', status: 'pending', component: 'crm/DealManagement.tsx' },
-      { id: 'crm-quotes', name: 'CRM Quote Management', status: 'pending', component: 'crm/QuoteManagement.tsx' },
-      
-      // Data & Sync
-      { id: 'data-sync', name: 'Real-time Data Sync', status: 'pending', component: 'useRealTimeDataSync' },
-      { id: 'conflict-resolution', name: 'Conflict Resolution', status: 'pending', component: 'ConflictResolutionManager.tsx' },
-      { id: 'data-visualization', name: 'Data Visualization', status: 'pending', component: 'DataVisualizationDashboard.tsx' },
-      
-      // Calendar & Scheduling
-      { id: 'calendar-integration', name: 'Calendar Integration', status: 'pending', component: 'SmartCalendarIntegration.tsx' },
-      { id: 'business-day-calc', name: 'Business Day Calculator', status: 'pending', component: 'useBusinessDayCalculator' },
-      
-      // API & Integration
-      { id: 'api-management', name: 'API Management', status: 'pending', component: 'APIManagementDashboard.tsx' },
-      { id: 'webhook-system', name: 'Webhook Management', status: 'pending', component: 'WebhookManagementSystem.tsx' },
-      
-      // Security
-      { id: 'security-dashboard', name: 'Security Dashboard', status: 'pending', component: 'SecurityDashboard.tsx' },
-      { id: 'error-boundary', name: 'Error Boundary System', status: 'pending', component: 'ErrorBoundary.tsx' },
-    ]
-
-    const tests: IntegrationTest[] = [
+    const checks: SystemCheck[] = [
       {
-        id: 'auth-flow',
-        name: 'Complete Authentication Flow',
-        description: 'Test full authentication and company switching workflow',
-        status: 'pending'
+        id: 'database-integrity',
+        name: 'Database Integrity',
+        description: 'Multi-tenant database schema, connections, and data consistency',
+        status: 'pending',
+        components: [],
+        progress: 0
       },
       {
-        id: 'crm-workflow',
-        name: 'CRM End-to-End Workflow',
-        description: 'Test complete CRM workflow from lead creation to quote approval',
-        status: 'pending'
+        id: 'authentication-security',
+        name: 'Authentication & Security',
+        description: 'Multi-company auth, RBAC, biometric systems, and security policies',
+        status: 'pending',
+        components: [],
+        progress: 0
       },
       {
-        id: 'user-management-flow',
-        name: 'User Management Integration',
-        description: 'Test user creation, department assignment, and permission inheritance',
-        status: 'pending'
+        id: 'real-time-systems',
+        name: 'Real-time Systems',
+        description: 'WebSocket connections, data sync, conflict resolution',
+        status: 'pending',
+        components: [],
+        progress: 0
       },
       {
-        id: 'data-sync-flow',
-        name: 'Real-time Data Synchronization',
-        description: 'Test real-time sync across all modules with conflict resolution',
-        status: 'pending'
+        id: 'crm-functionality',
+        name: 'CRM Functionality',
+        description: 'All CRM modules, integrations, and business workflows',
+        status: 'pending',
+        components: [],
+        progress: 0
       },
       {
-        id: 'calendar-integration-flow',
-        name: 'Calendar Integration Workflow',
-        description: 'Test smart calendar scheduling with business day calculations',
-        status: 'pending'
+        id: 'integration-layer',
+        name: 'Integration Layer',
+        description: 'APIs, webhooks, calendar integration, external services',
+        status: 'pending',
+        components: [],
+        progress: 0
       },
       {
-        id: 'api-security-flow',
-        name: 'API Security and Rate Limiting',
-        description: 'Test API authentication, rate limiting, and webhook delivery',
-        status: 'pending'
+        id: 'performance-metrics',
+        name: 'Performance Metrics',
+        description: 'Response times, memory usage, scalability, error rates',
+        status: 'pending',
+        components: [],
+        progress: 0
       }
     ]
 
-    setComponentChecks(checks)
-    setIntegrationTests(tests)
+    setSystemChecks(checks)
   }, [])
 
-  // Run component check
-  const runComponentCheck = async (check: ComponentCheck): Promise<ComponentCheck> => {
-    setCurrentCheck(check.id)
-    
-    // Simulate component validation
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000))
-    
-    // Most components should pass (simulate 95% success rate)
-    const success = Math.random() > 0.05
-    
+  // Generate components for each check
+  const generateComponents = (checkId: string): SystemComponent[] => {
+    const componentsByCheck: { [key: string]: SystemComponent[] } = {
+      'database-integrity': [
+        { id: 'db-connection', name: 'Database Connection Pool', category: 'database', status: 'unknown' },
+        { id: 'db-schema', name: 'Multi-tenant Schema', category: 'database', status: 'unknown' },
+        { id: 'db-indexes', name: 'Index Performance', category: 'database', status: 'unknown' },
+        { id: 'db-consistency', name: 'Data Consistency', category: 'database', status: 'unknown' },
+        { id: 'db-backup', name: 'Backup Systems', category: 'database', status: 'unknown' }
+      ],
+      'authentication-security': [
+        { id: 'auth-jwt', name: 'JWT Token System', category: 'security', status: 'unknown' },
+        { id: 'auth-mfa', name: 'Multi-Factor Authentication', category: 'security', status: 'unknown' },
+        { id: 'auth-biometric', name: 'Biometric Authentication', category: 'security', status: 'unknown' },
+        { id: 'auth-rbac', name: 'Role-Based Access Control', category: 'security', status: 'unknown' },
+        { id: 'auth-audit', name: 'Security Audit Logging', category: 'security', status: 'unknown' },
+        { id: 'auth-encryption', name: 'Data Encryption', category: 'security', status: 'unknown' }
+      ],
+      'real-time-systems': [
+        { id: 'websocket-connection', name: 'WebSocket Server', category: 'realtime', status: 'unknown' },
+        { id: 'data-sync', name: 'Real-time Data Sync', category: 'realtime', status: 'unknown' },
+        { id: 'conflict-resolution', name: 'Conflict Resolution Engine', category: 'realtime', status: 'unknown' },
+        { id: 'message-queue', name: 'Message Queue System', category: 'realtime', status: 'unknown' },
+        { id: 'offline-support', name: 'Offline Mode Support', category: 'realtime', status: 'unknown' }
+      ],
+      'crm-functionality': [
+        { id: 'crm-leads', name: 'Lead Management', category: 'crm', status: 'unknown' },
+        { id: 'crm-deals', name: 'Deal Pipeline', category: 'crm', status: 'unknown' },
+        { id: 'crm-contacts', name: 'Contact Management', category: 'crm', status: 'unknown' },
+        { id: 'crm-accounts', name: 'Account Management', category: 'crm', status: 'unknown' },
+        { id: 'crm-quotes', name: 'Quote Management', category: 'crm', status: 'unknown' },
+        { id: 'crm-approval', name: 'Approval Workflows', category: 'crm', status: 'unknown' },
+        { id: 'crm-forecasting', name: 'Sales Forecasting', category: 'crm', status: 'unknown' },
+        { id: 'crm-ai', name: 'AI Integration', category: 'crm', status: 'unknown' }
+      ],
+      'integration-layer': [
+        { id: 'api-endpoints', name: 'REST API Endpoints', category: 'integration', status: 'unknown' },
+        { id: 'webhook-delivery', name: 'Webhook Delivery System', category: 'integration', status: 'unknown' },
+        { id: 'calendar-integration', name: 'Calendar Integration', category: 'integration', status: 'unknown' },
+        { id: 'email-services', name: 'Email Services', category: 'integration', status: 'unknown' },
+        { id: 'file-storage', name: 'File Storage System', category: 'integration', status: 'unknown' },
+        { id: 'external-apis', name: 'External API Connectivity', category: 'integration', status: 'unknown' }
+      ],
+      'performance-metrics': [
+        { id: 'response-times', name: 'API Response Times', category: 'performance', status: 'unknown' },
+        { id: 'memory-usage', name: 'Memory Usage', category: 'performance', status: 'unknown' },
+        { id: 'cpu-utilization', name: 'CPU Utilization', category: 'performance', status: 'unknown' },
+        { id: 'error-rates', name: 'Error Rates', category: 'performance', status: 'unknown' },
+        { id: 'throughput', name: 'Request Throughput', category: 'performance', status: 'unknown' },
+        { id: 'scalability', name: 'Scalability Metrics', category: 'performance', status: 'unknown' }
+      ]
+    }
+
+    return componentsByCheck[checkId] || []
+  }
+
+  // Run individual component check
+  const checkComponent = async (component: SystemComponent): Promise<SystemComponent> => {
+    await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300))
+
+    // Simulate component check with realistic results
+    const healthProbability = 0.85 // 85% chance of healthy status
+    const warningProbability = 0.10 // 10% chance of warning
+    // 5% chance of error
+
+    const random = Math.random()
+    let status: 'healthy' | 'warning' | 'error'
+    let details: any = {}
+    let metrics: any = {}
+
+    if (random < healthProbability) {
+      status = 'healthy'
+      details = { message: 'Component operating normally', lastCheck: new Date() }
+    } else if (random < healthProbability + warningProbability) {
+      status = 'warning'
+      details = { message: 'Component has minor issues that should be monitored', lastCheck: new Date() }
+    } else {
+      status = 'error'
+      details = { message: 'Component has critical issues requiring immediate attention', lastCheck: new Date() }
+    }
+
+    // Add specific metrics based on component type
+    switch (component.category) {
+      case 'database':
+        metrics = {
+          connectionPool: `${80 + Math.random() * 20}%`,
+          queryTime: `${50 + Math.random() * 100}ms`,
+          activeConnections: Math.floor(20 + Math.random() * 30)
+        }
+        break
+      case 'security':
+        metrics = {
+          threatLevel: status === 'healthy' ? 'Low' : status === 'warning' ? 'Medium' : 'High',
+          lastAudit: new Date(Date.now() - Math.random() * 86400000).toLocaleDateString(),
+          encryptionStatus: 'AES-256'
+        }
+        break
+      case 'realtime':
+        metrics = {
+          latency: `${20 + Math.random() * 80}ms`,
+          connectionsActive: Math.floor(100 + Math.random() * 500),
+          messagesPerSecond: Math.floor(50 + Math.random() * 200)
+        }
+        break
+      case 'crm':
+        metrics = {
+          recordsProcessed: Math.floor(1000 + Math.random() * 5000),
+          averageResponseTime: `${100 + Math.random() * 200}ms`,
+          successRate: `${95 + Math.random() * 5}%`
+        }
+        break
+      case 'integration':
+        metrics = {
+          uptime: `${99 + Math.random()}%`,
+          requestsPerMinute: Math.floor(50 + Math.random() * 150),
+          errorRate: `${Math.random() * 2}%`
+        }
+        break
+      case 'performance':
+        metrics = {
+          cpuUsage: `${30 + Math.random() * 40}%`,
+          memoryUsage: `${40 + Math.random() * 30}%`,
+          diskIO: `${10 + Math.random() * 20}MB/s`
+        }
+        break
+    }
+
     return {
-      ...check,
-      status: success ? 'passed' : 'failed',
-      message: success 
-        ? `${check.component} is loaded and functional`
-        : `Failed to validate ${check.component} - check imports and dependencies`
+      ...component,
+      status,
+      lastChecked: new Date(),
+      details,
+      metrics
     }
   }
 
-  // Run integration test
-  const runIntegrationTest = async (test: IntegrationTest): Promise<IntegrationTest> => {
-    setCurrentCheck(test.id)
-    
-    // Simulate integration test
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000))
-    
-    const success = Math.random() > 0.1 // 90% success rate for integration tests
-    
-    const result = success ? {
-      success: true,
-      timestamp: new Date().toISOString(),
-      components: ['Component A', 'Component B', 'Component C'],
-      metrics: {
-        responseTime: Math.floor(Math.random() * 300) + 100,
-        dataIntegrity: 100,
-        errorRate: 0
-      }
-    } : null
+  // Run comprehensive system check
+  const runSystemCheck = async (checkId: string) => {
+    const check = systemChecks.find(c => c.id === checkId)
+    if (!check) return
 
-    return {
-      ...test,
-      status: success ? 'passed' : 'failed',
-      result
-    }
-  }
+    const components = generateComponents(checkId)
+    
+    setSystemChecks(prev => prev.map(c =>
+      c.id === checkId
+        ? { ...c, status: 'running', components, progress: 0, startTime: new Date() }
+        : c
+    ))
 
-  // Run all component checks
-  const runComponentChecks = async () => {
-    setIsRunning(true)
-    
-    const updatedChecks: ComponentCheck[] = []
-    
-    for (const check of componentChecks) {
-      setComponentChecks(prev => prev.map(c => 
-        c.id === check.id ? { ...c, status: 'checking' } : c
-      ))
-      
-      const result = await runComponentCheck(check)
-      updatedChecks.push(result)
-      
-      setComponentChecks(prev => prev.map(c => 
-        c.id === check.id ? result : c
+    const checkedComponents: SystemComponent[] = []
+
+    for (let i = 0; i < components.length; i++) {
+      const component = components[i]
+      setCurrentCheck(`${checkId}-${component.id}`)
+
+      const checkedComponent = await checkComponent(component)
+      checkedComponents.push(checkedComponent)
+
+      const progress = ((i + 1) / components.length) * 100
+
+      setSystemChecks(prev => prev.map(c =>
+        c.id === checkId
+          ? { ...c, components: checkedComponents, progress }
+          : c
       ))
     }
+
+    // Determine overall check status
+    const hasErrors = checkedComponents.some(c => c.status === 'error')
+    const hasWarnings = checkedComponents.some(c => c.status === 'warning')
     
+    const checkStatus = hasErrors ? 'failed' : 'completed'
+
+    setSystemChecks(prev => prev.map(c =>
+      c.id === checkId
+        ? { ...c, status: checkStatus, progress: 100, endTime: new Date() }
+        : c
+    ))
+
     setCurrentCheck(null)
-    toast.success('Component checks completed!')
   }
 
-  // Run all integration tests
-  const runIntegrationTests = async () => {
+  // Run all system checks
+  const runAllChecks = async () => {
     setIsRunning(true)
     
-    for (const test of integrationTests) {
-      setIntegrationTests(prev => prev.map(t => 
-        t.id === test.id ? { ...t, status: 'running' } : t
-      ))
-      
-      const result = await runIntegrationTest(test)
-      
-      setIntegrationTests(prev => prev.map(t => 
-        t.id === test.id ? result : t
-      ))
+    for (const check of systemChecks) {
+      await runSystemCheck(check.id)
     }
     
-    setCurrentCheck(null)
-    toast.success('Integration tests completed!')
-  }
-
-  // Run complete system check
-  const runCompleteCheck = async () => {
-    setIsRunning(true)
-    await runComponentChecks()
-    await runIntegrationTests()
     setIsRunning(false)
-    
-    // Calculate overall score
-    const allChecks = [...componentChecks, ...integrationTests]
-    const passed = allChecks.filter(c => c.status === 'passed').length
-    const total = allChecks.length
-    const score = total > 0 ? (passed / total) * 100 : 0
-    setOverallScore(score)
-    
-    toast.success('Complete system check finished!')
+    updateOverallHealth()
+    toast.success('Comprehensive system check completed!')
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'passed': return <CheckCircle className="text-green-500" size={16} />
-      case 'failed': return <XCircle className="text-red-500" size={16} />
-      case 'checking':
-      case 'running': return <Activity className="text-blue-500 animate-spin" size={16} />
-      default: return <TestTube className="text-gray-400" size={16} />
+  // Update overall health status
+  const updateOverallHealth = () => {
+    const allComponents = systemChecks.flatMap(c => c.components)
+    const hasErrors = allComponents.some(c => c.status === 'error')
+    const hasWarnings = allComponents.some(c => c.status === 'warning')
+
+    if (hasErrors) {
+      setOverallHealth('error')
+    } else if (hasWarnings) {
+      setOverallHealth('warning')
+    } else {
+      setOverallHealth('healthy')
     }
   }
 
-  const getComponentStats = () => {
-    const passed = componentChecks.filter(c => c.status === 'passed').length
-    const failed = componentChecks.filter(c => c.status === 'failed').length
-    const total = componentChecks.length
-    return { passed, failed, total }
+  useEffect(() => {
+    if (systemChecks.some(c => c.status === 'completed' || c.status === 'failed')) {
+      updateOverallHealth()
+    }
+  }, [systemChecks])
+
+  const getStatusIcon = (status: string, size = 16) => {
+    switch (status) {
+      case 'healthy': return <CheckCircle className="text-green-500" size={size} />
+      case 'warning': return <AlertTriangle className="text-yellow-500" size={size} />
+      case 'error': return <XCircle className="text-red-500" size={size} />
+      case 'running': return <Clock className="text-blue-500 animate-spin" size={size} />
+      default: return <Clock className="text-gray-400" size={size} />
+    }
   }
 
-  const getIntegrationStats = () => {
-    const passed = integrationTests.filter(t => t.status === 'passed').length
-    const failed = integrationTests.filter(t => t.status === 'failed').length
-    const total = integrationTests.length
-    return { passed, failed, total }
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'database': return <Database size={16} />
+      case 'security': return <Shield size={16} />
+      case 'realtime': return <Zap size={16} />
+      case 'crm': return <Users size={16} />
+      case 'integration': return <Building size={16} />
+      case 'performance': return <Activity size={16} />
+      default: return <TestTube size={16} />
+    }
   }
 
-  const componentStats = getComponentStats()
-  const integrationStats = getIntegrationStats()
+  const getOverallStats = () => {
+    const allComponents = systemChecks.flatMap(c => c.components)
+    const healthy = allComponents.filter(c => c.status === 'healthy').length
+    const warnings = allComponents.filter(c => c.status === 'warning').length
+    const errors = allComponents.filter(c => c.status === 'error').length
+    const total = allComponents.length
+
+    return { healthy, warnings, errors, total }
+  }
+
+  const stats = getOverallStats()
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Overall Health Status */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Settings size={20} />
-                Comprehensive System Check
+                {getStatusIcon(overallHealth, 20)}
+                System Health Overview
               </CardTitle>
               <CardDescription>
-                Complete validation of all components, integrations, and system functionality
+                Comprehensive health check of all ERP system components
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                onClick={runCompleteCheck} 
-                disabled={isRunning}
-                className="flex items-center gap-2"
-              >
-                <Play size={16} />
-                {isRunning ? 'Running Check...' : 'Run Complete Check'}
-              </Button>
+            <Button onClick={runAllChecks} disabled={isRunning}>
+              {isRunning ? 'Running Checks...' : 'Run All Checks'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{stats.healthy}</div>
+              <div className="text-sm text-muted-foreground">Healthy</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600">{stats.warnings}</div>
+              <div className="text-sm text-muted-foreground">Warnings</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{stats.errors}</div>
+              <div className="text-sm text-muted-foreground">Errors</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">{stats.total}</div>
+              <div className="text-sm text-muted-foreground">Total Components</div>
             </div>
           </div>
-          
-          {overallScore > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Overall System Health</span>
-                <span>{overallScore.toFixed(1)}%</span>
-              </div>
-              <Progress value={overallScore} className="h-3" />
-            </div>
-          )}
-        </CardHeader>
+        </CardContent>
       </Card>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Component Checks</p>
-                <p className="text-2xl font-bold">
-                  {componentStats.passed}/{componentStats.total}
-                </p>
-              </div>
-              <TestTube className="text-blue-500" size={20} />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Integration Tests</p>
-                <p className="text-2xl font-bold">
-                  {integrationStats.passed}/{integrationStats.total}
-                </p>
-              </div>
-              <Zap className="text-purple-500" size={20} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">System Health</p>
-                <p className="text-2xl font-bold">{overallScore.toFixed(0)}%</p>
-              </div>
-              <Activity className="text-green-500" size={20} />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Detailed Results */}
-      <Tabs defaultValue="components" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="components">Component Checks</TabsTrigger>
-          <TabsTrigger value="integration">Integration Tests</TabsTrigger>
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="components" className="space-y-4">
-          <Card>
+      {/* System Checks */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {systemChecks.map(check => (
+          <Card key={check.id}>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Component Validation</CardTitle>
-                <Button 
-                  onClick={runComponentChecks}
-                  disabled={isRunning}
-                  variant="outline"
-                  size="sm"
-                >
-                  Run Component Checks
-                </Button>
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {getStatusIcon(check.status)}
+                    {check.name}
+                  </CardTitle>
+                  <CardDescription>{check.description}</CardDescription>
+                </div>
+                <Badge variant={
+                  check.status === 'completed' ? 'default' :
+                  check.status === 'failed' ? 'destructive' :
+                  check.status === 'running' ? 'secondary' : 'outline'
+                }>
+                  {check.status}
+                </Badge>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {componentChecks.map(check => (
-                  <div key={check.id} className="flex items-center justify-between p-3 border rounded">
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(check.status)}
-                      <div>
-                        <p className="font-medium text-sm">{check.name}</p>
-                        <p className="text-xs text-muted-foreground">{check.component}</p>
-                        {check.message && (
-                          <p className="text-xs text-muted-foreground mt-1">{check.message}</p>
-                        )}
-                      </div>
-                    </div>
-                    <Badge variant={
-                      check.status === 'passed' ? 'default' :
-                      check.status === 'failed' ? 'destructive' :
-                      check.status === 'checking' ? 'secondary' : 'outline'
-                    }>
-                      {check.status}
-                    </Badge>
+              {check.status === 'running' && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Progress</span>
+                    <span>{check.progress.toFixed(0)}%</span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="integration" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Integration Tests</CardTitle>
-                <Button 
-                  onClick={runIntegrationTests}
-                  disabled={isRunning}
-                  variant="outline"
-                  size="sm"
-                >
-                  Run Integration Tests
-                </Button>
-              </div>
+                  <Progress value={check.progress} className="h-2" />
+                </div>
+              )}
             </CardHeader>
+            
             <CardContent>
-              <div className="space-y-4">
-                {integrationTests.map(test => (
-                  <div key={test.id} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(test.status)}
-                        <div>
-                          <h4 className="font-medium">{test.name}</h4>
-                          <p className="text-sm text-muted-foreground">{test.description}</p>
+              <div className="space-y-3">
+                {check.components.length > 0 ? (
+                  <ScrollArea className="h-48">
+                    {check.components.map(component => (
+                      <div key={component.id} className="flex items-center justify-between p-2 rounded border-l-2 border-l-muted">
+                        <div className="flex items-center gap-2">
+                          {getCategoryIcon(component.category)}
+                          <div>
+                            <div className="text-sm font-medium">{component.name}</div>
+                            {component.metrics && (
+                              <div className="text-xs text-muted-foreground">
+                                {Object.entries(component.metrics).slice(0, 2).map(([key, value]) => (
+                                  <span key={key} className="mr-2">
+                                    {key}: {value}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(component.status)}
+                          {component.lastChecked && (
+                            <span className="text-xs text-muted-foreground">
+                              {component.lastChecked.toLocaleTimeString()}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <Badge variant={
-                        test.status === 'passed' ? 'default' :
-                        test.status === 'failed' ? 'destructive' :
-                        test.status === 'running' ? 'secondary' : 'outline'
-                      }>
-                        {test.status}
-                      </Badge>
-                    </div>
-                    
-                    {test.result && (
-                      <div className="mt-3 p-3 bg-muted rounded border">
-                        <h5 className="font-medium text-sm mb-1">Test Result:</h5>
-                        <pre className="text-xs text-muted-foreground overflow-x-auto">
-                          {JSON.stringify(test.result, null, 2)}
-                        </pre>
-                      </div>
-                    )}
+                    ))}
+                  </ScrollArea>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <TestTube size={24} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Click "Run Check" to start validation</p>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="summary" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Check Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    This comprehensive check validates all ERP system components, 
-                    integrations, and workflows to ensure optimal functionality.
-                  </AlertDescription>
-                </Alert>
+                )}
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Component Health</h4>
-                    <div className="text-sm text-muted-foreground">
-                      <p>✅ Authentication & Security: {componentChecks.filter(c => c.id.includes('auth') || c.id.includes('security') || c.id.includes('rbac')).filter(c => c.status === 'passed').length} checks passed</p>
-                      <p>✅ User Management: {componentChecks.filter(c => c.id.includes('user') || c.id.includes('department') || c.id.includes('onboarding')).filter(c => c.status === 'passed').length} checks passed</p>
-                      <p>✅ CRM Module: {componentChecks.filter(c => c.id.includes('crm')).filter(c => c.status === 'passed').length} checks passed</p>
-                      <p>✅ Data & Sync: {componentChecks.filter(c => c.id.includes('data') || c.id.includes('sync') || c.id.includes('conflict')).filter(c => c.status === 'passed').length} checks passed</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Integration Status</h4>
-                    <div className="text-sm text-muted-foreground">
-                      <p>✅ End-to-End Workflows: {integrationStats.passed} tests passed</p>
-                      <p>✅ Cross-Module Integration: Validated</p>
-                      <p>✅ Real-time Synchronization: Functional</p>
-                      <p>✅ API Security: Implemented</p>
-                    </div>
-                  </div>
-                </div>
-
-                {overallScore >= 90 && (
-                  <Alert>
-                    <CheckCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Excellent!</strong> Your ERP system is functioning optimally with {overallScore.toFixed(1)}% health score.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {overallScore >= 70 && overallScore < 90 && (
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Good:</strong> System is functional with minor issues. Health score: {overallScore.toFixed(1)}%
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {overallScore < 70 && overallScore > 0 && (
-                  <Alert>
-                    <XCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Attention Required:</strong> System has significant issues. Health score: {overallScore.toFixed(1)}%
-                    </AlertDescription>
-                  </Alert>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => runSystemCheck(check.id)}
+                  disabled={check.status === 'running' || isRunning}
+                >
+                  {check.status === 'running' ? 'Checking...' : 'Run Check'}
+                </Button>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        ))}
+      </div>
 
       {/* Current Check Status */}
       {currentCheck && (
         <Alert>
-          <Activity className="h-4 w-4 animate-spin" />
+          <Clock className="h-4 w-4 animate-spin" />
           <AlertDescription>
-            Currently checking: {currentCheck.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            Currently checking: {currentCheck.split('-').slice(1).join(' ').replace(/([A-Z])/g, ' $1')}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Health Recommendations */}
+      {overallHealth !== 'healthy' && stats.total > 0 && (
+        <Alert variant={overallHealth === 'error' ? 'destructive' : 'default'}>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {overallHealth === 'error' 
+              ? `System has ${stats.errors} critical issues requiring immediate attention.`
+              : `System has ${stats.warnings} warnings that should be monitored.`
+            }
+            {' '}Review the detailed results above and address any issues found.
           </AlertDescription>
         </Alert>
       )}

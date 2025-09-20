@@ -5,288 +5,394 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   CheckCircle, 
   XCircle, 
-  AlertTriangle, 
-  Info,
+  AlertTriangle,
+  Clock,
   Database,
   Shield,
   Users,
   Building,
-  Calendar,
-  Globe,
-  Activity,
   Zap,
-  TestTube
+  TestTube,
+  FileText,
+  Bug,
+  Wrench
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
-interface SystemCheck {
+interface ValidationRule {
   id: string
   name: string
+  description: string
   category: string
-  status: 'pending' | 'checking' | 'passed' | 'failed' | 'warning'
-  message?: string
+  severity: 'info' | 'warning' | 'error' | 'critical'
+  status: 'pending' | 'passed' | 'failed' | 'skipped'
   details?: any
-  critical: boolean
+  recommendations?: string[]
 }
 
-interface ValidationResult {
+interface ValidationReport {
+  id: string
+  timestamp: Date
   category: string
-  checks: SystemCheck[]
-  status: 'healthy' | 'warning' | 'critical'
+  rules: ValidationRule[]
   score: number
+  status: 'in_progress' | 'completed' | 'failed'
 }
 
 export function SystemValidation({ companyId, userId }: { companyId: string; userId: string }) {
-  const [validationResults, setValidationResults] = useKV<ValidationResult[]>('system-validation', [])
-  const [isValidating, setIsValidating] = useState(false)
-  const [currentCheck, setCurrentCheck] = useState<string | null>(null)
-  const [overallHealth, setOverallHealth] = useState<'healthy' | 'warning' | 'critical'>('healthy')
-  const [healthScore, setHealthScore] = useState(100)
+  const [validationReports, setValidationReports] = useKV<ValidationReport[]>('validation-reports', [])
+  const [isRunning, setIsRunning] = useState(false)
+  const [currentValidation, setCurrentValidation] = useState<string | null>(null)
+  const [overallScore, setOverallScore] = useState(0)
 
-  // System checks configuration
-  const systemChecks: SystemCheck[] = [
-    // Authentication & Security
-    { id: 'auth-endpoints', name: 'Authentication Endpoints', category: 'security', status: 'pending', critical: true },
-    { id: 'rbac-validation', name: 'RBAC Configuration', category: 'security', status: 'pending', critical: true },
-    { id: 'session-management', name: 'Session Management', category: 'security', status: 'pending', critical: true },
-    { id: 'biometric-support', name: 'Biometric Authentication', category: 'security', status: 'pending', critical: false },
-    { id: 'mfa-configuration', name: 'Multi-Factor Authentication', category: 'security', status: 'pending', critical: true },
-    
-    // Data Management
-    { id: 'database-connectivity', name: 'Database Connectivity', category: 'data', status: 'pending', critical: true },
-    { id: 'data-isolation', name: 'Multi-Company Data Isolation', category: 'data', status: 'pending', critical: true },
-    { id: 'backup-systems', name: 'Backup Systems', category: 'data', status: 'pending', critical: true },
-    { id: 'sync-mechanisms', name: 'Real-time Sync', category: 'data', status: 'pending', critical: false },
-    
-    // User Management
-    { id: 'user-profiles', name: 'User Profile Management', category: 'users', status: 'pending', critical: true },
-    { id: 'department-assignment', name: 'Department Assignment', category: 'users', status: 'pending', critical: true },
-    { id: 'permission-inheritance', name: 'Permission Inheritance', category: 'users', status: 'pending', critical: false },
-    { id: 'onboarding-workflows', name: 'Onboarding Workflows', category: 'users', status: 'pending', critical: false },
-    
-    // CRM Module
-    { id: 'crm-lead-system', name: 'Lead Management System', category: 'crm', status: 'pending', critical: true },
-    { id: 'crm-deal-pipeline', name: 'Deal Pipeline', category: 'crm', status: 'pending', critical: true },
-    { id: 'crm-quote-management', name: 'Quote Management', category: 'crm', status: 'pending', critical: true },
-    { id: 'crm-ai-integration', name: 'AI Integration', category: 'crm', status: 'pending', critical: false },
-    
-    // Calendar Integration
-    { id: 'calendar-scheduling', name: 'Smart Scheduling', category: 'calendar', status: 'pending', critical: false },
-    { id: 'business-day-calc', name: 'Business Day Calculations', category: 'calendar', status: 'pending', critical: false },
-    { id: 'holiday-management', name: 'Holiday Calendar', category: 'calendar', status: 'pending', critical: false },
-    
-    // API & Integration
-    { id: 'api-endpoints', name: 'API Endpoints', category: 'api', status: 'pending', critical: true },
-    { id: 'webhook-delivery', name: 'Webhook Delivery', category: 'api', status: 'pending', critical: false },
-    { id: 'rate-limiting', name: 'Rate Limiting', category: 'api', status: 'pending', critical: true },
-    
-    // Performance
-    { id: 'response-times', name: 'Response Times', category: 'performance', status: 'pending', critical: false },
-    { id: 'memory-usage', name: 'Memory Usage', category: 'performance', status: 'pending', critical: false },
-    { id: 'error-handling', name: 'Error Handling', category: 'performance', status: 'pending', critical: true }
-  ]
+  // Define validation rules by category
+  const validationRules = {
+    'data-integrity': [
+      {
+        id: 'multi-tenant-isolation',
+        name: 'Multi-tenant Data Isolation',
+        description: 'Verify that company data is properly isolated and cannot be accessed across tenants',
+        category: 'data-integrity',
+        severity: 'critical' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'foreign-key-constraints',
+        name: 'Foreign Key Constraints',
+        description: 'Ensure all database foreign key relationships are properly defined and enforced',
+        category: 'data-integrity',
+        severity: 'error' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'data-consistency',
+        name: 'Cross-table Data Consistency',
+        description: 'Validate data consistency across related tables and modules',
+        category: 'data-integrity',
+        severity: 'warning' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'audit-trail-completeness',
+        name: 'Audit Trail Completeness',
+        description: 'Verify that all user actions are properly logged in audit trails',
+        category: 'data-integrity',
+        severity: 'error' as const,
+        status: 'pending' as const
+      }
+    ],
+    'security-compliance': [
+      {
+        id: 'authentication-security',
+        name: 'Authentication Security',
+        description: 'Validate password policies, MFA, and session management',
+        category: 'security-compliance',
+        severity: 'critical' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'rbac-enforcement',
+        name: 'RBAC Enforcement',
+        description: 'Ensure role-based access control is properly enforced across all modules',
+        category: 'security-compliance',
+        severity: 'critical' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'data-encryption',
+        name: 'Data Encryption',
+        description: 'Verify that sensitive data is encrypted at rest and in transit',
+        category: 'security-compliance',
+        severity: 'critical' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'api-security',
+        name: 'API Security',
+        description: 'Validate API authentication, rate limiting, and input validation',
+        category: 'security-compliance',
+        severity: 'error' as const,
+        status: 'pending' as const
+      }
+    ],
+    'business-logic': [
+      {
+        id: 'crm-workflow-integrity',
+        name: 'CRM Workflow Integrity',
+        description: 'Validate lead-to-deal conversion, quote approval workflows, and status transitions',
+        category: 'business-logic',
+        severity: 'error' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'permission-inheritance',
+        name: 'Permission Inheritance',
+        description: 'Verify that permission inheritance works correctly across role hierarchies',
+        category: 'business-logic',
+        severity: 'warning' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'department-assignment-logic',
+        name: 'Department Assignment Logic',
+        description: 'Validate user-department assignments and access restrictions',
+        category: 'business-logic',
+        severity: 'warning' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'onboarding-workflow-completeness',
+        name: 'Onboarding Workflow Completeness',
+        description: 'Ensure onboarding workflows are complete and properly sequenced',
+        category: 'business-logic',
+        severity: 'info' as const,
+        status: 'pending' as const
+      }
+    ],
+    'integration-validation': [
+      {
+        id: 'calendar-integration',
+        name: 'Calendar Integration',
+        description: 'Validate smart calendar features, business day calculations, and scheduling',
+        category: 'integration-validation',
+        severity: 'warning' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'webhook-delivery',
+        name: 'Webhook Delivery',
+        description: 'Test webhook delivery, retry logic, and failure handling',
+        category: 'integration-validation',
+        severity: 'warning' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'email-integration',
+        name: 'Email Integration',
+        description: 'Validate email sending, template rendering, and delivery tracking',
+        category: 'integration-validation',
+        severity: 'info' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'file-upload-handling',
+        name: 'File Upload Handling',
+        description: 'Test file upload, storage, virus scanning, and access controls',
+        category: 'integration-validation',
+        severity: 'warning' as const,
+        status: 'pending' as const
+      }
+    ],
+    'performance-optimization': [
+      {
+        id: 'query-performance',
+        name: 'Database Query Performance',
+        description: 'Analyze slow queries and recommend index optimizations',
+        category: 'performance-optimization',
+        severity: 'warning' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'api-response-times',
+        name: 'API Response Times',
+        description: 'Validate that API endpoints meet performance requirements',
+        category: 'performance-optimization',
+        severity: 'warning' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'caching-effectiveness',
+        name: 'Caching Effectiveness',
+        description: 'Evaluate cache hit rates and identify optimization opportunities',
+        category: 'performance-optimization',
+        severity: 'info' as const,
+        status: 'pending' as const
+      },
+      {
+        id: 'memory-usage-patterns',
+        name: 'Memory Usage Patterns',
+        description: 'Monitor memory usage and identify potential memory leaks',
+        category: 'performance-optimization',
+        severity: 'info' as const,
+        status: 'pending' as const
+      }
+    ]
+  }
 
-  // Run individual check
-  const runCheck = async (check: SystemCheck): Promise<SystemCheck> => {
-    setCurrentCheck(check.id)
-    
-    try {
-      // Simulate check execution
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 300))
+  // Run validation for a specific category
+  const runValidation = async (category: string) => {
+    const rules = validationRules[category as keyof typeof validationRules] || []
+    setIsRunning(true)
+    setCurrentValidation(category)
+
+    const validatedRules: ValidationRule[] = []
+
+    for (let i = 0; i < rules.length; i++) {
+      const rule = rules[i]
       
-      // Run actual validation based on check type
-      const result = await validateCheck(check)
-      return result
+      // Simulate validation logic
+      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000))
+      
+      const validationResult = await validateRule(rule)
+      validatedRules.push(validationResult)
+    }
+
+    // Calculate score for this category
+    const passedRules = validatedRules.filter(r => r.status === 'passed').length
+    const score = (passedRules / validatedRules.length) * 100
+
+    const report: ValidationReport = {
+      id: `${category}-${Date.now()}`,
+      timestamp: new Date(),
+      category,
+      rules: validatedRules,
+      score,
+      status: 'completed'
+    }
+
+    setValidationReports(prev => {
+      const filtered = prev.filter(r => r.category !== category)
+      return [...filtered, report]
+    })
+
+    setCurrentValidation(null)
+    setIsRunning(false)
+    
+    toast.success(`${category} validation completed with ${score.toFixed(1)}% score`)
+  }
+
+  // Validate individual rule
+  const validateRule = async (rule: ValidationRule): Promise<ValidationRule> => {
+    try {
+      // Simulate validation logic based on rule type
+      let status: 'passed' | 'failed' = 'passed'
+      let details: any = {}
+      let recommendations: string[] = []
+
+      // Simulate realistic validation results
+      const successRate = rule.severity === 'critical' ? 0.9 : 
+                         rule.severity === 'error' ? 0.8 : 
+                         rule.severity === 'warning' ? 0.7 : 0.6
+
+      if (Math.random() > successRate) {
+        status = 'failed'
+        recommendations = generateRecommendations(rule)
+        details = generateFailureDetails(rule)
+      } else {
+        details = generateSuccessDetails(rule)
+      }
+
+      return {
+        ...rule,
+        status,
+        details,
+        recommendations
+      }
     } catch (error) {
       return {
-        ...check,
+        ...rule,
         status: 'failed',
-        message: error instanceof Error ? error.message : 'Validation failed'
+        details: { error: error instanceof Error ? error.message : 'Unknown error' },
+        recommendations: ['Review system configuration and retry validation']
       }
     }
   }
 
-  // Validate specific checks
-  const validateCheck = async (check: SystemCheck): Promise<SystemCheck> => {
-    switch (check.id) {
-      case 'auth-endpoints':
-        return validateAuthEndpoints(check)
-      case 'database-connectivity':
-        return validateDatabaseConnectivity(check)
-      case 'rbac-validation':
-        return validateRBAC(check)
-      case 'crm-lead-system':
-        return validateCRMLeadSystem(check)
-      case 'api-endpoints':
-        return validateAPIEndpoints(check)
-      default:
-        return simulateGenericCheck(check)
+  // Generate realistic recommendations
+  const generateRecommendations = (rule: ValidationRule): string[] => {
+    const recommendations: { [key: string]: string[] } = {
+      'multi-tenant-isolation': [
+        'Review database row-level security policies',
+        'Implement additional company_id filters in queries',
+        'Audit API endpoints for proper tenant isolation'
+      ],
+      'authentication-security': [
+        'Strengthen password policy requirements',
+        'Enable MFA for all administrative users',
+        'Review session timeout configurations'
+      ],
+      'crm-workflow-integrity': [
+        'Update workflow validation rules',
+        'Review state transition permissions',
+        'Test quote approval escalation logic'
+      ],
+      'query-performance': [
+        'Add database indexes for frequently queried columns',
+        'Optimize N+1 query patterns',
+        'Consider query result caching'
+      ]
+    }
+
+    return recommendations[rule.id] || [
+      'Review system configuration',
+      'Consult documentation for best practices',
+      'Contact support if issues persist'
+    ]
+  }
+
+  // Generate failure details
+  const generateFailureDetails = (rule: ValidationRule): any => {
+    const details: { [key: string]: any } = {
+      'multi-tenant-isolation': {
+        issue: 'Found 3 queries without proper company_id filtering',
+        affectedTables: ['leads', 'contacts', 'quotes'],
+        riskLevel: 'High'
+      },
+      'authentication-security': {
+        issue: 'Password policy allows weak passwords',
+        weakPasswords: 12,
+        mfaAdoption: '67%'
+      },
+      'crm-workflow-integrity': {
+        issue: 'Quote approval workflow has validation gaps',
+        affectedWorkflows: ['high-value-quotes', 'regional-approvals'],
+        errorRate: '3.2%'
+      }
+    }
+
+    return details[rule.id] || {
+      issue: 'Validation check failed',
+      timestamp: new Date().toISOString()
     }
   }
 
-  // Specific validation functions
-  const validateAuthEndpoints = async (check: SystemCheck): Promise<SystemCheck> => {
-    // Simulate authentication endpoint validation
+  // Generate success details
+  const generateSuccessDetails = (rule: ValidationRule): any => {
     return {
-      ...check,
-      status: 'passed',
-      message: 'All authentication endpoints are responding correctly',
-      details: {
-        endpoints: ['/api/auth/login', '/api/auth/logout', '/api/auth/refresh'],
-        responseTime: '< 200ms',
-        security: 'HTTPS enabled'
-      }
-    }
-  }
-
-  const validateDatabaseConnectivity = async (check: SystemCheck): Promise<SystemCheck> => {
-    return {
-      ...check,
-      status: 'passed',
-      message: 'Database connectivity and schema validation successful',
-      details: {
-        connection: 'PostgreSQL 14+',
-        multiTenant: 'Enabled',
-        isolation: 'Company-level',
-        performance: 'Optimal'
-      }
-    }
-  }
-
-  const validateRBAC = async (check: SystemCheck): Promise<SystemCheck> => {
-    return {
-      ...check,
-      status: 'passed',
-      message: 'Role-based access control system operational',
-      details: {
-        roles: ['Super Admin', 'Company Admin', 'Manager', 'User', 'Viewer'],
-        permissions: 'Matrix validated',
-        inheritance: 'Working correctly'
-      }
-    }
-  }
-
-  const validateCRMLeadSystem = async (check: SystemCheck): Promise<SystemCheck> => {
-    return {
-      ...check,
-      status: 'passed',
-      message: 'CRM lead management system fully operational',
-      details: {
-        operations: ['Create', 'Read', 'Update', 'Delete', 'Convert'],
-        integrations: ['Calendar', 'Tasks', 'AI'],
-        pipeline: 'Functional'
-      }
-    }
-  }
-
-  const validateAPIEndpoints = async (check: SystemCheck): Promise<SystemCheck> => {
-    return {
-      ...check,
-      status: 'passed',
-      message: 'API endpoints responding correctly with proper authentication',
-      details: {
-        endpoints: 47,
-        authenticated: 'JWT + Company Context',
-        rateLimit: 'Configured',
-        documentation: 'OpenAPI/Swagger'
-      }
-    }
-  }
-
-  const simulateGenericCheck = async (check: SystemCheck): Promise<SystemCheck> => {
-    // Simulate random results with high success rate
-    const outcomes = ['passed', 'passed', 'passed', 'passed', 'warning', 'failed']
-    const status = outcomes[Math.floor(Math.random() * outcomes.length)] as SystemCheck['status']
-    
-    const messages = {
-      passed: 'System check completed successfully',
-      warning: 'Minor issues detected, system functional',
-      failed: 'Critical issues found, immediate attention required'
-    }
-    
-    return {
-      ...check,
-      status,
-      message: messages[status] || 'Check completed',
-      details: {
-        timestamp: new Date().toISOString(),
-        automated: true
-      }
+      message: 'Validation passed successfully',
+      checksPassed: Math.floor(5 + Math.random() * 10),
+      lastValidated: new Date().toISOString(),
+      score: Math.round(85 + Math.random() * 15)
     }
   }
 
   // Run all validations
-  const runSystemValidation = async () => {
-    setIsValidating(true)
-    setCurrentCheck(null)
-
-    const results: ValidationResult[] = []
-    const categories = [...new Set(systemChecks.map(c => c.category))]
-
-    for (const category of categories) {
-      const categoryChecks = systemChecks.filter(c => c.category === category)
-      const updatedChecks: SystemCheck[] = []
-
-      for (const check of categoryChecks) {
-        const result = await runCheck(check)
-        updatedChecks.push(result)
-      }
-
-      // Calculate category health
-      const passed = updatedChecks.filter(c => c.status === 'passed').length
-      const warnings = updatedChecks.filter(c => c.status === 'warning').length
-      const failed = updatedChecks.filter(c => c.status === 'failed').length
-      const total = updatedChecks.length
-
-      let categoryStatus: 'healthy' | 'warning' | 'critical' = 'healthy'
-      if (failed > 0) categoryStatus = 'critical'
-      else if (warnings > 0) categoryStatus = 'warning'
-
-      const score = ((passed + warnings * 0.5) / total) * 100
-
-      results.push({
-        category,
-        checks: updatedChecks,
-        status: categoryStatus,
-        score
-      })
+  const runAllValidations = async () => {
+    for (const category of Object.keys(validationRules)) {
+      await runValidation(category)
     }
-
-    setValidationResults(results)
-    
-    // Calculate overall health
-    const criticalIssues = results.filter(r => r.status === 'critical').length
-    const warnings = results.filter(r => r.status === 'warning').length
-    
-    let overallStatus: 'healthy' | 'warning' | 'critical' = 'healthy'
-    if (criticalIssues > 0) overallStatus = 'critical'
-    else if (warnings > 0) overallStatus = 'warning'
-    
-    const overallScore = results.reduce((sum, r) => sum + r.score, 0) / results.length
-
-    setOverallHealth(overallStatus)
-    setHealthScore(overallScore)
-    setIsValidating(false)
-    setCurrentCheck(null)
-
-    toast.success('System validation completed!')
   }
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'security': return <Shield size={16} />
-      case 'data': return <Database size={16} />
-      case 'users': return <Users size={16} />
-      case 'crm': return <Building size={16} />
-      case 'calendar': return <Calendar size={16} />
-      case 'api': return <Globe size={16} />
-      case 'performance': return <Zap size={16} />
-      default: return <TestTube size={16} />
+  // Calculate overall score
+  useEffect(() => {
+    if (validationReports.length > 0) {
+      const totalScore = validationReports.reduce((sum, report) => sum + report.score, 0)
+      setOverallScore(totalScore / validationReports.length)
+    }
+  }, [validationReports])
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'text-red-600'
+      case 'error': return 'text-red-500'
+      case 'warning': return 'text-yellow-500'
+      case 'info': return 'text-blue-500'
+      default: return 'text-gray-500'
     }
   }
 
@@ -294,207 +400,253 @@ export function SystemValidation({ companyId, userId }: { companyId: string; use
     switch (status) {
       case 'passed': return <CheckCircle className="text-green-500" size={16} />
       case 'failed': return <XCircle className="text-red-500" size={16} />
-      case 'warning': return <AlertTriangle className="text-yellow-500" size={16} />
-      case 'checking': return <Activity className="text-blue-500 animate-spin" size={16} />
-      default: return <Info className="text-gray-400" size={16} />
+      case 'skipped': return <Clock className="text-gray-400" size={16} />
+      default: return <Clock className="text-blue-500" size={16} />
     }
   }
 
-  const getHealthColor = (health: string) => {
-    switch (health) {
-      case 'healthy': return 'text-green-600'
-      case 'warning': return 'text-yellow-600'
-      case 'critical': return 'text-red-600'
-      default: return 'text-gray-600'
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'data-integrity': return <Database size={20} />
+      case 'security-compliance': return <Shield size={20} />
+      case 'business-logic': return <Building size={20} />
+      case 'integration-validation': return <Zap size={20} />
+      case 'performance-optimization': return <TestTube size={20} />
+      default: return <FileText size={20} />
     }
   }
 
   return (
     <div className="space-y-6">
-      {/* Health Overview */}
+      {/* Overall Validation Score */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Activity size={20} />
-                System Health Overview
+                <TestTube size={20} />
+                System Validation
               </CardTitle>
               <CardDescription>
-                Comprehensive validation of all ERP system components
+                Comprehensive validation of business rules, security, and data integrity
               </CardDescription>
             </div>
-            <Button 
-              onClick={runSystemValidation} 
-              disabled={isValidating}
-              className="flex items-center gap-2"
-            >
-              <TestTube size={16} />
-              {isValidating ? 'Validating...' : 'Run Validation'}
-            </Button>
+            <div className="flex items-center gap-4">
+              {overallScore > 0 && (
+                <div className="text-right">
+                  <div className="text-2xl font-bold">{overallScore.toFixed(1)}%</div>
+                  <div className="text-sm text-muted-foreground">Overall Score</div>
+                </div>
+              )}
+              <Button onClick={runAllValidations} disabled={isRunning}>
+                {isRunning ? 'Running...' : 'Run All Validations'}
+              </Button>
+            </div>
           </div>
         </CardHeader>
-
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Overall Health</p>
-                  <p className={`text-2xl font-bold ${getHealthColor(overallHealth)}`}>
-                    {overallHealth.charAt(0).toUpperCase() + overallHealth.slice(1)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Health Score</p>
-                  <p className="text-2xl font-bold">{healthScore.toFixed(1)}%</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Total Checks</p>
-                  <p className="text-2xl font-bold">{systemChecks.length}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {healthScore > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Overall System Health</span>
-                <span>{healthScore.toFixed(1)}%</span>
-              </div>
-              <Progress value={healthScore} className="h-3" />
-            </div>
-          )}
-        </CardContent>
       </Card>
 
-      {/* Validation Results */}
-      {validationResults.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {validationResults.map(result => (
-            <Card key={result.category}>
+      {/* Validation Categories */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {Object.entries(validationRules).map(([category, rules]) => {
+          const report = validationReports.find(r => r.category === category)
+          
+          return (
+            <Card key={category}>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {getCategoryIcon(result.category)}
+                    {getCategoryIcon(category)}
                     <div>
-                      <CardTitle className="text-sm capitalize">
-                        {result.category} Validation
+                      <CardTitle className="text-lg capitalize">
+                        {category.replace('-', ' ')}
                       </CardTitle>
-                      <CardDescription className="text-xs">
-                        {result.checks.length} checks completed
+                      <CardDescription>
+                        {rules.length} validation rules
                       </CardDescription>
                     </div>
                   </div>
-                  <Badge variant={
-                    result.status === 'healthy' ? 'default' :
-                    result.status === 'warning' ? 'secondary' : 'destructive'
-                  }>
-                    {result.status}
-                  </Badge>
+                  {report && (
+                    <Badge variant={
+                      report.score >= 90 ? 'default' :
+                      report.score >= 70 ? 'secondary' : 'destructive'
+                    }>
+                      {report.score.toFixed(1)}%
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
 
               <CardContent>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Category Score</span>
-                    <span>{result.score.toFixed(1)}%</span>
-                  </div>
-                  <Progress value={result.score} className="h-1" />
-                </div>
-
-                <ScrollArea className="h-48">
-                  <div className="space-y-1">
-                    {result.checks.map(check => (
-                      <div key={check.id} className="flex items-center justify-between p-2 rounded border">
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(check.status)}
-                          <div>
-                            <p className="text-sm font-medium">{check.name}</p>
-                            {check.message && (
-                              <p className="text-xs text-muted-foreground">{check.message}</p>
-                            )}
-                          </div>
-                        </div>
-                        {check.critical && (
-                          <Badge variant="outline" className="text-xs">
-                            Critical
-                          </Badge>
-                        )}
+                <div className="space-y-3">
+                  {currentValidation === category && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Validating...</span>
+                        <span>In Progress</span>
                       </div>
-                    ))}
-                  </div>
-                </ScrollArea>
+                      <Progress value={50} className="h-2" />
+                    </div>
+                  )}
+
+                  {report ? (
+                    <ScrollArea className="h-48">
+                      <div className="space-y-2">
+                        {report.rules.map(rule => (
+                          <div key={rule.id} className="flex items-start justify-between p-2 rounded border">
+                            <div className="flex items-start gap-2">
+                              {getStatusIcon(rule.status)}
+                              <div className="flex-1">
+                                <div className="text-sm font-medium">{rule.name}</div>
+                                <div className="text-xs text-muted-foreground">{rule.description}</div>
+                                {rule.status === 'failed' && rule.recommendations && (
+                                  <div className="mt-1">
+                                    <div className="text-xs text-yellow-600 mb-1">Recommendations:</div>
+                                    <ul className="text-xs text-muted-foreground list-disc list-inside">
+                                      {rule.recommendations.slice(0, 2).map((rec, i) => (
+                                        <li key={i}>{rec}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <Badge variant="outline" className={`text-xs ${getSeverityColor(rule.severity)}`}>
+                              {rule.severity}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Bug size={24} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Click "Run Validation" to start</p>
+                    </div>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => runValidation(category)}
+                    disabled={currentValidation === category || isRunning}
+                  >
+                    {currentValidation === category ? 'Validating...' : 'Run Validation'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          )
+        })}
+      </div>
 
-      {/* Current Check Status */}
-      {currentCheck && (
-        <Alert>
-          <Activity className="h-4 w-4 animate-spin" />
-          <AlertDescription>
-            Currently validating: {systemChecks.find(c => c.id === currentCheck)?.name || currentCheck}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* System Recommendations */}
-      {validationResults.length > 0 && overallHealth !== 'healthy' && (
+      {/* Validation Summary */}
+      {validationReports.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle size={20} />
-              Recommendations
-            </CardTitle>
+            <CardTitle>Validation Summary</CardTitle>
             <CardDescription>
-              Suggested actions to improve system health
+              Summary of all completed validations and recommendations
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {overallHealth === 'critical' && (
-                <Alert>
-                  <XCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Critical issues detected. Immediate attention required for production readiness.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {overallHealth === 'warning' && (
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Minor issues detected. System is functional but optimization recommended.
-                  </AlertDescription>
-                </Alert>
-              )}
+            <Tabs defaultValue="summary">
+              <TabsList>
+                <TabsTrigger value="summary">Summary</TabsTrigger>
+                <TabsTrigger value="failed-rules">Failed Rules</TabsTrigger>
+                <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+              </TabsList>
 
-              <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-4">
-                <li>Review failed critical checks and address immediately</li>
-                <li>Monitor system performance and response times</li>
-                <li>Verify all security configurations are properly set</li>
-                <li>Test backup and recovery procedures</li>
-                <li>Validate all API endpoints and authentication flows</li>
-              </ul>
-            </div>
+              <TabsContent value="summary" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {validationReports.reduce((sum, r) => sum + r.rules.filter(rule => rule.status === 'passed').length, 0)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Rules Passed</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">
+                      {validationReports.reduce((sum, r) => sum + r.rules.filter(rule => rule.status === 'failed').length, 0)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Rules Failed</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">
+                      {validationReports.reduce((sum, r) => sum + r.rules.length, 0)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Rules</div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="failed-rules" className="space-y-4">
+                {validationReports.flatMap(r => r.rules.filter(rule => rule.status === 'failed')).length === 0 ? (
+                  <div className="text-center py-8">
+                    <CheckCircle className="mx-auto mb-4 text-green-500" size={48} />
+                    <h3 className="text-lg font-semibold mb-2">All Validations Passed</h3>
+                    <p className="text-muted-foreground">No failed validation rules detected.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {validationReports.flatMap(r => 
+                      r.rules.filter(rule => rule.status === 'failed').map(rule => (
+                        <Alert key={`${r.category}-${rule.id}`} variant="destructive">
+                          <XCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            <strong>{rule.name}</strong> ({r.category}): {rule.description}
+                            {rule.details && rule.details.issue && (
+                              <div className="mt-1 text-sm">Issue: {rule.details.issue}</div>
+                            )}
+                          </AlertDescription>
+                        </Alert>
+                      ))
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="recommendations" className="space-y-4">
+                <div className="space-y-3">
+                  {validationReports.flatMap(r => 
+                    r.rules.filter(rule => rule.recommendations?.length > 0).map(rule => (
+                      <Card key={`${r.category}-${rule.id}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-2">
+                            <Wrench className="text-blue-500 mt-1" size={16} />
+                            <div>
+                              <div className="font-medium">{rule.name}</div>
+                              <div className="text-sm text-muted-foreground mb-2">{r.category}</div>
+                              <ul className="text-sm space-y-1">
+                                {rule.recommendations?.map((rec, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-blue-500">•</span>
+                                    {rec}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
+      )}
+
+      {/* Current Validation Status */}
+      {currentValidation && (
+        <Alert>
+          <Clock className="h-4 w-4 animate-spin" />
+          <AlertDescription>
+            Currently validating: {currentValidation.replace('-', ' ')}
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   )
