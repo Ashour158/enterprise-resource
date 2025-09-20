@@ -51,6 +51,20 @@ interface CalendarEvent {
   createdAt: Date
   autoScheduled: boolean
   conflictResolution?: 'manual' | 'auto-reschedule' | 'priority-override'
+  deadlineExtension?: {
+    originalDate: Date
+    extendedDate: Date
+    reason: 'weekend' | 'holiday' | 'business-day-rule' | 'manual'
+    extensionDays: number
+    notificationSent: boolean
+  }
+  businessDayCalculation?: {
+    originalDueDate: Date
+    adjustedDueDate: Date
+    businessDaysUsed: number
+    weekendsSkipped: number
+    holidaysSkipped: number
+  }
 }
 
 interface CalendarIntegration {
@@ -74,6 +88,19 @@ interface CalendarIntegration {
     }
     blackoutDates: string[]
     preferredMeetingTypes: string[]
+    weekendHandling: {
+      enabled: boolean
+      extendDeadlines: boolean
+      skipWeekends: boolean
+      holidayCalendar: string[]
+      customWorkingDays: number[] // 0-6, Sunday-Saturday
+      extensionNotifications: boolean
+    }
+    businessDayCalculation: {
+      excludeWeekends: boolean
+      excludeHolidays: boolean
+      customBusinessDays: number[]
+    }
   }
 }
 
@@ -180,6 +207,38 @@ export function SmartCalendarIntegration({
           createdBy: userId,
           createdAt: new Date(),
           autoScheduled: true
+        },
+        {
+          id: 'evt-004',
+          title: 'Project Documentation Deadline',
+          description: 'Complete initial project documentation and requirements',
+          startTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000),
+          attendees: ['john.smith', 'project-manager'],
+          meetingType: 'video',
+          eventType: 'deadline',
+          priority: 'high',
+          status: 'scheduled',
+          reminders: [1440, 120, 60],
+          linkedOnboardingTask: 'task-documentation-001',
+          departmentId: 'dept-002',
+          createdBy: userId,
+          createdAt: new Date(),
+          autoScheduled: true,
+          deadlineExtension: {
+            originalDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+            extendedDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            reason: 'weekend',
+            extensionDays: 2,
+            notificationSent: true
+          },
+          businessDayCalculation: {
+            originalDueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+            adjustedDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            businessDaysUsed: 5,
+            weekendsSkipped: 1,
+            holidaysSkipped: 0
+          }
         }
       ]
       setEvents(mockEvents)
@@ -204,8 +263,21 @@ export function SmartCalendarIntegration({
               end: '17:00',
               timezone: 'America/New_York'
             },
-            blackoutDates: [],
-            preferredMeetingTypes: ['video', 'in-person']
+            blackoutDates: ['2024-12-25', '2024-01-01', '2024-07-04'],
+            preferredMeetingTypes: ['video', 'in-person'],
+            weekendHandling: {
+              enabled: true,
+              extendDeadlines: true,
+              skipWeekends: true,
+              holidayCalendar: ['2024-12-25', '2024-01-01', '2024-07-04', '2024-11-28'],
+              customWorkingDays: [1, 2, 3, 4, 5], // Monday through Friday
+              extensionNotifications: true
+            },
+            businessDayCalculation: {
+              excludeWeekends: true,
+              excludeHolidays: true,
+              customBusinessDays: [1, 2, 3, 4, 5]
+            }
           }
         },
         {
@@ -225,7 +297,20 @@ export function SmartCalendarIntegration({
               timezone: 'America/New_York'
             },
             blackoutDates: [],
-            preferredMeetingTypes: ['video']
+            preferredMeetingTypes: ['video'],
+            weekendHandling: {
+              enabled: true,
+              extendDeadlines: false,
+              skipWeekends: true,
+              holidayCalendar: [],
+              customWorkingDays: [1, 2, 3, 4, 5],
+              extensionNotifications: false
+            },
+            businessDayCalculation: {
+              excludeWeekends: true,
+              excludeHolidays: false,
+              customBusinessDays: [1, 2, 3, 4, 5]
+            }
           }
         }
       ]
@@ -309,6 +394,180 @@ export function SmartCalendarIntegration({
   const safeIntegrations = integrations || []
   const safeScheduleTemplates = scheduleTemplates || []
 
+  // Business day calculation utilities
+  const isWeekend = (date: Date): boolean => {
+    const day = date.getDay()
+    return day === 0 || day === 6 // Sunday or Saturday
+  }
+
+  const isHoliday = (date: Date, holidays: string[]): boolean => {
+    const dateString = date.toISOString().split('T')[0]
+    return holidays.includes(dateString)
+  }
+
+  const isBusinessDay = (date: Date, settings: CalendarIntegration['settings']): boolean => {
+    const day = date.getDay()
+    const { businessDayCalculation, weekendHandling } = settings
+    
+    // Check if day is in custom business days
+    if (businessDayCalculation?.customBusinessDays && !businessDayCalculation.customBusinessDays.includes(day)) {
+      return false
+    }
+    
+    // Check weekends
+    if (businessDayCalculation?.excludeWeekends && isWeekend(date)) {
+      return false
+    }
+    
+    // Check holidays
+    if (businessDayCalculation?.excludeHolidays && isHoliday(date, weekendHandling?.holidayCalendar || [])) {
+      return false
+    }
+    
+    return true
+  }
+
+  const addBusinessDays = (startDate: Date, businessDays: number, settings: CalendarIntegration['settings']): Date => {
+    let currentDate = new Date(startDate)
+    let addedDays = 0
+    
+    while (addedDays < businessDays) {
+      currentDate.setDate(currentDate.getDate() + 1)
+      if (isBusinessDay(currentDate, settings)) {
+        addedDays++
+      }
+    }
+    
+    return currentDate
+  }
+
+  const calculateBusinessDaysBetween = (startDate: Date, endDate: Date, settings: CalendarIntegration['settings']): number => {
+    let currentDate = new Date(startDate)
+    let businessDays = 0
+    
+    while (currentDate < endDate) {
+      if (isBusinessDay(currentDate, settings)) {
+        businessDays++
+      }
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    return businessDays
+  }
+
+  const adjustDateForWeekends = (date: Date, settings: CalendarIntegration['settings']): {
+    adjustedDate: Date
+    extensionInfo?: {
+      originalDate: Date
+      extendedDate: Date
+      reason: 'weekend' | 'holiday' | 'business-day-rule'
+      extensionDays: number
+    }
+  } => {
+    const { weekendHandling } = settings
+    
+    if (!weekendHandling?.enabled) {
+      return { adjustedDate: date }
+    }
+    
+    let adjustedDate = new Date(date)
+    let extensionDays = 0
+    const originalDate = new Date(date)
+    
+    // Skip weekends if enabled
+    if (weekendHandling.skipWeekends) {
+      while (isWeekend(adjustedDate)) {
+        adjustedDate.setDate(adjustedDate.getDate() + 1)
+        extensionDays++
+      }
+    }
+    
+    // Skip holidays
+    while (isHoliday(adjustedDate, weekendHandling.holidayCalendar || [])) {
+      adjustedDate.setDate(adjustedDate.getDate() + 1)
+      extensionDays++
+    }
+    
+    // Check if date falls on non-business day
+    while (!isBusinessDay(adjustedDate, settings)) {
+      adjustedDate.setDate(adjustedDate.getDate() + 1)
+      extensionDays++
+    }
+    
+    if (extensionDays > 0) {
+      const reason = isWeekend(originalDate) ? 'weekend' : 
+                    isHoliday(originalDate, weekendHandling.holidayCalendar || []) ? 'holiday' : 
+                    'business-day-rule'
+      
+      return {
+        adjustedDate,
+        extensionInfo: {
+          originalDate,
+          extendedDate: adjustedDate,
+          reason,
+          extensionDays
+        }
+      }
+    }
+    
+    return { adjustedDate }
+  }
+
+  const processDeadlineExtensions = async (events: CalendarEvent[]): Promise<CalendarEvent[]> => {
+    const processedEvents: CalendarEvent[] = []
+    const primaryIntegration = safeIntegrations.find(i => i.isConnected) || safeIntegrations[0]
+    
+    if (!primaryIntegration?.settings.weekendHandling?.enabled) {
+      return events
+    }
+    
+    for (const event of events) {
+      if (event.eventType === 'deadline') {
+        const { adjustedDate, extensionInfo } = adjustDateForWeekends(event.startTime, primaryIntegration.settings)
+        
+        if (extensionInfo && primaryIntegration.settings.weekendHandling?.extendDeadlines) {
+          const updatedEvent: CalendarEvent = {
+            ...event,
+            startTime: adjustedDate,
+            endTime: new Date(adjustedDate.getTime() + (event.endTime.getTime() - event.startTime.getTime())),
+            deadlineExtension: {
+              originalDate: extensionInfo.originalDate,
+              extendedDate: extensionInfo.extendedDate,
+              reason: extensionInfo.reason,
+              extensionDays: extensionInfo.extensionDays,
+              notificationSent: false
+            }
+          }
+          
+          // Send notification if enabled
+          if (primaryIntegration.settings.weekendHandling?.extensionNotifications) {
+            await sendDeadlineExtensionNotification(updatedEvent)
+            updatedEvent.deadlineExtension!.notificationSent = true
+          }
+          
+          processedEvents.push(updatedEvent)
+        } else {
+          processedEvents.push(event)
+        }
+      } else {
+        processedEvents.push(event)
+      }
+    }
+    
+    return processedEvents
+  }
+
+  const sendDeadlineExtensionNotification = async (event: CalendarEvent): Promise<void> => {
+    if (!event.deadlineExtension) return
+    
+    const { originalDate, extendedDate, reason, extensionDays } = event.deadlineExtension
+    
+    toast.info(
+      `Deadline Extended: "${event.title}" moved from ${originalDate.toLocaleDateString()} to ${extendedDate.toLocaleDateString()} (${extensionDays} days) due to ${reason}`,
+      { duration: 5000 }
+    )
+  }
+
   const handleAutoScheduleOnboarding = async (employeeId: string, startDate: Date, departmentId: string) => {
     setIsScheduling(true)
     try {
@@ -318,17 +577,27 @@ export function SmartCalendarIntegration({
         return
       }
 
+      const primaryIntegration = safeIntegrations.find(i => i.isConnected) || safeIntegrations[0]
       const newEvents: CalendarEvent[] = []
       
       for (const scheduleItem of template.schedule) {
         if (!scheduleItem.autoSchedule) continue
 
-        const eventDate = new Date(startDate)
-        eventDate.setDate(eventDate.getDate() + scheduleItem.dayOffset)
+        let eventDate = new Date(startDate)
+        
+        // Use business day calculation if enabled
+        if (primaryIntegration?.settings.businessDayCalculation?.excludeWeekends) {
+          eventDate = addBusinessDays(startDate, scheduleItem.dayOffset, primaryIntegration.settings)
+        } else {
+          eventDate.setDate(eventDate.getDate() + scheduleItem.dayOffset)
+        }
+        
+        // Adjust for weekends and holidays
+        const { adjustedDate, extensionInfo } = adjustDateForWeekends(eventDate, primaryIntegration?.settings || safeIntegrations[0]?.settings)
         
         // Find optimal time slot
         const optimalTime = await findOptimalTimeSlot(
-          eventDate,
+          adjustedDate,
           scheduleItem.duration,
           scheduleItem.attendees
         )
@@ -353,6 +622,31 @@ export function SmartCalendarIntegration({
           autoScheduled: true
         }
 
+        // Add deadline extension info if applicable
+        if (extensionInfo && scheduleItem.eventType === 'deadline') {
+          newEvent.deadlineExtension = {
+            originalDate: extensionInfo.originalDate,
+            extendedDate: extensionInfo.extendedDate,
+            reason: extensionInfo.reason,
+            extensionDays: extensionInfo.extensionDays,
+            notificationSent: false
+          }
+        }
+
+        // Add business day calculation info
+        if (primaryIntegration?.settings.businessDayCalculation?.excludeWeekends) {
+          const originalDue = new Date(startDate)
+          originalDue.setDate(originalDue.getDate() + scheduleItem.dayOffset)
+          
+          newEvent.businessDayCalculation = {
+            originalDueDate: originalDue,
+            adjustedDueDate: adjustedDate,
+            businessDaysUsed: calculateBusinessDaysBetween(startDate, adjustedDate, primaryIntegration.settings),
+            weekendsSkipped: Math.floor((adjustedDate.getTime() - originalDue.getTime()) / (1000 * 60 * 60 * 24 * 7)) * 2,
+            holidaysSkipped: 0 // Would calculate based on actual holidays
+          }
+        }
+
         // Add meeting URL for video meetings
         if (scheduleItem.meetingType === 'video' || scheduleItem.meetingType === 'hybrid') {
           newEvent.meetingUrl = await generateMeetingUrl(newEvent)
@@ -361,12 +655,15 @@ export function SmartCalendarIntegration({
         newEvents.push(newEvent)
       }
 
-      setEvents(currentEvents => [...(currentEvents || []), ...newEvents])
+      // Process deadline extensions
+      const processedEvents = await processDeadlineExtensions(newEvents)
+      
+      setEvents(currentEvents => [...(currentEvents || []), ...processedEvents])
       
       // Sync with external calendars
-      await syncWithExternalCalendars(newEvents)
+      await syncWithExternalCalendars(processedEvents)
       
-      toast.success(`Successfully scheduled ${newEvents.length} onboarding events`)
+      toast.success(`Successfully scheduled ${processedEvents.length} onboarding events with weekend handling`)
       
     } catch (error) {
       console.error('Error auto-scheduling onboarding:', error)
@@ -381,19 +678,26 @@ export function SmartCalendarIntegration({
     durationMinutes: number,
     attendeeIds: string[]
   ): Promise<{ start: Date; end: Date }> => {
-    // Simple algorithm - in real implementation, this would check attendee availability
-    const workingHours = safeIntegrations[0]?.settings.workingHours || { start: '09:00', end: '17:00' }
-    const bufferTime = safeIntegrations[0]?.settings.bufferTime || 15
+    const primaryIntegration = safeIntegrations.find(i => i.isConnected) || safeIntegrations[0]
+    const workingHours = primaryIntegration?.settings.workingHours || { start: '09:00', end: '17:00' }
+    const bufferTime = primaryIntegration?.settings.bufferTime || 15
+    
+    // Ensure the preferred date is a business day
+    let targetDate = new Date(preferredDate)
+    if (primaryIntegration?.settings.weekendHandling?.enabled) {
+      const { adjustedDate } = adjustDateForWeekends(targetDate, primaryIntegration.settings)
+      targetDate = adjustedDate
+    }
     
     const startHour = parseInt(workingHours.start.split(':')[0])
     const startMinute = parseInt(workingHours.start.split(':')[1])
     
-    const startTime = new Date(preferredDate)
+    const startTime = new Date(targetDate)
     startTime.setHours(startHour, startMinute, 0, 0)
     
     // Check for conflicts and find next available slot
     const existingEvents = safeEvents.filter(event => 
-      event.startTime.toDateString() === preferredDate.toDateString()
+      event.startTime.toDateString() === targetDate.toDateString()
     ).sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
     
     let proposedStart = new Date(startTime)
@@ -406,7 +710,26 @@ export function SmartCalendarIntegration({
       }
     }
     
+    // Ensure we don't schedule outside working hours
+    const endHour = parseInt(workingHours.end.split(':')[0])
+    const endMinute = parseInt(workingHours.end.split(':')[1])
+    const endTime = new Date(targetDate)
+    endTime.setHours(endHour, endMinute, 0, 0)
+    
     const proposedEnd = new Date(proposedStart.getTime() + durationMinutes * 60000)
+    
+    // If meeting would end after working hours, move to next business day
+    if (proposedEnd > endTime) {
+      let nextDay = new Date(targetDate)
+      nextDay.setDate(nextDay.getDate() + 1)
+      
+      if (primaryIntegration?.settings.weekendHandling?.enabled) {
+        const { adjustedDate } = adjustDateForWeekends(nextDay, primaryIntegration.settings)
+        nextDay = adjustedDate
+      }
+      
+      return findOptimalTimeSlot(nextDay, durationMinutes, attendeeIds)
+    }
     
     return { start: proposedStart, end: proposedEnd }
   }
@@ -424,6 +747,17 @@ export function SmartCalendarIntegration({
     for (const integration of connectedIntegrations) {
       console.log(`Syncing ${events.length} events with ${integration.name}`)
       // API calls to sync events would go here
+    }
+  }
+
+  const handleProcessDeadlineExtensions = async () => {
+    try {
+      const processedEvents = await processDeadlineExtensions(safeEvents)
+      setEvents(processedEvents)
+      toast.success('Deadline extensions processed successfully')
+    } catch (error) {
+      console.error('Error processing deadline extensions:', error)
+      toast.error('Failed to process deadline extensions')
     }
   }
 
@@ -496,14 +830,15 @@ export function SmartCalendarIntegration({
                 Calendar Settings
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Calendar Integration Settings</DialogTitle>
                 <DialogDescription>
-                  Connect and configure external calendar services for automatic synchronization
+                  Connect and configure external calendar services for automatic synchronization and weekend handling
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Calendar Integrations</h3>
                 {safeIntegrations.map((integration) => (
                   <div key={integration.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-3">
@@ -545,9 +880,185 @@ export function SmartCalendarIntegration({
                     </div>
                   </div>
                 ))}
+                
+                <div className="mt-6 space-y-4">
+                  <h3 className="text-lg font-semibold">Weekend & Holiday Handling</h3>
+                  {safeIntegrations.filter(i => i.isConnected).map((integration) => (
+                    <div key={`weekend-${integration.id}`} className="p-4 border rounded-lg space-y-4">
+                      <h4 className="font-medium">{integration.name} Settings</h4>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor={`extend-deadlines-${integration.id}`}>
+                            Auto-extend deadlines
+                          </Label>
+                          <Switch
+                            id={`extend-deadlines-${integration.id}`}
+                            checked={integration.settings.weekendHandling?.extendDeadlines || false}
+                            onCheckedChange={(checked) => {
+                              setIntegrations(current =>
+                                (current || []).map(i =>
+                                  i.id === integration.id 
+                                    ? { 
+                                        ...i, 
+                                        settings: {
+                                          ...i.settings,
+                                          weekendHandling: {
+                                            ...i.settings.weekendHandling,
+                                            extendDeadlines: checked
+                                          }
+                                        }
+                                      }
+                                    : i
+                                )
+                              )
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor={`skip-weekends-${integration.id}`}>
+                            Skip weekends
+                          </Label>
+                          <Switch
+                            id={`skip-weekends-${integration.id}`}
+                            checked={integration.settings.weekendHandling?.skipWeekends || false}
+                            onCheckedChange={(checked) => {
+                              setIntegrations(current =>
+                                (current || []).map(i =>
+                                  i.id === integration.id 
+                                    ? { 
+                                        ...i, 
+                                        settings: {
+                                          ...i.settings,
+                                          weekendHandling: {
+                                            ...i.settings.weekendHandling,
+                                            skipWeekends: checked
+                                          }
+                                        }
+                                      }
+                                    : i
+                                )
+                              )
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor={`extension-notifications-${integration.id}`}>
+                            Extension notifications
+                          </Label>
+                          <Switch
+                            id={`extension-notifications-${integration.id}`}
+                            checked={integration.settings.weekendHandling?.extensionNotifications || false}
+                            onCheckedChange={(checked) => {
+                              setIntegrations(current =>
+                                (current || []).map(i =>
+                                  i.id === integration.id 
+                                    ? { 
+                                        ...i, 
+                                        settings: {
+                                          ...i.settings,
+                                          weekendHandling: {
+                                            ...i.settings.weekendHandling,
+                                            extensionNotifications: checked
+                                          }
+                                        }
+                                      }
+                                    : i
+                                )
+                              )
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor={`exclude-holidays-${integration.id}`}>
+                            Exclude holidays
+                          </Label>
+                          <Switch
+                            id={`exclude-holidays-${integration.id}`}
+                            checked={integration.settings.businessDayCalculation?.excludeHolidays || false}
+                            onCheckedChange={(checked) => {
+                              setIntegrations(current =>
+                                (current || []).map(i =>
+                                  i.id === integration.id 
+                                    ? { 
+                                        ...i, 
+                                        settings: {
+                                          ...i.settings,
+                                          businessDayCalculation: {
+                                            ...i.settings.businessDayCalculation,
+                                            excludeHolidays: checked
+                                          }
+                                        }
+                                      }
+                                    : i
+                                )
+                              )
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Working Days</Label>
+                        <div className="flex gap-2">
+                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                            <Button
+                              key={day}
+                              variant={integration.settings.weekendHandling?.customWorkingDays?.includes(index) ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => {
+                                setIntegrations(current =>
+                                  (current || []).map(i =>
+                                    i.id === integration.id 
+                                      ? { 
+                                          ...i, 
+                                          settings: {
+                                            ...i.settings,
+                                            weekendHandling: {
+                                              ...i.settings.weekendHandling,
+                                              customWorkingDays: integration.settings.weekendHandling?.customWorkingDays?.includes(index)
+                                                ? integration.settings.weekendHandling.customWorkingDays.filter(d => d !== index)
+                                                : [...(integration.settings.weekendHandling?.customWorkingDays || []), index]
+                                            }
+                                          }
+                                        }
+                                      : i
+                                  )
+                                )
+                              }}
+                            >
+                              {day}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Holiday Calendar</Label>
+                        <div className="text-sm text-muted-foreground">
+                          {integration.settings.weekendHandling?.holidayCalendar?.length || 0} holidays configured
+                        </div>
+                        <Button variant="outline" size="sm">
+                          Manage Holidays
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </DialogContent>
           </Dialog>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleProcessDeadlineExtensions}
+          >
+            <Warning size={16} className="mr-2" />
+            Process Extensions
+          </Button>
           {onboardingEmployeeId && (
             <Button
               onClick={() => handleAutoScheduleOnboarding(
@@ -739,6 +1250,11 @@ export function SmartCalendarIntegration({
                         <div className="flex items-center gap-2">
                           {getEventIcon(event.eventType)}
                           <h3 className="font-semibold">{event.title}</h3>
+                          {event.deadlineExtension && (
+                            <Badge variant="secondary" className="text-xs">
+                              Extended +{event.deadlineExtension.extensionDays}d
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">{event.eventType}</Badge>
@@ -751,6 +1267,25 @@ export function SmartCalendarIntegration({
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
+                      
+                      {event.deadlineExtension && (
+                        <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-sm">
+                          <p className="text-yellow-800 dark:text-yellow-200">
+                            <strong>Deadline Extended:</strong> Originally {event.deadlineExtension.originalDate.toLocaleDateString()}, 
+                            moved to {event.deadlineExtension.extendedDate.toLocaleDateString()} due to {event.deadlineExtension.reason}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {event.businessDayCalculation && (
+                        <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm">
+                          <p className="text-blue-800 dark:text-blue-200">
+                            <strong>Business Days:</strong> {event.businessDayCalculation.businessDaysUsed} business days used, 
+                            {event.businessDayCalculation.weekendsSkipped} weekends skipped
+                          </p>
+                        </div>
+                      )}
+                      
                       <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar size={14} />
@@ -870,10 +1405,10 @@ export function SmartCalendarIntegration({
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Connected Services</p>
-                    <p className="text-2xl font-bold">{safeIntegrations.filter(i => i.isConnected).length}</p>
+                    <p className="text-sm font-medium text-muted-foreground">Extended Deadlines</p>
+                    <p className="text-2xl font-bold">{safeEvents.filter(e => e.deadlineExtension).length}</p>
                   </div>
-                  <CheckCircle className="h-8 w-8 text-muted-foreground" />
+                  <Warning className="h-8 w-8 text-muted-foreground" />
                 </div>
               </CardContent>
             </Card>
@@ -891,6 +1426,112 @@ export function SmartCalendarIntegration({
                     </p>
                   </div>
                   <Clock className="h-8 w-8 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Weekend Handling Statistics</CardTitle>
+                <CardDescription>
+                  Analysis of deadline extensions and business day calculations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Weekend extensions</span>
+                    <span className="font-medium">
+                      {safeEvents.filter(e => e.deadlineExtension?.reason === 'weekend').length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Holiday extensions</span>
+                    <span className="font-medium">
+                      {safeEvents.filter(e => e.deadlineExtension?.reason === 'holiday').length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Business day rule extensions</span>
+                    <span className="font-medium">
+                      {safeEvents.filter(e => e.deadlineExtension?.reason === 'business-day-rule').length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Average extension days</span>
+                    <span className="font-medium">
+                      {safeEvents.filter(e => e.deadlineExtension).length > 0 
+                        ? Math.round(
+                            safeEvents
+                              .filter(e => e.deadlineExtension)
+                              .reduce((sum, e) => sum + (e.deadlineExtension?.extensionDays || 0), 0) /
+                            safeEvents.filter(e => e.deadlineExtension).length
+                          )
+                        : 0
+                      } days
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total weekends skipped</span>
+                    <span className="font-medium">
+                      {safeEvents
+                        .filter(e => e.businessDayCalculation)
+                        .reduce((sum, e) => sum + (e.businessDayCalculation?.weekendsSkipped || 0), 0)
+                      }
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Business Day Configuration</CardTitle>
+                <CardDescription>
+                  Current settings for weekend and holiday handling
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {safeIntegrations.filter(i => i.isConnected).map((integration) => (
+                    <div key={integration.id} className="border rounded-lg p-3">
+                      <h4 className="font-medium mb-2">{integration.name}</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Weekend handling enabled</span>
+                          <Badge variant={integration.settings.weekendHandling?.enabled ? 'default' : 'secondary'}>
+                            {integration.settings.weekendHandling?.enabled ? 'Yes' : 'No'}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Auto-extend deadlines</span>
+                          <Badge variant={integration.settings.weekendHandling?.extendDeadlines ? 'default' : 'secondary'}>
+                            {integration.settings.weekendHandling?.extendDeadlines ? 'Yes' : 'No'}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Skip weekends</span>
+                          <Badge variant={integration.settings.weekendHandling?.skipWeekends ? 'default' : 'secondary'}>
+                            {integration.settings.weekendHandling?.skipWeekends ? 'Yes' : 'No'}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Working days</span>
+                          <span>
+                            {integration.settings.weekendHandling?.customWorkingDays?.length || 0} days/week
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Holidays configured</span>
+                          <span>
+                            {integration.settings.weekendHandling?.holidayCalendar?.length || 0} holidays
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
