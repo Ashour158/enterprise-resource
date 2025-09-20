@@ -7,6 +7,8 @@ import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { AutomatedFollowUpReminders } from './AutomatedFollowUpReminders'
 import { 
   Clock, 
   TrendDown, 
@@ -21,7 +23,9 @@ import {
   Phone,
   Mail,
   Eye,
-  ArrowRight
+  ArrowRight,
+  Bell,
+  Zap
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { format, differenceInDays, isAfter, subDays } from 'date-fns'
@@ -73,11 +77,13 @@ interface AIAgingInsight {
 interface LeadAgingDashboardProps {
   companyId: string
   userId: string
+  userRole?: string
   assignedOnly?: boolean
 }
 
-export function LeadAgingDashboard({ companyId, userId, assignedOnly = false }: LeadAgingDashboardProps) {
+export function LeadAgingDashboard({ companyId, userId, userRole = 'user', assignedOnly = false }: LeadAgingDashboardProps) {
   const [leads, setLeads] = useKV<Lead[]>(`company-leads-${companyId}`, [])
+  const [activeTab, setActiveTab] = useState('aging')
   const [selectedBucket, setSelectedBucket] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [showDetails, setShowDetails] = useState(false)
@@ -274,10 +280,10 @@ export function LeadAgingDashboard({ companyId, userId, assignedOnly = false }: 
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Clock size={20} />
-                Lead Aging Dashboard
+                Lead Aging & Follow-up Management
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Track lead aging patterns and identify opportunities for immediate action
+                Track lead aging patterns, automated follow-up reminders, and identify opportunities for immediate action
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -309,241 +315,340 @@ export function LeadAgingDashboard({ companyId, userId, assignedOnly = false }: 
         </CardHeader>
       </Card>
 
-      {/* Metrics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Leads</p>
-                <p className="text-2xl font-bold">{metrics.totalLeads}</p>
-              </div>
-              <Users size={20} className="text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Main Interface with Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="aging" className="flex items-center gap-2">
+              <Clock size={16} />
+              Lead Aging
+            </TabsTrigger>
+            <TabsTrigger value="reminders" className="flex items-center gap-2">
+              <Bell size={16} />
+              Automated Reminders
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="flex items-center gap-2">
+              <Zap size={16} />
+              AI Insights
+            </TabsTrigger>
+          </TabsList>
+          <Badge variant="outline">
+            {metrics.totalLeads} Total Leads
+          </Badge>
+        </div>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Age</p>
-                <p className="text-2xl font-bold">{metrics.avgAge}d</p>
-              </div>
-              <Calendar size={20} className="text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <TabsContent value="aging" className="space-y-6">
+          {/* Metrics Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Leads</p>
+                    <p className="text-2xl font-bold">{metrics.totalLeads}</p>
+                  </div>
+                  <Users size={20} className="text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Contact Gap</p>
-                <p className="text-2xl font-bold">{metrics.avgDaysSinceContact}d</p>
-              </div>
-              <Activity size={20} className="text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Avg Age</p>
+                    <p className="text-2xl font-bold">{metrics.avgAge}d</p>
+                  </div>
+                  <Calendar size={20} className="text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className={metrics.overdueFollowUps > 0 ? 'border-orange-200 bg-orange-50/50' : ''}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Overdue</p>
-                <p className="text-2xl font-bold text-orange-600">{metrics.overdueFollowUps}</p>
-              </div>
-              <AlertTriangle size={20} className="text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Avg Contact Gap</p>
+                    <p className="text-2xl font-bold">{metrics.avgDaysSinceContact}d</p>
+                  </div>
+                  <Activity size={20} className="text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className={metrics.staleLeads > 0 ? 'border-red-200 bg-red-50/50' : ''}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Stale Leads</p>
-                <p className="text-2xl font-bold text-red-600">{metrics.staleLeads}</p>
-              </div>
-              <TrendDown size={20} className="text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
+            <Card className={metrics.overdueFollowUps > 0 ? 'border-orange-200 bg-orange-50/50' : ''}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Overdue</p>
+                    <p className="text-2xl font-bold text-orange-600">{metrics.overdueFollowUps}</p>
+                  </div>
+                  <AlertTriangle size={20} className="text-orange-500" />
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className={metrics.actionRequired > 0 ? 'border-yellow-200 bg-yellow-50/50' : ''}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Action Needed</p>
-                <p className="text-2xl font-bold text-yellow-600">{metrics.actionRequired}</p>
-              </div>
-              <Target size={20} className="text-yellow-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Card className={metrics.staleLeads > 0 ? 'border-red-200 bg-red-50/50' : ''}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Stale Leads</p>
+                    <p className="text-2xl font-bold text-red-600">{metrics.staleLeads}</p>
+                  </div>
+                  <TrendDown size={20} className="text-red-500" />
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Aging Buckets */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter size={20} />
-            Lead Distribution by Age
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            {agingBuckets.map((bucket) => {
-              const bucketLeads = leadsByBucket.get(bucket.name) || []
-              const percentage = metrics.totalLeads > 0 ? (bucketLeads.length / metrics.totalLeads) * 100 : 0
-              
-              return (
-                <Card 
-                  key={bucket.name}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    selectedBucket === bucket.name.toLowerCase() ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => setSelectedBucket(
-                    selectedBucket === bucket.name.toLowerCase() ? 'all' : bucket.name.toLowerCase()
-                  )}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium">{bucket.name}</h3>
-                      <div className={`w-3 h-3 rounded-full ${bucket.color}`} />
+            <Card className={metrics.actionRequired > 0 ? 'border-yellow-200 bg-yellow-50/50' : ''}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Action Needed</p>
+                    <p className="text-2xl font-bold text-yellow-600">{metrics.actionRequired}</p>
+                  </div>
+                  <Target size={20} className="text-yellow-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Aging Buckets */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter size={20} />
+                Lead Distribution by Age
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                {agingBuckets.map((bucket) => {
+                  const bucketLeads = leadsByBucket.get(bucket.name) || []
+                  const percentage = metrics.totalLeads > 0 ? (bucketLeads.length / metrics.totalLeads) * 100 : 0
+                  
+                  return (
+                    <Card 
+                      key={bucket.name}
+                      className={`cursor-pointer transition-all hover:shadow-md ${
+                        selectedBucket === bucket.name.toLowerCase() ? 'ring-2 ring-primary' : ''
+                      }`}
+                      onClick={() => setSelectedBucket(
+                        selectedBucket === bucket.name.toLowerCase() ? 'all' : bucket.name.toLowerCase()
+                      )}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium">{bucket.name}</h3>
+                          <div className={`w-3 h-3 rounded-full ${bucket.color}`} />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-2xl font-bold">{bucketLeads.length}</span>
+                            <Badge variant={
+                              bucket.urgency === 'critical' ? 'destructive' :
+                              bucket.urgency === 'high' ? 'destructive' :
+                              bucket.urgency === 'medium' ? 'secondary' : 'outline'
+                            }>
+                              {bucket.urgency}
+                            </Badge>
+                          </div>
+                          <Progress value={percentage} className="h-2" />
+                          <p className="text-xs text-muted-foreground">
+                            {bucket.minDays}-{bucket.maxDays === 999 ? '∞' : bucket.maxDays} days
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lead List */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>
+                  {selectedBucket === 'all' ? 'All Leads' : `${selectedBucket.charAt(0).toUpperCase() + selectedBucket.slice(1)} Leads`}
+                  <Badge variant="outline" className="ml-2">
+                    {filteredLeads.length}
+                  </Badge>
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedBucket('all')}
+                    disabled={selectedBucket === 'all'}
+                  >
+                    Clear Filter
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96">
+                <div className="space-y-2">
+                  {filteredLeads.length > 0 ? (
+                    filteredLeads
+                      .sort((a, b) => getDaysSinceLastContact(b) - getDaysSinceLastContact(a))
+                      .map((lead) => {
+                        const age = getLeadAge(lead)
+                        const daysSinceContact = getDaysSinceLastContact(lead)
+                        const bucket = getAgingBucket(lead)
+                        const isOverdue = isFollowUpOverdue(lead)
+                        
+                        return (
+                          <div 
+                            key={lead.id} 
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                            onClick={() => {
+                              setSelectedLead(lead)
+                              setShowDetails(true)
+                            }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-3 h-3 rounded-full ${bucket.color}`} />
+                              <div>
+                                <h4 className="font-medium">
+                                  {lead.firstName} {lead.lastName}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {lead.companyName} • {lead.jobTitle}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <div className="text-right text-sm">
+                                <p className="font-medium">Age: {age}d</p>
+                                <p className="text-muted-foreground">
+                                  Contact: {daysSinceContact}d ago
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <Badge variant={
+                                  lead.leadRating === 'hot' ? 'destructive' :
+                                  lead.leadRating === 'warm' ? 'default' : 'secondary'
+                                }>
+                                  {lead.leadRating}
+                                </Badge>
+
+                                {isOverdue && (
+                                  <Badge variant="destructive" className="animate-pulse">
+                                    Overdue
+                                  </Badge>
+                                )}
+
+                                <Badge variant="outline">
+                                  Score: {lead.aiLeadScore}
+                                </Badge>
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                                  <Phone size={14} />
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                                  <Mail size={14} />
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                                  <Eye size={14} />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                  ) : (
+                    <div className="text-center text-muted-foreground py-12">
+                      <Clock size={24} className="mx-auto mb-2 opacity-50" />
+                      <p>No leads found matching the current filters</p>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold">{bucketLeads.length}</span>
-                        <Badge variant={
-                          bucket.urgency === 'critical' ? 'destructive' :
-                          bucket.urgency === 'high' ? 'destructive' :
-                          bucket.urgency === 'medium' ? 'secondary' : 'outline'
-                        }>
-                          {bucket.urgency}
-                        </Badge>
-                      </div>
-                      <Progress value={percentage} className="h-2" />
-                      <p className="text-xs text-muted-foreground">
-                        {bucket.minDays}-{bucket.maxDays === 999 ? '∞' : bucket.maxDays} days
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reminders" className="space-y-6">
+          <AutomatedFollowUpReminders 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+          />
+        </TabsContent>
+
+        <TabsContent value="insights" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain size={20} />
+                AI-Powered Lead Aging Insights
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Advanced analytics and recommendations for optimizing your lead follow-up strategy
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="font-medium">Performance Insights</h3>
+                  <div className="space-y-3">
+                    <div className="p-3 border rounded-lg">
+                      <h4 className="font-medium text-sm text-green-600">Opportunity Identified</h4>
+                      <p className="text-sm mt-1">
+                        {metrics.staleLeads} leads haven't been contacted in over 60 days. 
+                        Re-engaging these leads could increase conversion by 15-20%.
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Lead List */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>
-              {selectedBucket === 'all' ? 'All Leads' : `${selectedBucket.charAt(0).toUpperCase() + selectedBucket.slice(1)} Leads`}
-              <Badge variant="outline" className="ml-2">
-                {filteredLeads.length}
-              </Badge>
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setSelectedBucket('all')}
-                disabled={selectedBucket === 'all'}
-              >
-                Clear Filter
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-96">
-            <div className="space-y-2">
-              {filteredLeads.length > 0 ? (
-                filteredLeads
-                  .sort((a, b) => getDaysSinceLastContact(b) - getDaysSinceLastContact(a))
-                  .map((lead) => {
-                    const age = getLeadAge(lead)
-                    const daysSinceContact = getDaysSinceLastContact(lead)
-                    const bucket = getAgingBucket(lead)
-                    const isOverdue = isFollowUpOverdue(lead)
-                    
-                    return (
-                      <div 
-                        key={lead.id} 
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                        onClick={() => {
-                          setSelectedLead(lead)
-                          setShowDetails(true)
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full ${bucket.color}`} />
-                          <div>
-                            <h4 className="font-medium">
-                              {lead.firstName} {lead.lastName}
-                            </h4>
-                            <p className="text-sm text-muted-foreground">
-                              {lead.companyName} • {lead.jobTitle}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                          <div className="text-right text-sm">
-                            <p className="font-medium">Age: {age}d</p>
-                            <p className="text-muted-foreground">
-                              Contact: {daysSinceContact}d ago
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <Badge variant={
-                              lead.leadRating === 'hot' ? 'destructive' :
-                              lead.leadRating === 'warm' ? 'default' : 'secondary'
-                            }>
-                              {lead.leadRating}
-                            </Badge>
-
-                            {isOverdue && (
-                              <Badge variant="destructive" className="animate-pulse">
-                                Overdue
-                              </Badge>
-                            )}
-
-                            <Badge variant="outline">
-                              Score: {lead.aiLeadScore}
-                            </Badge>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                              <Phone size={14} />
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                              <Mail size={14} />
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                              <Eye size={14} />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })
-              ) : (
-                <div className="text-center text-muted-foreground py-12">
-                  <Clock size={24} className="mx-auto mb-2 opacity-50" />
-                  <p>No leads found matching the current filters</p>
+                    <div className="p-3 border rounded-lg">
+                      <h4 className="font-medium text-sm text-orange-600">Action Required</h4>
+                      <p className="text-sm mt-1">
+                        {metrics.overdueFollowUps} follow-ups are overdue. 
+                        Prompt action on these leads is critical to maintain momentum.
+                      </p>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <h4 className="font-medium text-sm text-blue-600">Optimization Tip</h4>
+                      <p className="text-sm mt-1">
+                        Consider implementing automated follow-up sequences for leads that remain 
+                        uncontacted for more than 7 days.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+                
+                <div className="space-y-4">
+                  <h3 className="font-medium">Recommended Actions</h3>
+                  <div className="space-y-2">
+                    <Button variant="outline" className="w-full justify-start" onClick={() => setActiveTab('reminders')}>
+                      <Bell size={16} className="mr-2" />
+                      Set up automated follow-up reminders
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start">
+                      <Target size={16} className="mr-2" />
+                      Prioritize hot leads with contact gaps
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start">
+                      <Mail size={16} className="mr-2" />
+                      Launch re-engagement campaign for stale leads
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start">
+                      <Activity size={16} className="mr-2" />
+                      Review and update lead scoring criteria
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Lead Details Dialog */}
       <Dialog open={showDetails} onOpenChange={setShowDetails}>

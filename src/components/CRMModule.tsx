@@ -30,6 +30,7 @@ import { ComprehensiveLeadManagement } from '@/components/lead-management/Compre
 import { LeadTimelineManager } from '@/components/lead-management/LeadTimelineManager'
 import { LeadAgingDashboard } from '@/components/lead-management/LeadAgingDashboard'
 import { QuoteAttachmentManager } from '@/components/lead-management/QuoteAttachmentManager'
+import { FollowUpNotificationSystem } from '@/components/lead-management/FollowUpNotificationSystem'
 import { ComprehensiveDealManagement } from '@/components/crm/deal/ComprehensiveDealManagement'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
 import { CRMAnalytics as CRMAnalyticsType, CRMSettings } from '@/types/crm'
@@ -400,6 +401,25 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
           </TabsList>
 
           <div className="flex items-center gap-2">
+            <FollowUpNotificationSystem 
+              companyId={companyId}
+              userId={userId}
+              onNotificationAction={(notificationId, action) => {
+                // Handle notification actions
+                switch (action) {
+                  case 'view_lead':
+                    setActiveTab('leads')
+                    break
+                  case 'call':
+                  case 'email':
+                  case 'schedule':
+                    setActiveTab('activities')
+                    break
+                  default:
+                    break
+                }
+              }}
+            />
             <Button variant="outline" onClick={() => setShowImportExport(true)}>
               <Export size={16} className="mr-2" />
               Export All
@@ -461,6 +481,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
           <LeadAgingDashboard 
             companyId={companyId}
             userId={userId}
+            userRole={userRole}
             assignedOnly={false}
           />
         </TabsContent>
