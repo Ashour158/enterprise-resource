@@ -34,6 +34,8 @@ import { LeadAgingDashboard } from '@/components/lead-management/LeadAgingDashbo
 import { QuoteAttachmentManager } from '@/components/lead-management/QuoteAttachmentManager'
 import { FollowUpNotificationSystem } from '@/components/lead-management/FollowUpNotificationSystem'
 import { ComprehensiveDealManagement } from '@/components/crm/deal/ComprehensiveDealManagement'
+import { LeadProfilePage } from '@/components/crm/profiles/LeadProfilePage'
+import { ContactProfilePage } from '@/components/crm/profiles/ContactProfilePage'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
 import { CRMAnalytics as CRMAnalyticsType, CRMSettings } from '@/types/crm'
 import { 
@@ -88,6 +90,8 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
   const [selectedEntityForHistory, setSelectedEntityForHistory] = useState<{type?: string, id?: string}>({})
   const [selectedLeadForTimeline, setSelectedLeadForTimeline] = useState<string | null>(null)
   const [showTimelineDialog, setShowTimelineDialog] = useState(false)
+  const [selectedLeadProfile, setSelectedLeadProfile] = useState<string | null>(null)
+  const [selectedContactProfile, setSelectedContactProfile] = useState<string | null>(null)
 
   // Initialize CRM history tracking
   const { addEntry: addHistoryEntry } = useCRMHistory(companyId, userId, 'Current User')
@@ -256,29 +260,51 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {getModuleStats().map((stat, index) => (
-          <Card key={index}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                    <Badge variant="outline" className="text-xs">
-                      {stat.change}
-                    </Badge>
+      {/* Check for profile views first */}
+      {selectedLeadProfile && (
+        <LeadProfilePage
+          leadId={selectedLeadProfile}
+          companyId={companyId}
+          userId={userId}
+          onBack={() => setSelectedLeadProfile(null)}
+        />
+      )}
+      
+      {selectedContactProfile && (
+        <ContactProfilePage
+          contactId={selectedContactProfile}
+          companyId={companyId}
+          userId={userId}
+          onBack={() => setSelectedContactProfile(null)}
+        />
+      )}
+
+      {/* Only show main CRM interface if no profile is selected */}
+      {!selectedLeadProfile && !selectedContactProfile && (
+        <>
+          {/* Header Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {getModuleStats().map((stat, index) => (
+              <Card key={index}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-2xl font-bold">{stat.value}</p>
+                        <Badge variant="outline" className="text-xs">
+                          {stat.change}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className={stat.color}>
+                      {stat.icon}
+                    </div>
                   </div>
-                </div>
-                <div className={stat.color}>
-                  {stat.icon}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
       {/* Quick Actions & Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -472,6 +498,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             companyId={companyId}
             userId={userId}
             userRole={userRole}
+            onLeadSelect={setSelectedLeadProfile}
           />
         </TabsContent>
 
@@ -481,6 +508,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             userId={userId}
             userRole={userRole}
             assignedOnly={false}
+            onLeadSelect={setSelectedLeadProfile}
           />
         </TabsContent>
 
@@ -489,6 +517,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             companyId={companyId}
             userId={userId}
             userRole={userRole}
+            onContactSelect={setSelectedContactProfile}
           />
         </TabsContent>
 
@@ -722,6 +751,8 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             />
           </DialogContent>
         </Dialog>
+      )}
+      </>
       )}
     </div>
   )

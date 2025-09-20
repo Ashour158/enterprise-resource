@@ -79,9 +79,10 @@ interface LeadAgingDashboardProps {
   userId: string
   userRole?: string
   assignedOnly?: boolean
+  onLeadSelect?: (leadId: string) => void
 }
 
-export function LeadAgingDashboard({ companyId, userId, userRole = 'user', assignedOnly = false }: LeadAgingDashboardProps) {
+export function LeadAgingDashboard({ companyId, userId, userRole = 'user', assignedOnly = false, onLeadSelect }: LeadAgingDashboardProps) {
   const [leads, setLeads] = useKV<Lead[]>(`company-leads-${companyId}`, [])
   const [activeTab, setActiveTab] = useState('aging')
   const [selectedBucket, setSelectedBucket] = useState<string>('all')
@@ -505,8 +506,12 @@ export function LeadAgingDashboard({ companyId, userId, userRole = 'user', assig
                             key={lead.id} 
                             className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
                             onClick={() => {
-                              setSelectedLead(lead)
-                              setShowDetails(true)
+                              if (onLeadSelect) {
+                                onLeadSelect(lead.id)
+                              } else {
+                                setSelectedLead(lead)
+                                setShowDetails(true)
+                              }
                             }}
                           >
                             <div className="flex items-center gap-3">

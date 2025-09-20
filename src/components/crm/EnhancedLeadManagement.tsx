@@ -30,9 +30,10 @@ interface EnhancedLeadManagementProps {
   companyId: string
   userId: string
   userRole: string
+  onLeadSelect?: (leadId: string) => void
 }
 
-export function EnhancedLeadManagement({ companyId, userId, userRole }: EnhancedLeadManagementProps) {
+export function EnhancedLeadManagement({ companyId, userId, userRole, onLeadSelect }: EnhancedLeadManagementProps) {
   const [leads, setLeads] = useKV<Lead[]>(`leads-${companyId}`, mockLeads)
   
   const safeLeads = leads || mockLeads
@@ -531,6 +532,7 @@ export function EnhancedLeadManagement({ companyId, userId, userRole }: Enhanced
         showSearch={true}
         showFilters={true}
         showBulkActions={true}
+        onRowClick={(row) => onLeadSelect?.(row.id)}
         onAction={handleAction}
         onBulkAction={handleBulkAction}
         className="w-full"
@@ -555,7 +557,11 @@ export function EnhancedLeadManagement({ companyId, userId, userRole }: Enhanced
               .sort((a, b) => b.leadScore - a.leadScore)
               .slice(0, 6)
               .map((lead) => (
-                <div key={lead.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                <div 
+                  key={lead.id} 
+                  className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => onLeadSelect?.(lead.id)}
+                >
                   <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
                     <span className="text-sm font-medium text-primary">
                       {lead.firstName[0]}{lead.lastName[0]}

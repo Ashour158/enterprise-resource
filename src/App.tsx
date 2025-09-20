@@ -29,6 +29,8 @@ import { DataVisualizationDashboard } from '@/components/DataVisualizationDashbo
 import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { WebhookManagementSystem } from '@/components/WebhookManagementSystem'
 import { CRMModule } from '@/components/CRMModule'
+import { CRMProfileDemo } from '@/components/crm/CRMProfileDemo'
+import { SystemTestingSuite } from '@/components/SystemTestingSuite'
 import { ClickableDataShowcase } from '@/components/shared/ClickableDataShowcase'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -220,6 +222,7 @@ function App() {
                  activeView === 'onboarding-workflows' ? 'Onboarding Workflow Builder' :
                  activeView === 'employee-onboarding' ? 'My Onboarding Progress' :
                  activeView === 'calendar' ? 'Smart Calendar Integration' :
+                 activeView === 'crm-profiles' ? 'CRM Profile Experience' :
                  activeView === 'testing' ? 'System Testing Suite' :
                  'Multi-Company Management'}
               </h1>
@@ -258,6 +261,8 @@ function App() {
                   ? 'Smart calendar integration with automated scheduling for onboarding meetings and deadlines'
                   : activeView === 'crm'
                   ? 'Comprehensive customer relationship management with lead tracking, deal pipeline, customer service, and regional business rules for quote approvals'
+                  : activeView === 'crm-profiles'
+                  ? 'Experience comprehensive full-page lead and contact profiles with AI insights, activity timelines, and collaborative team notes'
                   : activeView === 'testing'
                   ? 'Comprehensive system testing suite for validating all ERP components, features, and integrations'
                   : 'Manage access and switch between multiple companies'
@@ -330,6 +335,10 @@ function App() {
                 <TabsTrigger value="crm" className="flex items-center gap-2">
                   <Users size={16} />
                   CRM
+                </TabsTrigger>
+                <TabsTrigger value="crm-profiles" className="flex items-center gap-2">
+                  <User size={16} />
+                  CRM Profiles
                 </TabsTrigger>
                 <TabsTrigger value="testing" className="flex items-center gap-2">
                   <TestTube size={16} />
@@ -598,6 +607,13 @@ function App() {
               companyId={currentCompany.id}
               userId={mockUser.id}
               userRole="company_admin"
+            />
+          </TabsContent>
+
+          <TabsContent value="crm-profiles" className="space-y-6">
+            <CRMProfileDemo 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
             />
           </TabsContent>
 

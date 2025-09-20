@@ -14,9 +14,10 @@ interface EnhancedContactManagementProps {
   companyId: string
   userId: string
   userRole: string
+  onContactSelect?: (contactId: string) => void
 }
 
-export function EnhancedContactManagement({ companyId, userId, userRole }: EnhancedContactManagementProps) {
+export function EnhancedContactManagement({ companyId, userId, userRole, onContactSelect }: EnhancedContactManagementProps) {
   const [contacts, setContacts] = useKV<Contact[]>(`contacts-${companyId}`, mockContacts)
   const [selectedContacts, setSelectedContacts] = useState<Contact[]>([])
 
@@ -340,6 +341,7 @@ export function EnhancedContactManagement({ companyId, userId, userRole }: Enhan
         showSearch={true}
         showFilters={true}
         showBulkActions={true}
+        onRowClick={(row) => onContactSelect?.(row.id)}
         onAction={handleAction}
         onBulkAction={handleBulkAction}
         className="w-full"
