@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CRMDashboard } from '@/components/crm/CRMDashboard'
+import { SalesReportingDashboard } from '@/components/crm/SalesReportingDashboard'
 import { ContactManagement } from '@/components/crm/ContactManagement'
 import { DealPipeline } from '@/components/crm/DealPipeline'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
@@ -354,15 +355,11 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>CRM Reports</CardTitle>
-              <CardDescription>Analytics and performance reports</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">CRM reports interface will be implemented here.</p>
-            </CardContent>
-          </Card>
+          <SalesReportingDashboard 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+          />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
