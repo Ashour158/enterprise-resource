@@ -24,6 +24,7 @@ import { FileAttachmentSystem } from '@/components/shared/FileAttachmentSystem'
 import { CRMImportExportSystem } from '@/components/shared/CRMImportExportSystem'
 import { CRMHistoryTracker, useCRMHistory } from '@/components/shared/CRMHistoryTracker'
 import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
+import { HolidayCalendarManager } from '@/components/HolidayCalendarManager'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
 import { CRMAnalytics as CRMAnalyticsType, CRMSettings } from '@/types/crm'
 import { 
@@ -319,7 +320,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
       {/* Main CRM Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="flex items-center justify-between">
-          <TabsList className="grid w-full grid-cols-11 lg:w-auto lg:grid-cols-none lg:flex">
+          <TabsList className="grid w-full grid-cols-12 lg:w-auto lg:grid-cols-none lg:flex">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <ChartLine size={16} />
               <span className="hidden sm:inline">Dashboard</span>
@@ -375,6 +376,10 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell size={16} />
               <span className="hidden sm:inline">Notifications</span>
+            </TabsTrigger>
+            <TabsTrigger value="holidays" className="flex items-center gap-2">
+              <Calendar size={16} />
+              <span className="hidden sm:inline">Holidays</span>
             </TabsTrigger>
           </TabsList>
 
@@ -614,6 +619,18 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             companyId={companyId}
             userId={userId}
             userRole={userRole}
+          />
+        </TabsContent>
+
+        <TabsContent value="holidays" className="space-y-6">
+          <HolidayCalendarManager
+            companyId={companyId}
+            onHolidayUpdate={(holidays) => {
+              toast.success(`Updated ${holidays.length} holidays`)
+            }}
+            onRulesUpdate={(rules) => {
+              toast.success(`Updated business rules for ${rules.length} locations`)
+            }}
           />
         </TabsContent>
       </Tabs>

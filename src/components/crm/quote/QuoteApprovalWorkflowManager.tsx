@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
+import { useBusinessDayCalculator } from '@/hooks/useBusinessDayCalculator'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,7 +48,8 @@ import {
   Crown,
   Building,
   Activity,
-  ArrowUp
+  ArrowUp,
+  Calendar
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -158,6 +160,15 @@ export function QuoteApprovalWorkflowManager({ companyId, userId, userRole }: Qu
   const [activeTab, setActiveTab] = useState('workflows')
   const [formData, setFormData] = useState<Partial<QuoteApprovalWorkflow>>({})
 
+  // Business day calculator for deadline management
+  const {
+    isBusinessDay,
+    addBusinessDays,
+    getUpcomingHolidays,
+    getBusinessHoursInfo,
+    isWithinBusinessHours
+  } = useBusinessDayCalculator(companyId)
+
   // Approval status summary
   const [pendingApprovals] = useKV<QuoteApproval[]>(`pending-approvals-${companyId}`, [])
   const [approvalStats, setApprovalStats] = useState({
@@ -224,6 +235,72 @@ export function QuoteApprovalWorkflowManager({ companyId, userId, userRole }: Qu
     setFormData({})
     setShowWorkflowForm(false)
     toast.success('Approval workflow created successfully')
+  }
+
+  // Business day deadline calculation functions
+  const calculateApprovalDeadline = (timeoutHours: number, createdAt: Date = new Date()): Date => {
+    // Convert hours to business days (assuming 8-hour work days)
+    const businessDays = Math.ceil(timeoutHours / 8)
+    const deadline = addBusinessDays(createdAt, businessDays)
+    
+    // Ensure deadline is within business hours
+    const businessHours = getBusinessHoursInfo()
+    const [hour, minute] = businessHours.endTime.split(':').map(Number)
+    deadline.setHours(hour, minute, 0, 0)
+    
+    // If deadline falls on a non-business day, move to next business day
+    if (!isBusinessDay(deadline)) {
+      return addBusinessDays(deadline, 1)
+    }
+    
+    return deadline
+  }
+
+  const checkForWeekendAndHolidayExtensions = (originalDeadline: Date): { 
+    newDeadline: Date, 
+    extensionReason: string | null 
+  } => {
+    const dayOfWeek = originalDeadline.getDay()
+    const upcomingHolidays = getUpcomingHolidays(7) // Check next 7 days
+    
+    let newDeadline = new Date(originalDeadline)
+    let extensionReason = null
+    
+    // Check if deadline falls on weekend
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      newDeadline = addBusinessDays(originalDeadline, 1)
+      extensionReason = 'Deadline extended due to weekend'
+    }
+    
+    // Check if deadline falls on holiday
+    const holidayOnDeadline = upcomingHolidays.find(holiday => 
+      new Date(holiday.date).toDateString() === newDeadline.toDateString()
+    )
+    
+    if (holidayOnDeadline) {
+      newDeadline = addBusinessDays(newDeadline, 1)
+      extensionReason = `Deadline extended due to holiday: ${holidayOnDeadline.name}`
+    }
+    
+    return { newDeadline, extensionReason }
+  }
+
+  const getApprovalTimeRemaining = (deadline: Date): string => {
+    const now = new Date()
+    const timeRemaining = deadline.getTime() - now.getTime()
+    
+    if (timeRemaining <= 0) {
+      return 'Overdue'
+    }
+    
+    const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    
+    if (days > 0) {
+      return `${days}d ${hours}h remaining`
+    } else {
+      return `${hours}h remaining`
+    }
   }
 
   const handleDeleteWorkflow = (workflowId: string) => {
@@ -359,6 +436,7 @@ export function QuoteApprovalWorkflowManager({ companyId, userId, userRole }: Qu
           <TabsTrigger value="workflows">Workflows</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="pending">Pending Approvals</TabsTrigger>
+          <TabsTrigger value="business-days">Business Days</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -704,6 +782,139 @@ export function QuoteApprovalWorkflowManager({ companyId, userId, userRole }: Qu
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="business-days" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Business Day Configuration</CardTitle>
+                <CardDescription>
+                  Configure holidays and business hours that affect approval deadlines
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Business Hours</Label>
+                  <div className="text-sm text-muted-foreground">
+                    {(() => {
+                      const info = getBusinessHoursInfo()
+                      return (
+                        <div>
+                          <p><strong>Working Days:</strong> {info.workingDays.join(', ')}</p>
+                          <p><strong>Hours:</strong> {info.startTime} - {info.endTime} ({info.timezone})</p>
+                          {info.lunchBreak && (
+                            <p><strong>Lunch Break:</strong> {info.lunchBreak.start} - {info.lunchBreak.end}</p>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Deadline Calculation Rules</Label>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                      <span>Weekend Extension</span>
+                      <Badge variant="secondary">Automatic</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                      <span>Holiday Extension</span>
+                      <Badge variant="secondary">Automatic</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                      <span>Business Hours Only</span>
+                      <Badge variant="secondary">Enabled</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Example Deadline Calculation</Label>
+                  <div className="p-3 border rounded-lg bg-muted/10">
+                    <p className="text-sm">
+                      <strong>Created:</strong> Today at 2:00 PM<br />
+                      <strong>Timeout:</strong> 24 hours<br />
+                      <strong>Calculated Deadline:</strong> {(() => {
+                        const deadline = calculateApprovalDeadline(24)
+                        const { newDeadline, extensionReason } = checkForWeekendAndHolidayExtensions(deadline)
+                        return (
+                          <span>
+                            {newDeadline.toLocaleDateString()} at {newDeadline.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {extensionReason && (
+                              <Badge variant="outline" className="ml-2 text-xs">
+                                {extensionReason}
+                              </Badge>
+                            )}
+                          </span>
+                        )
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Holidays</CardTitle>
+                <CardDescription>
+                  Holidays that will affect approval deadlines
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {(() => {
+                    const upcomingHolidays = getUpcomingHolidays(30)
+                    if (upcomingHolidays.length === 0) {
+                      return (
+                        <div className="text-center py-6">
+                          <Calendar size={32} className="mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">No upcoming holidays in the next 30 days</p>
+                        </div>
+                      )
+                    }
+                    
+                    return upcomingHolidays.map((holiday, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium text-sm">{holiday.name}</h4>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(holiday.date).toLocaleDateString(undefined, { 
+                              weekday: 'long', 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {holiday.type}
+                        </Badge>
+                      </div>
+                    ))
+                  })()}
+                </div>
+                
+                <Separator className="my-4" />
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Impact on Approvals</Label>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>• Approval deadlines are automatically extended when they fall on holidays</p>
+                    <p>• Weekend deadlines are moved to the next business day</p>
+                    <p>• Notifications respect business hours and holidays</p>
+                    <p>• Escalation timers pause during non-business days</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
