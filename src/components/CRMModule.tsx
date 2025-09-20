@@ -26,6 +26,7 @@ import { CRMHistoryTracker, useCRMHistory } from '@/components/shared/CRMHistory
 import { SmartCalendarIntegration } from '@/components/SmartCalendarIntegration'
 import { HolidayCalendarManager } from '@/components/HolidayCalendarManager'
 import { RegionalBusinessRulesDemo } from '@/components/crm/RegionalBusinessRulesDemo'
+import { LeadManagementSystem } from '@/components/LeadManagementSystem'
 import { mockCRMAnalytics, mockCRMSettings } from '@/data/crmMockData'
 import { CRMAnalytics as CRMAnalyticsType, CRMSettings } from '@/types/crm'
 import { 
@@ -435,12 +436,10 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         </TabsContent>
 
         <TabsContent value="leads" className="space-y-6">
-          <AIEnhancedLeadManagement 
+          <LeadManagementSystem 
             companyId={companyId}
             userId={userId}
             userRole={userRole}
-            onScheduleMeeting={handleScheduleMeeting}
-            onCreateDeal={handleCreateDeal}
           />
         </TabsContent>
 
