@@ -52,7 +52,8 @@ import {
   Download as Import,
   Database,
   ClockCounterClockwise as History,
-  File as FileIcon
+  File as FileIcon,
+  Bell
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -370,6 +371,10 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
               <Calendar size={16} />
               <span className="hidden sm:inline">Calendar</span>
             </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell size={16} />
+              <span className="hidden sm:inline">Notifications</span>
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex items-center gap-2">
@@ -600,6 +605,97 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
                 </CardContent>
               </Card>
             </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-6">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quote Approval Notifications</CardTitle>
+                <CardDescription>
+                  Automated escalation and reminder system for quote approvals
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Pending Quotes</p>
+                          <p className="text-2xl font-bold text-yellow-600">12</p>
+                        </div>
+                        <Clock className="text-yellow-600" size={20} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Overdue</p>
+                          <p className="text-2xl font-bold text-red-600">3</p>
+                        </div>
+                        <AlertTriangle className="text-red-600" size={20} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Escalated</p>
+                          <p className="text-2xl font-bold text-orange-600">5</p>
+                        </div>
+                        <Bell className="text-orange-600" size={20} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Recent Notifications</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-yellow-50 border-l-4 border-l-yellow-400 rounded">
+                      <Clock size={16} className="text-yellow-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Quote Q-2024-001 pending approval</p>
+                        <p className="text-xs text-muted-foreground">Value: $75,000 • Due in 2 hours</p>
+                      </div>
+                      <Badge variant="outline">Reminder</Badge>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-red-50 border-l-4 border-l-red-400 rounded">
+                      <AlertTriangle size={16} className="text-red-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Quote Q-2024-002 escalated to director</p>
+                        <p className="text-xs text-muted-foreground">Value: $125,000 • Overdue by 12 hours</p>
+                      </div>
+                      <Badge variant="destructive">Escalated</Badge>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-green-50 border-l-4 border-l-green-400 rounded">
+                      <CheckSquare size={16} className="text-green-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Quote Q-2024-003 approved</p>
+                        <p className="text-xs text-muted-foreground">Value: $45,000 • Approved 30 minutes ago</p>
+                      </div>
+                      <Badge variant="outline">Approved</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setActiveTab('quotes')}>
+                    <Receipt size={16} className="mr-2" />
+                    View All Quotes
+                  </Button>
+                  <Button variant="outline">
+                    <Gear size={16} className="mr-2" />
+                    Configure Notifications
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>

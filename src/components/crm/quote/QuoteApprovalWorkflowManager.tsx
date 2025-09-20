@@ -24,7 +24,7 @@ import {
 } from '@/types/crm'
 import { 
   Plus,
-  Gear as Settings,
+  GearSix as Settings,
   Trash,
   Shield,
   Users,
@@ -45,7 +45,9 @@ import {
   CurrencyDollar as DollarSign,
   Percent,
   Crown,
-  Building
+  Building,
+  Activity,
+  ArrowUp
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -355,6 +357,7 @@ export function QuoteApprovalWorkflowManager({ companyId, userId, userRole }: Qu
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="workflows">Workflows</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="pending">Pending Approvals</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -466,6 +469,163 @@ export function QuoteApprovalWorkflowManager({ companyId, userId, userRole }: Qu
                     </Button>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Automated Notification System</CardTitle>
+              <CardDescription>
+                Configure intelligent reminders and escalation workflows for quote approvals
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Quick Setup Section */}
+                <div className="bg-muted rounded-lg p-4">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <Lightning size={16} />
+                    Quick Setup
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm">Default Reminder Interval</Label>
+                      <Select defaultValue="24">
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="12">12 hours</SelectItem>
+                          <SelectItem value="24">24 hours</SelectItem>
+                          <SelectItem value="48">48 hours</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Escalation Threshold</Label>
+                      <Select defaultValue="high">
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="high">High Value ($50K+)</SelectItem>
+                          <SelectItem value="medium">Medium Value ($10K+)</SelectItem>
+                          <SelectItem value="all">All Quotes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Notification Channels</Label>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <Bell size={12} />
+                          Email
+                        </Badge>
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <Bell size={12} />
+                          Slack
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Active Notification Rules */}
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Bell size={16} />
+                    Active Notification Rules
+                  </h4>
+                  <div className="space-y-3">
+                    {/* Sample notification rules */}
+                    <div className="border rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle size={16} className="text-orange-500" />
+                          <span className="font-medium">High Value Quote Escalation</span>
+                          <Badge variant="default">Active</Badge>
+                        </div>
+                        <Switch defaultChecked />
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Escalate quotes over $50,000 if not approved within 24 hours
+                      </p>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>Trigger: Amount &gt; $50,000</span>
+                        <span>•</span>
+                        <span>Timeout: 24 hours</span>
+                        <span>•</span>
+                        <span>Channels: Email, Slack</span>
+                      </div>
+                    </div>
+
+                    <div className="border rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Clock size={16} className="text-blue-500" />
+                          <span className="font-medium">Standard Approval Reminders</span>
+                          <Badge variant="default">Active</Badge>
+                        </div>
+                        <Switch defaultChecked />
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Send daily reminders for pending quote approvals
+                      </p>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>Trigger: Quote pending</span>
+                        <span>•</span>
+                        <span>Frequency: Every 24 hours</span>
+                        <span>•</span>
+                        <span>Max: 3 reminders</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Activity */}
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Activity size={16} />
+                    Recent Notification Activity
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 p-2 bg-muted/50 rounded">
+                      <Bell size={14} className="text-blue-500" />
+                      <div className="flex-1">
+                        <span className="text-sm">Reminder sent for Quote #Q-2024-001</span>
+                        <div className="text-xs text-muted-foreground">john.doe@company.com • 2 hours ago</div>
+                      </div>
+                      <Badge variant="outline" className="text-xs">Email</Badge>
+                    </div>
+                    <div className="flex items-center gap-3 p-2 bg-muted/50 rounded">
+                      <ArrowUp size={14} className="text-orange-500" />
+                      <div className="flex-1">
+                        <span className="text-sm">Quote escalated to Sales Director</span>
+                        <div className="text-xs text-muted-foreground">Quote #Q-2024-002 • 4 hours ago</div>
+                      </div>
+                      <Badge variant="outline" className="text-xs">Escalation</Badge>
+                    </div>
+                    <div className="flex items-center gap-3 p-2 bg-muted/50 rounded">
+                      <CheckCircle size={14} className="text-green-500" />
+                      <div className="flex-1">
+                        <span className="text-sm">Approval confirmation sent</span>
+                        <div className="text-xs text-muted-foreground">Quote #Q-2024-003 • 6 hours ago</div>
+                      </div>
+                      <Badge variant="outline" className="text-xs">Confirmation</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Configure Advanced Notifications */}
+                <div className="border-t pt-4">
+                  <Button className="w-full" variant="outline">
+                    <Settings size={16} className="mr-2" />
+                    Configure Advanced Notification Rules
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
