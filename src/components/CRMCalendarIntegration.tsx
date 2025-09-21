@@ -11,6 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
 import CRMQuickActions from '@/components/CRMQuickActions'
 import { 
   Calendar, 
@@ -37,7 +40,26 @@ import {
   Target,
   Timer,
   Repeat,
-  Globe
+  Globe,
+  Link,
+  LinkBreak,
+  Sync,
+  SyncArrows,
+  GoogleLogo,
+  MicrosoftOutlookLogo,
+  CalendarCheck,
+  CalendarX,
+  Shield,
+  Key,
+  CloudArrowUp,
+  CloudArrowDown,
+  WifiHigh,
+  WifiSlash,
+  Gear,
+  WarningCircle,
+  Info,
+  Export,
+  Import
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -95,13 +117,159 @@ interface CRMEvent {
     customDays?: number[] // for weekly patterns
   }
   
-  // Integration data
+  // External Calendar Integration
+  externalCalendarIntegrations: {
+    google?: {
+      eventId: string
+      calendarId: string
+      syncStatus: 'synced' | 'pending' | 'failed' | 'conflict'
+      lastSyncTime: Date
+      conflictDetails?: string
+    }
+    outlook?: {
+      eventId: string
+      calendarId: string
+      syncStatus: 'synced' | 'pending' | 'failed' | 'conflict'
+      lastSyncTime: Date
+      conflictDetails?: string
+    }
+    apple?: {
+      eventId: string
+      calendarId: string
+      syncStatus: 'synced' | 'pending' | 'failed' | 'conflict'
+      lastSyncTime: Date
+      conflictDetails?: string
+    }
+  }
+  
+  // Legacy field for backwards compatibility
   externalCalendarId?: string
   syncStatus: 'synced' | 'pending' | 'failed' | 'not_synced'
   
   createdBy: string
   createdAt: Date
   updatedAt: Date
+}
+
+interface ExternalCalendarProvider {
+  id: string
+  type: 'google' | 'outlook' | 'apple' | 'exchange'
+  name: string
+  isConnected: boolean
+  isActive: boolean
+  
+  // OAuth credentials
+  accessToken?: string
+  refreshToken?: string
+  tokenExpiry?: Date
+  
+  // Provider-specific settings
+  settings: {
+    primaryCalendarId?: string
+    availableCalendars: {
+      id: string
+      name: string
+      description?: string
+      isSelected: boolean
+      isPrimary: boolean
+      accessRole: 'owner' | 'writer' | 'reader'
+      backgroundColor?: string
+    }[]
+    syncDirection: 'bidirectional' | 'crm_to_external' | 'external_to_crm'
+    conflictResolution: 'manual' | 'crm_wins' | 'external_wins' | 'latest_wins'
+    autoCreateMeetings: boolean
+    includePrivateEvents: boolean
+    eventPrefix?: string // Prefix for CRM-created events
+  }
+  
+  // Sync status
+  lastSyncTime?: Date
+  nextSyncTime?: Date
+  syncInProgress: boolean
+  syncErrors: {
+    timestamp: Date
+    error: string
+    eventId?: string
+    resolution?: string
+  }[]
+  
+  // Statistics
+  stats: {
+    totalEventsSynced: number
+    lastMonthSync: number
+    conflictsResolved: number
+    failedSyncs: number
+  }
+  
+  companyId: string
+  userId: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface CalendarSyncConflict {
+  id: string
+  eventId: string
+  provider: 'google' | 'outlook' | 'apple'
+  conflictType: 'time_overlap' | 'duplicate_event' | 'field_mismatch' | 'deletion_conflict'
+  
+  // Conflict details
+  crmEvent: Partial<CRMEvent>
+  externalEvent: {
+    id: string
+    title: string
+    startTime: Date
+    endTime: Date
+    description?: string
+    location?: string
+    attendees?: string[]
+    lastModified: Date
+  }
+  
+  // Difference details
+  differences: {
+    field: string
+    crmValue: any
+    externalValue: any
+    severity: 'low' | 'medium' | 'high'
+  }[]
+  
+  // Resolution options
+  resolutionOptions: {
+    id: string
+    action: 'keep_crm' | 'keep_external' | 'merge' | 'create_both' | 'manual_edit'
+    description: string
+    consequences: string[]
+  }[]
+  
+  status: 'pending' | 'resolved' | 'ignored'
+  resolution?: {
+    action: string
+    appliedAt: Date
+    appliedBy: string
+    notes?: string
+  }
+  
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface CalendarSyncActivity {
+  id: string
+  providerId: string
+  activityType: 'sync_started' | 'sync_completed' | 'sync_failed' | 'event_created' | 'event_updated' | 'event_deleted' | 'conflict_detected' | 'conflict_resolved'
+  
+  details: {
+    eventId?: string
+    eventTitle?: string
+    direction: 'crm_to_external' | 'external_to_crm'
+    changes?: string[]
+    errorMessage?: string
+    duration?: number // milliseconds
+  }
+  
+  timestamp: Date
+  userId: string
 }
 
 interface CRMCalendarTemplate {
@@ -182,6 +350,9 @@ export function CRMCalendarIntegration({
   const [templates, setTemplates] = useKV<CRMCalendarTemplate[]>(`crm-calendar-templates-${companyId}`, [])
   const [reminderConfigs, setReminderConfigs] = useKV<ReminderConfiguration[]>(`crm-reminder-configs-${companyId}`, [])
   const [schedulingRules, setSchedulingRules] = useKV<SchedulingRule[]>(`crm-scheduling-rules-${companyId}`, [])
+  const [externalProviders, setExternalProviders] = useKV<ExternalCalendarProvider[]>(`crm-external-providers-${companyId}`, [])
+  const [syncConflicts, setSyncConflicts] = useKV<CalendarSyncConflict[]>(`crm-sync-conflicts-${companyId}`, [])
+  const [syncActivities, setSyncActivities] = useKV<CalendarSyncActivity[]>(`crm-sync-activities-${companyId}`, [])
   
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week')
@@ -189,7 +360,11 @@ export function CRMCalendarIntegration({
   const [showTemplateDialog, setShowTemplateDialog] = useState(false)
   const [showReminderDialog, setShowReminderDialog] = useState(false)
   const [showRuleDialog, setShowRuleDialog] = useState(false)
+  const [showProviderDialog, setShowProviderDialog] = useState(false)
+  const [showConflictDialog, setShowConflictDialog] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  const [selectedConflict, setSelectedConflict] = useState<CalendarSyncConflict | null>(null)
+  const [syncInProgress, setSyncInProgress] = useState(false)
   
   // Form states
   const [newEvent, setNewEvent] = useState<Partial<CRMEvent>>({
@@ -203,11 +378,149 @@ export function CRMCalendarIntegration({
     reminders: [
       { time: 60, type: 'email', sent: false },
       { time: 15, type: 'push', sent: false }
-    ]
+    ],
+    externalCalendarIntegrations: {}
   })
 
   // Mock data initialization
   useEffect(() => {
+    // Initialize external providers if empty
+    if (!externalProviders || externalProviders.length === 0) {
+      const mockProviders: ExternalCalendarProvider[] = [
+        {
+          id: 'google-001',
+          type: 'google',
+          name: 'Google Calendar (john@company.com)',
+          isConnected: true,
+          isActive: true,
+          accessToken: 'mock_google_token',
+          refreshToken: 'mock_google_refresh',
+          tokenExpiry: new Date(Date.now() + 60 * 60 * 1000),
+          settings: {
+            primaryCalendarId: 'primary',
+            availableCalendars: [
+              {
+                id: 'primary',
+                name: 'Primary Calendar',
+                description: 'Main calendar',
+                isSelected: true,
+                isPrimary: true,
+                accessRole: 'owner',
+                backgroundColor: '#1976d2'
+              },
+              {
+                id: 'work-meetings',
+                name: 'Work Meetings',
+                description: 'Business meetings calendar',
+                isSelected: true,
+                isPrimary: false,
+                accessRole: 'owner',
+                backgroundColor: '#388e3c'
+              }
+            ],
+            syncDirection: 'bidirectional',
+            conflictResolution: 'manual',
+            autoCreateMeetings: true,
+            includePrivateEvents: false,
+            eventPrefix: '[CRM]'
+          },
+          lastSyncTime: new Date(Date.now() - 15 * 60 * 1000),
+          nextSyncTime: new Date(Date.now() + 15 * 60 * 1000),
+          syncInProgress: false,
+          syncErrors: [],
+          stats: {
+            totalEventsSynced: 127,
+            lastMonthSync: 23,
+            conflictsResolved: 3,
+            failedSyncs: 1
+          },
+          companyId,
+          userId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: 'outlook-001',
+          type: 'outlook',
+          name: 'Outlook Calendar (john@company.com)',
+          isConnected: false,
+          isActive: false,
+          settings: {
+            availableCalendars: [],
+            syncDirection: 'bidirectional',
+            conflictResolution: 'crm_wins',
+            autoCreateMeetings: true,
+            includePrivateEvents: false,
+            eventPrefix: '[CRM]'
+          },
+          syncInProgress: false,
+          syncErrors: [],
+          stats: {
+            totalEventsSynced: 0,
+            lastMonthSync: 0,
+            conflictsResolved: 0,
+            failedSyncs: 0
+          },
+          companyId,
+          userId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ]
+      setExternalProviders(mockProviders)
+    }
+
+    // Initialize sync conflicts if empty
+    if (!syncConflicts || syncConflicts.length === 0) {
+      const mockConflicts: CalendarSyncConflict[] = [
+        {
+          id: 'conflict-001',
+          eventId: 'crm-evt-001',
+          provider: 'google',
+          conflictType: 'time_overlap',
+          crmEvent: {
+            id: 'crm-evt-001',
+            title: 'Sales Discovery Call - TechCorp Inc.',
+            startTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
+            endTime: new Date(Date.now() + 3 * 60 * 60 * 1000)
+          },
+          externalEvent: {
+            id: 'google-evt-123',
+            title: 'Team Standup',
+            startTime: new Date(Date.now() + 2.5 * 60 * 60 * 1000),
+            endTime: new Date(Date.now() + 3.5 * 60 * 60 * 1000),
+            lastModified: new Date()
+          },
+          differences: [
+            {
+              field: 'startTime',
+              crmValue: new Date(Date.now() + 2 * 60 * 60 * 1000),
+              externalValue: new Date(Date.now() + 2.5 * 60 * 60 * 1000),
+              severity: 'high'
+            }
+          ],
+          resolutionOptions: [
+            {
+              id: 'reschedule-crm',
+              action: 'keep_external',
+              description: 'Reschedule CRM meeting to avoid conflict',
+              consequences: ['CRM event will be moved to next available slot', 'Attendees will be notified']
+            },
+            {
+              id: 'reschedule-external',
+              action: 'keep_crm',
+              description: 'Keep CRM meeting, suggest new time for external event',
+              consequences: ['External event may need to be rescheduled', 'Manual coordination required']
+            }
+          ],
+          status: 'pending',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ]
+      setSyncConflicts(mockConflicts)
+    }
+
     if (!events || events.length === 0) {
       const mockEvents: CRMEvent[] = [
         {
@@ -259,6 +572,14 @@ export function CRMCalendarIntegration({
             ]
           },
           autoScheduled: false,
+          externalCalendarIntegrations: {
+            google: {
+              eventId: 'google-evt-001',
+              calendarId: 'primary',
+              syncStatus: 'synced',
+              lastSyncTime: new Date()
+            }
+          },
           syncStatus: 'synced',
           createdBy: userId,
           createdAt: new Date(),
@@ -294,48 +615,15 @@ export function CRMCalendarIntegration({
             { time: 10, type: 'push', sent: false }
           ],
           autoScheduled: true,
-          syncStatus: 'synced',
-          createdBy: userId,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: 'crm-evt-003',
-          title: 'Contract Negotiation - Global Manufacturing',
-          description: 'Final contract terms discussion and signing ceremony',
-          startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-          endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // 2 hours
-          eventType: 'contract_negotiation',
-          priority: 'urgent',
-          status: 'scheduled',
-          accountId: 'account-003',
-          dealId: 'deal-002',
-          quoteId: 'quote-001',
-          assignedTo: [userId, 'sales-director-001', 'legal-001'],
-          meetingType: 'in-person',
-          location: 'Conference Room A - HQ Building',
-          agenda: [
-            'Contract terms review',
-            'Pricing and payment schedule finalization',
-            'Implementation timeline discussion',
-            'Support and maintenance agreement',
-            'Contract signing and celebration'
-          ],
-          reminders: [
-            { time: 2880, type: 'email', sent: true }, // 48 hours
-            { time: 1440, type: 'email', sent: false }, // 24 hours
-            { time: 240, type: 'sms', sent: false }, // 4 hours
-            { time: 60, type: 'push', sent: false },
-            { time: 15, type: 'in-app', sent: false }
-          ],
-          autoScheduled: false,
-          recurringPattern: {
-            frequency: 'weekly',
-            interval: 1,
-            maxOccurrences: 4,
-            customDays: [2, 4] // Tuesday and Thursday
+          externalCalendarIntegrations: {
+            google: {
+              eventId: 'google-evt-002',
+              calendarId: 'work-meetings',
+              syncStatus: 'pending',
+              lastSyncTime: new Date(Date.now() - 5 * 60 * 1000)
+            }
           },
-          syncStatus: 'synced',
+          syncStatus: 'pending',
           createdBy: userId,
           createdAt: new Date(),
           updatedAt: new Date()
@@ -478,12 +766,15 @@ export function CRMCalendarIntegration({
       ]
       setSchedulingRules(mockSchedulingRules)
     }
-  }, [events, templates, reminderConfigs, schedulingRules, setEvents, setTemplates, setReminderConfigs, setSchedulingRules, companyId, userId])
+  }, [events, templates, reminderConfigs, schedulingRules, externalProviders, syncConflicts, setEvents, setTemplates, setReminderConfigs, setSchedulingRules, setExternalProviders, setSyncConflicts, companyId, userId])
 
   const safeEvents = events || []
   const safeTemplates = templates || []
   const safeReminderConfigs = reminderConfigs || []
   const safeSchedulingRules = schedulingRules || []
+  const safeExternalProviders = externalProviders || []
+  const safeSyncConflicts = syncConflicts || []
+  const safeSyncActivities = syncActivities || []
 
   // AI-powered scheduling logic
   const generateAISchedulingSuggestions = async (leadId: string, contactId: string): Promise<CRMEvent['aiSuggestions']> => {
@@ -550,6 +841,7 @@ export function CRMCalendarIntegration({
           reminders: template.defaultReminders.map(r => ({ ...r, sent: false })),
           aiSuggestions,
           autoScheduled: true,
+          externalCalendarIntegrations: {},
           syncStatus: 'pending',
           createdBy: 'system',
           createdAt: new Date(),
@@ -666,6 +958,7 @@ export function CRMCalendarIntegration({
       agenda: newEvent.agenda || template?.defaultAgenda || [],
       reminders: newEvent.reminders || template?.defaultReminders.map(r => ({ ...r, sent: false })) || [],
       autoScheduled: false,
+      externalCalendarIntegrations: {},
       syncStatus: 'pending',
       createdBy: userId,
       createdAt: new Date(),
@@ -693,10 +986,369 @@ export function CRMCalendarIntegration({
       meetingType: 'video',
       agenda: [],
       assignedTo: [userId],
-      reminders: []
+      reminders: [],
+      externalCalendarIntegrations: {}
     })
     
     toast.success(`Meeting "${event.title}" scheduled successfully`)
+    
+    // Sync to external calendars if connected
+    await syncEventToExternalCalendars(event)
+  }
+
+  // External Calendar Integration Functions
+  const connectExternalProvider = async (providerType: 'google' | 'outlook' | 'apple') => {
+    try {
+      setSyncInProgress(true)
+      
+      // Mock OAuth flow - in production, this would open OAuth popup/redirect
+      const mockAuthFlow = () => {
+        return new Promise<{accessToken: string, refreshToken: string}>((resolve) => {
+          setTimeout(() => {
+            resolve({
+              accessToken: `mock_${providerType}_token_${Date.now()}`,
+              refreshToken: `mock_${providerType}_refresh_${Date.now()}`
+            })
+          }, 2000)
+        })
+      }
+
+      toast.info(`Connecting to ${providerType} Calendar...`, {
+        description: 'Opening authentication window'
+      })
+
+      const authResult = await mockAuthFlow()
+      
+      // Mock fetching available calendars
+      const mockCalendars = [
+        {
+          id: 'primary',
+          name: 'Primary Calendar',
+          description: 'Main calendar',
+          isSelected: true,
+          isPrimary: true,
+          accessRole: 'owner' as const,
+          backgroundColor: providerType === 'google' ? '#1976d2' : '#0078d4'
+        },
+        {
+          id: 'work',
+          name: 'Work Calendar',
+          description: 'Business meetings',
+          isSelected: false,
+          isPrimary: false,
+          accessRole: 'owner' as const,
+          backgroundColor: '#388e3c'
+        }
+      ]
+
+      const newProvider: ExternalCalendarProvider = {
+        id: `${providerType}-${Date.now()}`,
+        type: providerType,
+        name: `${providerType.charAt(0).toUpperCase() + providerType.slice(1)} Calendar (${userId}@company.com)`,
+        isConnected: true,
+        isActive: true,
+        accessToken: authResult.accessToken,
+        refreshToken: authResult.refreshToken,
+        tokenExpiry: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+        settings: {
+          primaryCalendarId: 'primary',
+          availableCalendars: mockCalendars,
+          syncDirection: 'bidirectional',
+          conflictResolution: 'manual',
+          autoCreateMeetings: true,
+          includePrivateEvents: false,
+          eventPrefix: '[CRM]'
+        },
+        lastSyncTime: new Date(),
+        syncInProgress: false,
+        syncErrors: [],
+        stats: {
+          totalEventsSynced: 0,
+          lastMonthSync: 0,
+          conflictsResolved: 0,
+          failedSyncs: 0
+        },
+        companyId,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+
+      setExternalProviders(current => [...(current || []), newProvider])
+      
+      toast.success(`${providerType.charAt(0).toUpperCase() + providerType.slice(1)} Calendar connected successfully`)
+      
+      // Trigger initial sync
+      await performFullSync(newProvider.id)
+      
+    } catch (error) {
+      console.error('Error connecting external provider:', error)
+      toast.error(`Failed to connect ${providerType} Calendar`)
+    } finally {
+      setSyncInProgress(false)
+    }
+  }
+
+  const disconnectExternalProvider = async (providerId: string) => {
+    try {
+      setExternalProviders(current => 
+        (current || []).map(provider => 
+          provider.id === providerId 
+            ? { ...provider, isConnected: false, isActive: false }
+            : provider
+        )
+      )
+      
+      // Remove external calendar data from events
+      setEvents(current =>
+        (current || []).map(event => ({
+          ...event,
+          externalCalendarIntegrations: Object.fromEntries(
+            Object.entries(event.externalCalendarIntegrations || {})
+              .filter(([key]) => !key.startsWith(providerId.split('-')[0]))
+          )
+        }))
+      )
+      
+      toast.success('Calendar provider disconnected')
+    } catch (error) {
+      console.error('Error disconnecting provider:', error)
+      toast.error('Failed to disconnect provider')
+    }
+  }
+
+  const syncEventToExternalCalendars = async (event: CRMEvent) => {
+    const activeProviders = (externalProviders || []).filter(p => p.isConnected && p.isActive)
+    
+    for (const provider of activeProviders) {
+      try {
+        if (provider.settings.syncDirection === 'external_to_crm') continue
+        
+        // Mock API call to create event in external calendar
+        const mockCreateEvent = () => {
+          return new Promise<string>((resolve) => {
+            setTimeout(() => {
+              resolve(`${provider.type}-evt-${Date.now()}`)
+            }, 500)
+          })
+        }
+
+        const externalEventId = await mockCreateEvent()
+        
+        // Update event with external calendar info
+        const updatedIntegrations = {
+          ...event.externalCalendarIntegrations,
+          [provider.type]: {
+            eventId: externalEventId,
+            calendarId: provider.settings.primaryCalendarId || 'primary',
+            syncStatus: 'synced' as const,
+            lastSyncTime: new Date()
+          }
+        }
+
+        setEvents(current =>
+          (current || []).map(e =>
+            e.id === event.id
+              ? { ...e, externalCalendarIntegrations: updatedIntegrations, syncStatus: 'synced' }
+              : e
+          )
+        )
+
+        // Log sync activity
+        const activity: CalendarSyncActivity = {
+          id: `activity-${Date.now()}`,
+          providerId: provider.id,
+          activityType: 'event_created',
+          details: {
+            eventId: event.id,
+            eventTitle: event.title,
+            direction: 'crm_to_external',
+            changes: ['Event created in external calendar'],
+            duration: 500
+          },
+          timestamp: new Date(),
+          userId
+        }
+
+        setSyncActivities(current => [...(current || []), activity])
+
+      } catch (error) {
+        console.error(`Error syncing to ${provider.type}:`, error)
+        
+        // Mark as failed
+        setEvents(current =>
+          (current || []).map(e =>
+            e.id === event.id
+              ? {
+                  ...e,
+                  externalCalendarIntegrations: {
+                    ...e.externalCalendarIntegrations,
+                    [provider.type]: {
+                      eventId: '',
+                      calendarId: provider.settings.primaryCalendarId || 'primary',
+                      syncStatus: 'failed',
+                      lastSyncTime: new Date(),
+                      conflictDetails: 'Failed to create event'
+                    }
+                  },
+                  syncStatus: 'failed'
+                }
+              : e
+          )
+        )
+      }
+    }
+  }
+
+  const performFullSync = async (providerId?: string) => {
+    try {
+      setSyncInProgress(true)
+      const providersToSync = providerId 
+        ? (externalProviders || []).filter(p => p.id === providerId)
+        : (externalProviders || []).filter(p => p.isConnected && p.isActive)
+
+      for (const provider of providersToSync) {
+        // Update provider sync status
+        setExternalProviders(current =>
+          (current || []).map(p =>
+            p.id === provider.id ? { ...p, syncInProgress: true } : p
+          )
+        )
+
+        // Mock fetching events from external calendar
+        const mockFetchExternalEvents = () => {
+          return new Promise<any[]>((resolve) => {
+            setTimeout(() => {
+              resolve([
+                {
+                  id: `${provider.type}-external-001`,
+                  title: 'Team Meeting',
+                  startTime: new Date(Date.now() + 6 * 60 * 60 * 1000),
+                  endTime: new Date(Date.now() + 7 * 60 * 60 * 1000),
+                  description: 'Weekly team sync',
+                  attendees: ['user1@company.com', 'user2@company.com']
+                }
+              ])
+            }, 1000)
+          })
+        }
+
+        const externalEvents = await mockFetchExternalEvents()
+        
+        // Process external events
+        for (const extEvent of externalEvents) {
+          // Check if event already exists in CRM
+          const existingEvent = (events || []).find(e => 
+            e.externalCalendarIntegrations?.[provider.type]?.eventId === extEvent.id
+          )
+
+          if (!existingEvent && provider.settings.syncDirection !== 'crm_to_external') {
+            // Create new CRM event from external event
+            const newCRMEvent: CRMEvent = {
+              id: `imported-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              title: `${provider.settings.eventPrefix || ''} ${extEvent.title}`.trim(),
+              description: extEvent.description || 'Imported from external calendar',
+              startTime: extEvent.startTime,
+              endTime: extEvent.endTime,
+              eventType: 'customer_meeting',
+              priority: 'medium',
+              status: 'scheduled',
+              assignedTo: [userId],
+              meetingType: 'video',
+              agenda: [],
+              reminders: [
+                { time: 15, type: 'push', sent: false }
+              ],
+              autoScheduled: false,
+              externalCalendarIntegrations: {
+                [provider.type]: {
+                  eventId: extEvent.id,
+                  calendarId: provider.settings.primaryCalendarId || 'primary',
+                  syncStatus: 'synced',
+                  lastSyncTime: new Date()
+                }
+              },
+              syncStatus: 'synced',
+              createdBy: 'external-sync',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+
+            setEvents(current => [...(current || []), newCRMEvent])
+          }
+        }
+
+        // Update provider stats and status
+        setExternalProviders(current =>
+          (current || []).map(p =>
+            p.id === provider.id 
+              ? {
+                  ...p,
+                  syncInProgress: false,
+                  lastSyncTime: new Date(),
+                  stats: {
+                    ...p.stats,
+                    totalEventsSynced: p.stats.totalEventsSynced + externalEvents.length,
+                    lastMonthSync: p.stats.lastMonthSync + externalEvents.length
+                  }
+                }
+              : p
+          )
+        )
+
+        // Log sync activity
+        const activity: CalendarSyncActivity = {
+          id: `sync-${Date.now()}`,
+          providerId: provider.id,
+          activityType: 'sync_completed',
+          details: {
+            direction: 'external_to_crm',
+            changes: [`Imported ${externalEvents.length} events`],
+            duration: 1000
+          },
+          timestamp: new Date(),
+          userId
+        }
+
+        setSyncActivities(current => [...(current || []), activity])
+      }
+
+      toast.success('Calendar sync completed successfully')
+      
+    } catch (error) {
+      console.error('Error during full sync:', error)
+      toast.error('Calendar sync failed')
+    } finally {
+      setSyncInProgress(false)
+    }
+  }
+
+  const resolveConflict = async (conflictId: string, resolution: string) => {
+    try {
+      const conflict = (syncConflicts || []).find(c => c.id === conflictId)
+      if (!conflict) return
+
+      setSyncConflicts(current =>
+        (current || []).map(c =>
+          c.id === conflictId
+            ? {
+                ...c,
+                status: 'resolved',
+                resolution: {
+                  action: resolution,
+                  appliedAt: new Date(),
+                  appliedBy: userId
+                }
+              }
+            : c
+        )
+      )
+
+      toast.success('Conflict resolved successfully')
+    } catch (error) {
+      console.error('Error resolving conflict:', error)
+      toast.error('Failed to resolve conflict')
+    }
   }
 
   const getEventTypeIcon = (eventType: string) => {
@@ -746,6 +1398,10 @@ export function CRMCalendarIntegration({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowProviderDialog(true)}>
+            <Link size={16} className="mr-2" />
+            Connect Calendar
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setShowTemplateDialog(true)}>
             <Lightning size={16} className="mr-2" />
             Templates
@@ -769,6 +1425,14 @@ export function CRMCalendarIntegration({
         <TabsList>
           <TabsTrigger value="calendar">Calendar View</TabsTrigger>
           <TabsTrigger value="upcoming">Upcoming Meetings</TabsTrigger>
+          <TabsTrigger value="integrations" className="flex items-center gap-2">
+            <Globe size={16} />
+            External Calendars
+          </TabsTrigger>
+          <TabsTrigger value="conflicts" className="flex items-center gap-2">
+            <WarningCircle size={16} />
+            Sync Conflicts
+          </TabsTrigger>
           <TabsTrigger value="analytics">Meeting Analytics</TabsTrigger>
           <TabsTrigger value="automation">Automation Center</TabsTrigger>
         </TabsList>
@@ -822,17 +1486,29 @@ export function CRMCalendarIntegration({
                           >
                             <div className="text-sm font-medium">{date.getDate()}</div>
                             <div className="space-y-1">
-                              {dayEvents.slice(0, 3).map((event) => (
-                                <div
-                                  key={event.id}
-                                  className={`text-xs p-1 rounded truncate flex items-center gap-1 ${getPriorityColor(event.priority)} text-white`}
-                                  title={`${event.title} - ${event.startTime.toLocaleTimeString()}`}
-                                >
-                                  {getEventTypeIcon(event.eventType)}
-                                  <span className="truncate">{event.title}</span>
-                                  {event.autoScheduled && <Lightning size={10} />}
-                                </div>
-                              ))}
+                              {dayEvents.slice(0, 3).map((event) => {
+                                const hasExternalSync = Object.keys(event.externalCalendarIntegrations || {}).length > 0
+                                const syncFailed = Object.values(event.externalCalendarIntegrations || {}).some(sync => sync.syncStatus === 'failed')
+                                
+                                return (
+                                  <div
+                                    key={event.id}
+                                    className={`text-xs p-1 rounded truncate flex items-center gap-1 ${getPriorityColor(event.priority)} text-white`}
+                                    title={`${event.title} - ${event.startTime.toLocaleTimeString()}${hasExternalSync ? ` • Synced to ${Object.keys(event.externalCalendarIntegrations || {}).join(', ')}` : ''}`}
+                                  >
+                                    {getEventTypeIcon(event.eventType)}
+                                    <span className="truncate">{event.title}</span>
+                                    {event.autoScheduled && <Lightning size={10} />}
+                                    {hasExternalSync && (
+                                      syncFailed ? (
+                                        <WifiSlash size={10} className="text-red-300" />
+                                      ) : (
+                                        <WifiHigh size={10} className="text-green-300" />
+                                      )
+                                    )}
+                                  </div>
+                                )
+                              })}
                               {dayEvents.length > 3 && (
                                 <div className="text-xs text-muted-foreground">
                                   +{dayEvents.length - 3} more
@@ -879,6 +1555,16 @@ export function CRMCalendarIntegration({
                               {event.status === 'confirmed' && (
                                 <Badge variant="default" className="text-xs">
                                   Confirmed
+                                </Badge>
+                              )}
+                              {Object.keys(event.externalCalendarIntegrations || {}).length > 0 && (
+                                <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                  {Object.values(event.externalCalendarIntegrations || {}).some(sync => sync.syncStatus === 'failed') ? (
+                                    <WifiSlash size={10} className="text-red-500" />
+                                  ) : (
+                                    <WifiHigh size={10} className="text-green-500" />
+                                  )}
+                                  {Object.keys(event.externalCalendarIntegrations || {}).join(', ')}
                                 </Badge>
                               )}
                             </div>
@@ -1188,6 +1874,339 @@ export function CRMCalendarIntegration({
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="integrations" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe size={18} />
+                  External Calendar Providers
+                </CardTitle>
+                <CardDescription>
+                  Connect and manage external calendar integrations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {safeExternalProviders.length > 0 ? (
+                    safeExternalProviders.map((provider) => (
+                      <div key={provider.id} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            {provider.type === 'google' && <GoogleLogo size={24} className="text-blue-600" />}
+                            {provider.type === 'outlook' && <MicrosoftOutlookLogo size={24} className="text-blue-700" />}
+                            <div>
+                              <h4 className="font-medium">{provider.name}</h4>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant={provider.isConnected ? 'default' : 'secondary'}>
+                                  {provider.isConnected ? (
+                                    <><CheckCircle size={12} className="mr-1" /> Connected</>
+                                  ) : (
+                                    <><X size={12} className="mr-1" /> Disconnected</>
+                                  )}
+                                </Badge>
+                                {provider.syncInProgress && (
+                                  <Badge variant="outline" className="animate-pulse">
+                                    <Sync size={12} className="mr-1" />
+                                    Syncing...
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {provider.isConnected ? (
+                              <>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => performFullSync(provider.id)}
+                                  disabled={syncInProgress}
+                                >
+                                  <Sync size={14} className="mr-2" />
+                                  Sync Now
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive"
+                                  onClick={() => disconnectExternalProvider(provider.id)}
+                                >
+                                  <LinkBreak size={14} className="mr-2" />
+                                  Disconnect
+                                </Button>
+                              </>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                onClick={() => connectExternalProvider(provider.type)}
+                                disabled={syncInProgress}
+                              >
+                                <Link size={14} className="mr-2" />
+                                Reconnect
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {provider.isConnected && (
+                          <div className="space-y-3">
+                            <div className="text-sm space-y-1">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Last Sync:</span>
+                                <span>{provider.lastSyncTime?.toLocaleString() || 'Never'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Events Synced:</span>
+                                <span>{provider.stats.totalEventsSynced}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Sync Direction:</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {provider.settings.syncDirection.replace('_', ' ')}
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <h5 className="text-sm font-medium">Connected Calendars:</h5>
+                              <div className="space-y-1">
+                                {provider.settings.availableCalendars
+                                  .filter(cal => cal.isSelected)
+                                  .map((calendar) => (
+                                    <div key={calendar.id} className="flex items-center gap-2 text-sm">
+                                      <div 
+                                        className="w-3 h-3 rounded-full"
+                                        style={{ backgroundColor: calendar.backgroundColor }}
+                                      />
+                                      <span>{calendar.name}</span>
+                                      {calendar.isPrimary && (
+                                        <Badge variant="outline" className="text-xs">Primary</Badge>
+                                      )}
+                                    </div>
+                                  ))
+                                }
+                              </div>
+                            </div>
+
+                            {provider.syncErrors.length > 0 && (
+                              <Alert>
+                                <WarningCircle size={16} />
+                                <AlertDescription>
+                                  {provider.syncErrors.length} sync error(s) detected. 
+                                  <Button variant="link" className="p-0 h-auto ml-2" size="sm">
+                                    View Details
+                                  </Button>
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <Globe size={48} className="mx-auto mb-4 text-muted-foreground/50" />
+                      <h3 className="font-medium mb-2">No External Calendars Connected</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Connect your Google, Outlook, or other calendars to sync events automatically
+                      </p>
+                      <div className="flex justify-center gap-2">
+                        <Button onClick={() => connectExternalProvider('google')} disabled={syncInProgress}>
+                          <GoogleLogo size={16} className="mr-2" />
+                          Connect Google
+                        </Button>
+                        <Button onClick={() => connectExternalProvider('outlook')} disabled={syncInProgress}>
+                          <MicrosoftOutlookLogo size={16} className="mr-2" />
+                          Connect Outlook
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <SyncArrows size={18} />
+                  Sync Activity
+                </CardTitle>
+                <CardDescription>
+                  Recent synchronization activities and events
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {safeSyncActivities.length > 0 ? (
+                    safeSyncActivities
+                      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+                      .slice(0, 20)
+                      .map((activity) => {
+                        const provider = safeExternalProviders.find(p => p.id === activity.providerId)
+                        return (
+                          <div key={activity.id} className="flex items-start gap-3 p-3 border rounded-lg text-sm">
+                            <div className="flex-shrink-0 mt-1">
+                              {activity.activityType === 'sync_completed' && <CheckCircle size={16} className="text-green-500" />}
+                              {activity.activityType === 'sync_failed' && <X size={16} className="text-red-500" />}
+                              {activity.activityType === 'event_created' && <CalendarPlus size={16} className="text-blue-500" />}
+                              {activity.activityType === 'event_updated' && <Calendar size={16} className="text-orange-500" />}
+                              {activity.activityType === 'conflict_detected' && <WarningCircle size={16} className="text-yellow-500" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium">
+                                  {activity.activityType.replace('_', ' ')}
+                                </span>
+                                <Badge variant="outline" className="text-xs">
+                                  {provider?.type || 'Unknown'}
+                                </Badge>
+                              </div>
+                              {activity.details.eventTitle && (
+                                <p className="text-muted-foreground truncate">
+                                  {activity.details.eventTitle}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  {activity.details.direction?.replace('_', ' ') || 'System'}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {activity.timestamp.toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <SyncArrows size={24} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No sync activity yet</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="conflicts" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <WarningCircle size={18} />
+                Calendar Sync Conflicts
+              </CardTitle>
+              <CardDescription>
+                Resolve conflicts between CRM and external calendar events
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {safeSyncConflicts.length > 0 ? (
+                  safeSyncConflicts
+                    .filter(conflict => conflict.status === 'pending')
+                    .map((conflict) => (
+                      <div key={conflict.id} className="border rounded-lg p-4 bg-yellow-50 dark:bg-yellow-900/20">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h4 className="font-medium text-lg flex items-center gap-2">
+                              <WarningCircle size={18} className="text-yellow-600" />
+                              {conflict.conflictType.replace('_', ' ')} Conflict
+                            </h4>
+                            <Badge variant="outline" className="mt-1">
+                              {conflict.provider} Calendar
+                            </Badge>
+                          </div>
+                          <Badge variant="destructive">
+                            Requires Resolution
+                          </Badge>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="border rounded-lg p-3 bg-blue-50 dark:bg-blue-900/20">
+                            <h5 className="font-medium mb-2 text-blue-700 dark:text-blue-300">CRM Event</h5>
+                            <div className="space-y-1 text-sm">
+                              <div><strong>Title:</strong> {conflict.crmEvent.title}</div>
+                              <div><strong>Time:</strong> {conflict.crmEvent.startTime?.toLocaleString()}</div>
+                              {conflict.crmEvent.description && (
+                                <div><strong>Description:</strong> {conflict.crmEvent.description}</div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="border rounded-lg p-3 bg-green-50 dark:bg-green-900/20">
+                            <h5 className="font-medium mb-2 text-green-700 dark:text-green-300">External Event</h5>
+                            <div className="space-y-1 text-sm">
+                              <div><strong>Title:</strong> {conflict.externalEvent.title}</div>
+                              <div><strong>Time:</strong> {conflict.externalEvent.startTime.toLocaleString()}</div>
+                              {conflict.externalEvent.description && (
+                                <div><strong>Description:</strong> {conflict.externalEvent.description}</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <h5 className="font-medium">Resolution Options:</h5>
+                          <div className="grid gap-2">
+                            {conflict.resolutionOptions.map((option) => (
+                              <Button
+                                key={option.id}
+                                variant="outline"
+                                className="justify-start h-auto p-3"
+                                onClick={() => resolveConflict(conflict.id, option.action)}
+                              >
+                                <div className="text-left">
+                                  <div className="font-medium">{option.description}</div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {option.consequences.join(', ')}
+                                  </div>
+                                </div>
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                ) : (
+                  <div className="text-center py-8">
+                    <CheckCircle size={48} className="mx-auto mb-4 text-green-500/50" />
+                    <h3 className="font-medium mb-2">No Conflicts Detected</h3>
+                    <p className="text-sm text-muted-foreground">
+                      All calendar events are synchronized successfully
+                    </p>
+                  </div>
+                )}
+
+                {safeSyncConflicts.filter(c => c.status === 'resolved').length > 0 && (
+                  <div className="mt-8">
+                    <h4 className="font-medium mb-4">Recently Resolved Conflicts</h4>
+                    <div className="space-y-2">
+                      {safeSyncConflicts
+                        .filter(c => c.status === 'resolved')
+                        .slice(0, 5)
+                        .map((conflict) => (
+                          <div key={conflict.id} className="flex items-center gap-3 p-3 border rounded-lg bg-green-50 dark:bg-green-900/20">
+                            <CheckCircle size={16} className="text-green-500" />
+                            <div className="flex-1">
+                              <span className="text-sm">{conflict.conflictType.replace('_', ' ')} conflict resolved</span>
+                              <div className="text-xs text-muted-foreground">
+                                {conflict.resolution?.appliedAt.toLocaleString()} • Action: {conflict.resolution?.action}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Create Event Dialog */}
@@ -1301,6 +2320,194 @@ export function CRMCalendarIntegration({
               <CalendarPlus size={16} className="mr-2" />
               Schedule Meeting
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* External Calendar Provider Dialog */}
+      <Dialog open={showProviderDialog} onOpenChange={setShowProviderDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Globe size={20} />
+              Connect External Calendar
+            </DialogTitle>
+            <DialogDescription>
+              Integrate with your external calendars for seamless event synchronization
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => connectExternalProvider('google')}>
+                <CardContent className="p-6 text-center">
+                  <GoogleLogo size={48} className="mx-auto mb-4 text-blue-600" />
+                  <h3 className="font-semibold mb-2">Google Calendar</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Sync with Gmail and Google Workspace calendars
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <CheckCircle size={14} className="text-green-500" />
+                      <span>Bidirectional sync</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <CheckCircle size={14} className="text-green-500" />
+                      <span>Multiple calendars</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <CheckCircle size={14} className="text-green-500" />
+                      <span>Real-time updates</span>
+                    </div>
+                  </div>
+                  <Button className="w-full mt-4" disabled={syncInProgress}>
+                    {syncInProgress ? (
+                      <>
+                        <Sync size={16} className="mr-2 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <Link size={16} className="mr-2" />
+                        Connect Google Calendar
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => connectExternalProvider('outlook')}>
+                <CardContent className="p-6 text-center">
+                  <MicrosoftOutlookLogo size={48} className="mx-auto mb-4 text-blue-700" />
+                  <h3 className="font-semibold mb-2">Microsoft Outlook</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Sync with Outlook and Microsoft 365 calendars
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <CheckCircle size={14} className="text-green-500" />
+                      <span>Enterprise integration</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <CheckCircle size={14} className="text-green-500" />
+                      <span>Teams meeting links</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <CheckCircle size={14} className="text-green-500" />
+                      <span>Exchange support</span>
+                    </div>
+                  </div>
+                  <Button className="w-full mt-4" disabled={syncInProgress}>
+                    {syncInProgress ? (
+                      <>
+                        <Sync size={16} className="mr-2 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <Link size={16} className="mr-2" />
+                        Connect Outlook Calendar
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <h4 className="font-medium">Integration Features</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <SyncArrows size={16} className="text-blue-500 mt-0.5" />
+                    <div>
+                      <h5 className="font-medium">Bidirectional Sync</h5>
+                      <p className="text-muted-foreground">Events sync both ways automatically</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Bell size={16} className="text-orange-500 mt-0.5" />
+                    <div>
+                      <h5 className="font-medium">Smart Reminders</h5>
+                      <p className="text-muted-foreground">Unified notifications across platforms</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Brain size={16} className="text-purple-500 mt-0.5" />
+                    <div>
+                      <h5 className="font-medium">Conflict Resolution</h5>
+                      <p className="text-muted-foreground">AI-powered conflict detection and resolution</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Shield size={16} className="text-green-500 mt-0.5" />
+                    <div>
+                      <h5 className="font-medium">Secure OAuth</h5>
+                      <p className="text-muted-foreground">Enterprise-grade security and privacy</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {safeExternalProviders.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <h4 className="font-medium">Connected Providers</h4>
+                  <div className="space-y-3">
+                    {safeExternalProviders.map((provider) => (
+                      <div key={provider.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          {provider.type === 'google' && <GoogleLogo size={20} className="text-blue-600" />}
+                          {provider.type === 'outlook' && <MicrosoftOutlookLogo size={20} className="text-blue-700" />}
+                          <div>
+                            <h5 className="font-medium">{provider.name}</h5>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant={provider.isConnected ? 'default' : 'secondary'} className="text-xs">
+                                {provider.isConnected ? 'Connected' : 'Disconnected'}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {provider.stats.totalEventsSynced} events synced
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant={provider.isConnected ? 'destructive' : 'default'}
+                          onClick={() => provider.isConnected 
+                            ? disconnectExternalProvider(provider.id)
+                            : connectExternalProvider(provider.type)
+                          }
+                        >
+                          {provider.isConnected ? 'Disconnect' : 'Reconnect'}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowProviderDialog(false)}>
+              Close
+            </Button>
+            {safeExternalProviders.some(p => p.isConnected) && (
+              <Button onClick={() => {
+                performFullSync()
+                setShowProviderDialog(false)
+              }}>
+                <Sync size={16} className="mr-2" />
+                Sync All Calendars
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
