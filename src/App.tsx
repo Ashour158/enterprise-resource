@@ -37,6 +37,7 @@ import { CRMProductivitySummary } from '@/components/CRMProductivitySummary'
 import { SystemTestingSuite } from '@/components/SystemTestingSuite'
 import { ClickableDataShowcase } from '@/components/shared/ClickableDataShowcase'
 import { CRMApiDocumentation } from '@/components/CRMApiDocumentation'
+import { EnhancedAccountManagement } from '@/components/EnhancedAccountManagement'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -275,6 +276,8 @@ function App() {
                   ? 'Comprehensive system testing suite for validating all ERP components, features, and integrations'
                   : activeView === 'api-docs'
                   ? 'Complete REST API documentation with enhanced CRM endpoints, real-time updates, email integration, and AI-powered features'
+                  : activeView === 'enhanced-accounts'
+                  ? 'Enhanced account management with complete historical tracking, AI insights, interactive timelines, and comprehensive customer intelligence'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -361,6 +364,10 @@ function App() {
                 <TabsTrigger value="api-docs" className="flex items-center gap-2">
                   <Globe size={16} />
                   API Documentation
+                </TabsTrigger>
+                <TabsTrigger value="enhanced-accounts" className="flex items-center gap-2">
+                  <Building size={16} />
+                  Enhanced Accounts
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -678,6 +685,14 @@ function App() {
             <CRMApiDocumentation 
               companyId={currentCompany.id}
               userId={mockUser.id}
+            />
+          </TabsContent>
+
+          <TabsContent value="enhanced-accounts" className="space-y-6">
+            <EnhancedAccountManagement 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+              userRole="company_admin"
             />
           </TabsContent>
         </Tabs>
