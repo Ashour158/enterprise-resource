@@ -386,6 +386,10 @@ function App() {
                   <TestTube size={16} />
                   Account Tests
                 </TabsTrigger>
+                <TabsTrigger value="crm-calendar" className="flex items-center gap-2">
+                  <Calendar size={16} />
+                  CRM Calendar
+                </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
                 <WifiHigh size={12} className={isConnected ? 'text-green-500' : 'text-red-500'} />
@@ -738,6 +742,13 @@ function App() {
 
           <TabsContent value="enhanced-account-test" className="space-y-6">
             <EnhancedAccountTestSuite 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+            />
+          </TabsContent>
+
+          <TabsContent value="crm-calendar" className="space-y-6">
+            <CRMCalendarIntegration 
               companyId={currentCompany.id}
               userId={mockUser.id}
             />

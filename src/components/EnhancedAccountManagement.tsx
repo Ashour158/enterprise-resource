@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { EnhancedAccount, CustomerTimelineEntry, AccountEngagementAlert, CustomerSuccessMetrics } from '@/types/enhanced-accounts'
 import { 
   Building, 
   Users, 
@@ -68,7 +69,6 @@ import {
   LinkSimple
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { Account, CustomerUnifiedTimeline, AccountEcosystemMap, CustomerSuccessMetrics, CustomerDocumentLibrary, CustomerPortalActivity, CustomerEngagementAlert } from '@/types/crm'
 
 interface EnhancedAccountManagementProps {
   companyId: string
@@ -81,62 +81,42 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
   userId,
   userRole
 }) => {
-  const [accounts, setAccounts] = useKV<Account[]>('enhanced-accounts-v2', [])
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
+  const [accounts, setAccounts] = useKV<EnhancedAccount[]>('enhanced-accounts-v3', [])
+  const [selectedAccount, setSelectedAccount] = useState<EnhancedAccount | null>(null)
   const [activeTab, setActiveTab] = useState('executive')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
-  const [timelineData, setTimelineData] = useKV<CustomerUnifiedTimeline[]>('customer-timeline', [])
-  const [ecosystemMap, setEcosystemMap] = useKV<AccountEcosystemMap[]>('account-ecosystem', [])
-  const [successMetrics, setSuccessMetrics] = useKV<CustomerSuccessMetrics[]>('success-metrics', [])
-  const [documentLibrary, setDocumentLibrary] = useKV<CustomerDocumentLibrary[]>('document-library', [])
-  const [portalActivity, setPortalActivity] = useKV<CustomerPortalActivity[]>('portal-activity', [])
-  const [engagementAlerts, setEngagementAlerts] = useKV<CustomerEngagementAlert[]>('engagement-alerts', [])
+  const [timelineData, setTimelineData] = useKV<CustomerTimelineEntry[]>('customer-timeline-v2', [])
+  const [successMetrics, setSuccessMetrics] = useKV<CustomerSuccessMetrics[]>('success-metrics-v2', [])
+  const [engagementAlerts, setEngagementAlerts] = useKV<AccountEngagementAlert[]>('engagement-alerts-v2', [])
 
-  // Enhanced mock data with new AI features
+  // Enhanced mock data with new AI features and fixed schema
   useEffect(() => {
     if (accounts.length === 0) {
-      const mockAccounts: Account[] = [
+      const mockAccounts: EnhancedAccount[] = [
         {
           id: 'acc-001',
           companyId,
-          name: 'Acme Corporation',
-          website: 'https://acme.com',
+          accountNumber: 'ACC-2024-001',
+          companyName: 'Acme Corporation',
           industry: 'Technology',
-          size: 'enterprise',
-          revenue: 5000000,
-          employees: 250,
-          address: {
-            street: '123 Tech Boulevard',
+          companySize: '201-1000',
+          annualRevenue: 5000000,
+          numberOfEmployees: 250,
+          websiteUrl: 'https://acme.com',
+          accountType: 'customer',
+          accountStatus: 'active',
+          priorityLevel: 'high',
+          territory: 'West Coast',
+          accountManagerId: userId,
+          primaryAddress: {
+            line1: '123 Tech Boulevard',
             city: 'San Francisco',
             state: 'CA',
             country: 'United States',
-            zipCode: '94105'
+            postalCode: '94105'
           },
           phone: '+1 (555) 123-4567',
-          description: 'Leading technology solutions provider',
-          accountType: 'customer',
-          status: 'active',
-          owner: userId,
-          tags: ['High Value', 'Strategic', 'Expansion Ready'],
-          customFields: {},
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-15T10:30:00Z',
-          totalRevenue: 750000,
-          lastActivityDate: '2024-01-14T16:45:00Z',
-          nextReviewDate: '2024-01-20T14:00:00Z',
-          
-          // Enhanced AI Intelligence
-          aiEngagementTrend: 'increasing',
-          aiSatisfactionTrend: 'stable',
-          aiExpansionReadiness: 85,
-          aiRetentionProbability: 0.92,
-          aiAdvocacyPotential: 78,
-          
-          // Customer Portal Integration
-          portalAccessEnabled: true,
-          portalLastLogin: '2024-01-14T09:15:00Z',
-          portalLoginCount: 47,
           
           // Complete Historical Tracking
           totalEmailCount: 124,
@@ -146,200 +126,309 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
           totalDealCount: 12,
           totalSupportTickets: 3,
           totalDocumentsShared: 25,
+          totalInvoices: 15,
+          totalPayments: 14,
           
           // Real-time Engagement Metrics
-          lastEmailDate: '2024-01-14T11:30:00Z',
-          lastMeetingDate: '2024-01-10T14:00:00Z',
-          lastCallDate: '2024-01-12T16:20:00Z',
-          lastQuoteDate: '2024-01-08T10:15:00Z',
-          lastSupportTicketDate: '2024-01-05T13:45:00Z',
+          lastEmailDate: new Date('2024-01-14T11:30:00Z'),
+          lastMeetingDate: new Date('2024-01-10T14:00:00Z'),
+          lastCallDate: new Date('2024-01-12T16:20:00Z'),
+          lastQuoteDate: new Date('2024-01-08T09:15:00Z'),
+          lastDealDate: new Date('2024-01-05T15:45:00Z'),
+          lastInteractionDate: new Date('2024-01-14T16:45:00Z'),
           
-          // Social Media Monitoring
-          socialMentionsCount: 15,
-          socialSentimentScore: 0.75,
-          lastSocialMention: '2024-01-13T08:30:00Z',
+          // Financial Information
+          totalRevenue: 750000,
+          lifetimeValue: 850000,
+          averageDealSize: 62500,
+          paymentTerms: 'net_30',
+          creditLimit: 100000,
+          creditRating: 'AAA',
           
-          // Enhanced Analytics
-          customerHealthScore: 87,
-          engagementScore: 92,
-          satisfactionScore: 89,
-          churnRisk: 'low',
-          expansionOpportunities: ['Enterprise Package', 'Additional Licenses', 'Professional Services']
+          // Enhanced AI Intelligence
+          aiHealthScore: 92,
+          aiEngagementTrend: 'increasing',
+          aiSatisfactionTrend: 'stable',
+          aiExpansionReadiness: 85,
+          aiRetentionProbability: 0.92,
+          aiAdvocacyPotential: 78,
+          aiChurnRiskScore: 0.08,
+          aiNextBestAction: 'Schedule expansion planning meeting',
+          aiInsights: [
+            {
+              id: 'insight-1',
+              type: 'opportunity',
+              title: 'Expansion Ready',
+              description: 'High engagement and satisfaction indicate readiness for additional services',
+              confidence: 85,
+              impact: 'high',
+              actionRequired: true,
+              dueDate: new Date('2024-01-25T00:00:00Z'),
+              createdAt: new Date()
+            }
+          ],
+          
+          // Customer Portal Integration
+          portalAccessEnabled: true,
+          portalLastLogin: new Date('2024-01-14T09:15:00Z'),
+          portalLoginCount: 47,
+          portalFeaturesEnabled: ['documents', 'support', 'billing'],
+          
+          // Social Media
+          socialMentionsCount: 12,
+          socialSentimentScore: 0.78,
+          lastSocialMention: new Date('2024-01-13T14:22:00Z'),
+          socialProfiles: {
+            linkedin: 'https://linkedin.com/company/acme-corp',
+            twitter: '@acmecorp'
+          },
+          
+          // Metadata
+          customFields: {
+            preferredContactMethod: 'email',
+            timezone: 'PST',
+            marketSegment: 'Enterprise'
+          },
+          tags: ['High Value', 'Strategic', 'Expansion Ready'],
+          notes: 'Excellent relationship with strong growth potential. Considering AI solution upgrade.',
+          metadata: {},
+          
+          // System Fields
+          isDeleted: false,
+          createdBy: userId,
+          createdAt: new Date('2024-01-01T00:00:00Z'),
+          updatedAt: new Date('2024-01-15T10:30:00Z')
         },
         {
           id: 'acc-002',
           companyId,
-          name: 'TechFlow Solutions',
-          website: 'https://techflow.com',
+          accountNumber: 'ACC-2024-002',
+          companyName: 'TechFlow Solutions',
           industry: 'Software',
-          size: 'medium',
-          revenue: 2500000,
-          employees: 120,
-          address: {
-            street: '456 Innovation Drive',
-            city: 'Austin',
-            state: 'TX',
+          companySize: '51-200',
+          annualRevenue: 2500000,
+          numberOfEmployees: 85,
+          websiteUrl: 'https://techflow.com',
+          accountType: 'prospect',
+          accountStatus: 'active',
+          priorityLevel: 'medium',
+          territory: 'East Coast',
+          accountManagerId: userId,
+          primaryAddress: {
+            line1: '456 Innovation Drive',
+            city: 'Boston',
+            state: 'MA',
             country: 'United States',
-            zipCode: '78701'
+            postalCode: '02101'
           },
           phone: '+1 (555) 987-6543',
-          description: 'Innovative software development company',
-          accountType: 'prospect',
-          status: 'active',
-          owner: userId,
-          tags: ['Growth Potential', 'Tech Savvy', 'Mid-Market'],
-          customFields: {},
-          createdAt: '2024-01-02T00:00:00Z',
-          updatedAt: '2024-01-12T09:15:00Z',
-          totalRevenue: 320000,
-          lastActivityDate: '2024-01-11T15:30:00Z',
-          nextReviewDate: '2024-01-18T11:00:00Z',
+          
+          // Complete Historical Tracking
+          totalEmailCount: 45,
+          totalMeetingCount: 6,
+          totalCallCount: 12,
+          totalQuoteCount: 3,
+          totalDealCount: 2,
+          totalSupportTickets: 1,
+          totalDocumentsShared: 8,
+          totalInvoices: 0,
+          totalPayments: 0,
+          
+          // Real-time Engagement Metrics
+          lastEmailDate: new Date('2024-01-13T14:22:00Z'),
+          lastMeetingDate: new Date('2024-01-08T11:00:00Z'),
+          lastCallDate: new Date('2024-01-11T15:30:00Z'),
+          lastQuoteDate: new Date('2024-01-09T16:45:00Z'),
+          lastInteractionDate: new Date('2024-01-13T14:22:00Z'),
+          
+          // Financial Information
+          totalRevenue: 0,
+          lifetimeValue: 125000,
+          averageDealSize: 62500,
+          paymentTerms: 'net_30',
           
           // Enhanced AI Intelligence
+          aiHealthScore: 73,
           aiEngagementTrend: 'stable',
           aiSatisfactionTrend: 'improving',
-          aiExpansionReadiness: 68,
-          aiRetentionProbability: 0.84,
-          aiAdvocacyPotential: 65,
+          aiExpansionReadiness: 45,
+          aiRetentionProbability: 0.78,
+          aiAdvocacyPotential: 55,
+          aiChurnRiskScore: 0.22,
+          aiNextBestAction: 'Follow up on proposal',
+          aiInsights: [
+            {
+              id: 'insight-2',
+              type: 'recommendation',
+              title: 'Proposal Follow-up',
+              description: 'Customer showed interest in recent proposal, good time for follow-up',
+              confidence: 75,
+              impact: 'medium',
+              actionRequired: true,
+              dueDate: new Date('2024-01-20T00:00:00Z'),
+              createdAt: new Date()
+            }
+          ],
           
           // Customer Portal Integration
           portalAccessEnabled: false,
-          portalLastLogin: undefined,
           portalLoginCount: 0,
+          portalFeaturesEnabled: [],
           
-          // Complete Historical Tracking
-          totalEmailCount: 89,
-          totalMeetingCount: 12,
-          totalCallCount: 24,
-          totalQuoteCount: 5,
-          totalDealCount: 8,
-          totalSupportTickets: 1,
-          totalDocumentsShared: 15,
-          
-          // Real-time Engagement Metrics
-          lastEmailDate: '2024-01-11T10:45:00Z',
-          lastMeetingDate: '2024-01-08T15:30:00Z',
-          lastCallDate: '2024-01-09T13:15:00Z',
-          lastQuoteDate: '2024-01-07T09:20:00Z',
-          lastSupportTicketDate: '2024-01-03T14:30:00Z',
-          
-          // Social Media Monitoring
-          socialMentionsCount: 8,
+          // Social Media
+          socialMentionsCount: 3,
           socialSentimentScore: 0.65,
-          lastSocialMention: '2024-01-10T12:45:00Z',
+          lastSocialMention: new Date('2024-01-10T10:15:00Z'),
+          socialProfiles: {
+            linkedin: 'https://linkedin.com/company/techflow-solutions'
+          },
           
-          // Enhanced Analytics
-          customerHealthScore: 73,
-          engagementScore: 78,
-          satisfactionScore: 81,
-          churnRisk: 'medium',
-          expansionOpportunities: ['Premium Features', 'Training Services']
+          // Metadata
+          customFields: {
+            preferredContactMethod: 'phone',
+            timezone: 'EST',
+            marketSegment: 'Mid-Market'
+          },
+          tags: ['Prospect', 'Qualified', 'Decision Pending'],
+          notes: 'Active prospect with strong interest in our platform. Decision expected within 2 weeks.',
+          metadata: {},
+          
+          // System Fields
+          isDeleted: false,
+          createdBy: userId,
+          createdAt: new Date('2024-01-05T00:00:00Z'),
+          updatedAt: new Date('2024-01-13T14:22:00Z')
         }
       ]
       setAccounts(mockAccounts)
-      setSelectedAccount(mockAccounts[0])
     }
+  }, [accounts.length, companyId, userId, setAccounts])
 
-    // Mock timeline data
+  // Mock timeline data
+  useEffect(() => {
     if (timelineData.length === 0) {
-      const mockTimeline: CustomerUnifiedTimeline[] = [
+      const mockTimeline: CustomerTimelineEntry[] = [
         {
-          id: 'timeline-001',
-          customerId: 'acc-001',
+          id: 'timeline-1',
+          accountId: 'acc-001',
+          companyId,
           timelineType: 'email',
           timelineSubtype: 'email_sent',
-          title: 'Proposal Follow-up Email Sent',
-          description: 'Sent follow-up email regarding enterprise package proposal',
-          summary: 'Follow-up on enterprise package pricing and implementation timeline',
-          relatedQuoteId: 'quote-001',
-          timelineDate: '2024-01-14T11:30:00Z',
-          participants: ['John Smith', 'Sarah Johnson'],
-          attachments: [],
-          aiImportanceScore: 85,
+          title: 'Product Demo Follow-up',
+          description: 'Sent follow-up email after product demonstration with additional resources',
+          timelineDate: new Date('2024-01-14T11:30:00Z'),
+          durationMinutes: 0,
+          participants: [
+            { id: 'p1', name: 'John Smith', email: 'john@acme.com', type: 'external', role: 'CTO' },
+            { id: 'p2', name: 'Sales Rep', email: 'sales@company.com', type: 'internal', role: 'Account Manager' }
+          ],
+          attachments: [
+            { id: 'att1', name: 'Product Brochure.pdf', url: '/docs/brochure.pdf', type: 'pdf', size: 2048000 }
+          ],
+          tags: ['follow-up', 'demo', 'resources'],
+          aiImportanceScore: 75,
           aiSentimentScore: 0.8,
-          aiImpactOnRelationship: 0.75,
-          aiExtractedInsights: ['Customer interested in Q2 implementation', 'Budget approved for enterprise features'],
+          aiImpactOnRelationship: 0.15,
+          aiExtractedInsights: ['Customer interested in enterprise features', 'Requested integration details'],
+          aiKeywords: ['demo', 'integration', 'enterprise', 'pricing'],
           isPublic: true,
           visibleToRoles: [],
-          createdBy: userId,
-          isPinned: true,
-          viewCount: 5,
-          lastViewed: '2024-01-14T12:00:00Z',
-          createdAt: '2024-01-14T11:30:00Z',
-          updatedAt: '2024-01-14T11:30:00Z'
+          isPinned: false,
+          viewCount: 3,
+          createdAt: new Date('2024-01-14T11:30:00Z'),
+          updatedAt: new Date('2024-01-14T11:30:00Z')
         },
         {
-          id: 'timeline-002',
-          customerId: 'acc-001',
+          id: 'timeline-2',
+          accountId: 'acc-001',
+          companyId,
           timelineType: 'meeting',
-          timelineSubtype: 'demo_completed',
-          title: 'Product Demo Session',
-          description: 'Conducted comprehensive product demonstration for key stakeholders',
-          summary: 'Successful demo covering enterprise features, integration capabilities, and ROI analysis',
-          relatedDealId: 'deal-001',
-          timelineDate: '2024-01-10T14:00:00Z',
-          durationMinutes: 90,
-          participants: ['John Smith', 'Sarah Johnson', 'Mike Chen', 'Lisa Wong'],
-          attachments: [],
+          timelineSubtype: 'meeting_completed',
+          title: 'Quarterly Business Review',
+          description: 'Conducted Q4 2023 business review and planning for 2024 expansion',
+          timelineDate: new Date('2024-01-10T14:00:00Z'),
+          durationMinutes: 60,
+          participants: [
+            { id: 'p3', name: 'John Smith', email: 'john@acme.com', type: 'external', role: 'CTO' },
+            { id: 'p4', name: 'Sarah Johnson', email: 'sarah@acme.com', type: 'external', role: 'VP Operations' },
+            { id: 'p5', name: 'Account Manager', email: 'am@company.com', type: 'internal', role: 'Account Manager' }
+          ],
+          attachments: [
+            { id: 'att2', name: 'QBR Presentation.pptx', url: '/docs/qbr-q4-2023.pptx', type: 'pptx', size: 5120000 }
+          ],
+          tags: ['qbr', 'expansion', 'planning'],
           aiImportanceScore: 95,
           aiSentimentScore: 0.9,
-          aiImpactOnRelationship: 0.85,
-          aiExtractedInsights: ['Strong interest in API integrations', 'Security compliance concerns addressed', 'Implementation timeline acceptable'],
+          aiImpactOnRelationship: 0.25,
+          aiExtractedInsights: ['Strong satisfaction with current service', 'Ready for expansion discussion', 'Budget approved for additional licenses'],
+          aiKeywords: ['expansion', 'budget', 'satisfaction', 'additional', 'licenses'],
           isPublic: true,
           visibleToRoles: [],
-          createdBy: userId,
-          isPinned: false,
+          isPinned: true,
           viewCount: 8,
-          lastViewed: '2024-01-12T09:30:00Z',
-          createdAt: '2024-01-10T14:00:00Z',
-          updatedAt: '2024-01-10T14:00:00Z'
+          createdAt: new Date('2024-01-10T14:00:00Z'),
+          updatedAt: new Date('2024-01-10T14:00:00Z')
         }
       ]
       setTimelineData(mockTimeline)
     }
+  }, [timelineData.length, companyId, setTimelineData])
 
-    // Mock engagement alerts
+  // Mock engagement alerts
+  useEffect(() => {
     if (engagementAlerts.length === 0) {
-      const mockAlerts: CustomerEngagementAlert[] = [
+      const mockAlerts: AccountEngagementAlert[] = [
         {
-          id: 'alert-001',
-          customerId: 'acc-001',
-          alertType: 'portal_inactivity',
-          severity: 'medium',
-          message: 'Customer portal activity decreased by 40%',
-          description: 'Acme Corporation has shown reduced portal engagement over the past week',
-          triggeredBy: 'ai_analysis',
-          triggerConditions: { portal_sessions: 'decreased', threshold: 40 },
+          id: 'alert-1',
+          accountId: 'acc-002',
+          companyId,
+          alertType: 'expansion_opportunity',
+          alertSeverity: 'high',
+          alertTitle: 'Expansion Opportunity Detected',
+          alertDescription: 'Account shows strong engagement and readiness for expansion',
+          alertMessage: 'TechFlow Solutions has increased usage by 40% this month and expressed interest in additional features.',
+          triggerConditions: { engagementIncrease: 40, featureInterest: true },
+          thresholdValues: { engagementThreshold: 30 },
           status: 'active',
-          recommendedActions: ['Send engagement email', 'Schedule check-in call', 'Offer training session'],
+          recommendedActions: ['Schedule expansion meeting', 'Prepare custom proposal', 'Analyze usage patterns'],
           assignedTo: userId,
-          dueDate: '2024-01-17T17:00:00Z',
-          createdAt: '2024-01-15T09:00:00Z',
-          updatedAt: '2024-01-15T09:00:00Z'
+          dueDate: new Date('2024-01-20T00:00:00Z'),
+          escalationLevel: 1,
+          aiUrgencyScore: 85,
+          aiImpactPrediction: { revenueIncrease: 125000, probability: 0.75 },
+          aiRecommendedResponse: 'Schedule a meeting within 3 days to discuss expansion opportunities',
+          createdAt: new Date('2024-01-14T10:00:00Z'),
+          updatedAt: new Date('2024-01-14T10:00:00Z')
         }
       ]
       setEngagementAlerts(mockAlerts)
     }
-  }, [accounts, setAccounts, timelineData, setTimelineData, engagementAlerts, setEngagementAlerts, userId, companyId])
+  }, [engagementAlerts.length, companyId, userId, setEngagementAlerts])
 
   const filteredAccounts = accounts.filter(account => {
-    const matchesSearch = account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         account.industry.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterStatus === 'all' || account.status === filterStatus
+    const matchesSearch = searchTerm === '' || 
+      account.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      account.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      account.accountNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesFilter = filterStatus === 'all' || account.accountStatus === filterStatus
+    
     return matchesSearch && matchesFilter
   })
 
-  const handleAccountClick = (account: Account) => {
+  const handleAccountSelect = (account: EnhancedAccount) => {
     setSelectedAccount(account)
-    toast.success(`Viewing ${account.name} details`)
+    toast.success(`Opened account: ${account.companyName}`)
   }
 
   const handleEmailClick = (email: string) => {
-    toast.info(`Opening email composer for ${email}`)
+    window.open(`mailto:${email}`, '_blank')
+    toast.info(`Opening email to ${email}`)
   }
 
   const handlePhoneClick = (phone: string) => {
-    toast.info(`Initiating call to ${phone}`)
+    window.open(`tel:${phone}`, '_blank')
+    toast.info(`Calling ${phone}`)
   }
 
   const getHealthScoreColor = (score: number) => {
@@ -348,838 +437,714 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
     return 'text-red-600'
   }
 
-  const getTrendIcon = (trend: string) => {
+  const getEngagementTrendIcon = (trend: string) => {
     switch (trend) {
-      case 'increasing':
-        return <TrendUp className="w-4 h-4 text-green-600" />
-      case 'decreasing':
-        return <TrendDown className="w-4 h-4 text-red-600" />
-      default:
-        return <Activity className="w-4 h-4 text-blue-600" />
+      case 'increasing': return <TrendUp className="text-green-600" size={16} />
+      case 'decreasing': return <TrendDown className="text-red-600" size={16} />
+      case 'critical': return <Warning className="text-red-600" size={16} />
+      default: return <Activity className="text-blue-600" size={16} />
     }
   }
 
-  const getChurnRiskColor = (risk: string) => {
-    switch (risk) {
-      case 'low':
-        return 'text-green-600 bg-green-50 border-green-200'
-      case 'medium':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200'
-      case 'high':
-        return 'text-orange-600 bg-orange-50 border-orange-200'
-      case 'critical':
-        return 'text-red-600 bg-red-50 border-red-200'
-      default:
-        return 'text-gray-600 bg-gray-50 border-gray-200'
-    }
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0
+    }).format(amount)
   }
 
-  const renderAccountsList = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center">
-            <Building className="w-5 h-5 mr-2" />
-            Enhanced Account Management
-          </span>
-          <Button size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Account
-          </Button>
-        </CardTitle>
-        <CardDescription>
-          Comprehensive account intelligence with AI insights, portal integration, and real-time collaboration
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center space-x-4 mb-6">
-          <div className="flex-1">
-            <Input
-              placeholder="Search accounts by name, industry, or tags..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          <Button variant="outline" size="sm">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
-        </div>
-
-        <div className="space-y-3">
-          {filteredAccounts.map((account) => {
-            const accountAlerts = engagementAlerts.filter(alert => 
-              alert.customerId === account.id && alert.status === 'active'
-            )
-            
-            return (
-              <div
-                key={account.id}
-                className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                onClick={() => handleAccountClick(account)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Avatar className="relative">
-                      <AvatarImage src={`/api/placeholder/40/40`} />
-                      <AvatarFallback>{account.name.charAt(0)}</AvatarFallback>
-                      {account.portalAccessEnabled && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-                      )}
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold">{account.name}</h3>
-                        {accountAlerts.length > 0 && (
-                          <Badge variant="destructive" className="px-1 py-0 text-xs">
-                            <Bell className="w-3 h-3 mr-1" />
-                            {accountAlerts.length}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{account.industry} • {account.size}</p>
-                      <div className="flex items-center space-x-4 mt-1">
-                        <div className="flex items-center text-xs">
-                          {getTrendIcon(account.aiEngagementTrend)}
-                          <span className="ml-1 capitalize">{account.aiEngagementTrend}</span>
-                        </div>
-                        <div className={`text-xs px-2 py-1 rounded border ${getChurnRiskColor(account.churnRisk)}`}>
-                          {account.churnRisk.toUpperCase()} RISK
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4 text-right">
-                    <div>
-                      <div className={`text-sm font-medium ${getHealthScoreColor(account.customerHealthScore)}`}>
-                        {account.customerHealthScore}% Health
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        AI Score: {account.aiExpansionReadiness}/100
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        ${account.totalRevenue.toLocaleString()} revenue
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <button
-                        className="block text-sm text-blue-600 hover:underline"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleEmailClick('contact@' + account.name.toLowerCase().replace(/\s+/g, '') + '.com')
-                        }}
-                      >
-                        <Mail className="w-4 h-4 inline mr-1" />
-                        Email
-                      </button>
-                      <button
-                        className="block text-sm text-blue-600 hover:underline"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handlePhoneClick(account.phone || '+1 (555) 000-0000')
-                        }}
-                      >
-                        <Phone className="w-4 h-4 inline mr-1" />
-                        Call
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  )
-
-  const renderAccountDetails = () => {
-    if (!selectedAccount) return null
-
-    const accountTimeline = timelineData.filter(item => item.customerId === selectedAccount.id)
-    const accountAlerts = engagementAlerts.filter(alert => alert.customerId === selectedAccount.id)
-
+  if (!selectedAccount) {
     return (
       <div className="space-y-6">
-        {/* Enhanced Account Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Avatar className="w-16 h-16 relative">
-                  <AvatarImage src={`/api/placeholder/64/64`} />
-                  <AvatarFallback className="text-lg">
-                    {selectedAccount.name.charAt(0)}
-                  </AvatarFallback>
-                  {selectedAccount.portalAccessEnabled && (
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full flex items-center justify-center">
-                      <Monitor className="w-3 h-3 text-white" />
-                    </div>
-                  )}
-                </Avatar>
-                <div>
-                  <div className="flex items-center space-x-3">
-                    <h2 className="text-2xl font-bold">{selectedAccount.name}</h2>
-                    <Badge variant={selectedAccount.status === 'active' ? 'default' : 'secondary'}>
-                      {selectedAccount.status.toUpperCase()}
-                    </Badge>
-                    <div className={`px-2 py-1 rounded text-xs border ${getChurnRiskColor(selectedAccount.churnRisk)}`}>
-                      {selectedAccount.churnRisk.toUpperCase()} CHURN RISK
-                    </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Enhanced Account Management</h2>
+            <p className="text-muted-foreground">
+              Complete historical tracking, AI insights, and customer intelligence
+            </p>
+          </div>
+          <Button onClick={() => toast.info('New account creation')}>
+            <Plus size={16} className="mr-2" />
+            New Account
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search accounts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-2 border border-border rounded-md bg-background"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredAccounts.map((account) => (
+            <Card key={account.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleAccountSelect(account)}>
+              <CardHeader className="space-y-2">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">{account.companyName}</CardTitle>
+                    <CardDescription>{account.industry}</CardDescription>
                   </div>
-                  <p className="text-muted-foreground">{selectedAccount.industry} • {selectedAccount.size}</p>
-                  <div className="flex items-center space-x-6 mt-2">
-                    <div className="flex items-center text-sm">
-                      <DollarSign className="w-4 h-4 mr-2 text-muted-foreground" />
-                      <span>${(selectedAccount.revenue! / 1000000).toFixed(1)}M revenue</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Users className="w-4 h-4 mr-2 text-muted-foreground" />
-                      <span>{selectedAccount.employees} employees</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Building className="w-4 h-4 mr-2 text-muted-foreground" />
-                      <span>{selectedAccount.accountType}</span>
-                    </div>
-                    {selectedAccount.portalAccessEnabled && (
-                      <div className="flex items-center text-sm">
-                        <Monitor className="w-4 h-4 mr-2 text-green-600" />
-                        <span>Portal Active</span>
-                      </div>
-                    )}
-                  </div>
+                  <Badge variant={account.accountStatus === 'active' ? 'default' : 'secondary'}>
+                    {account.accountStatus}
+                  </Badge>
                 </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button size="sm" variant="outline">
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-                <Button size="sm" variant="outline">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* AI Health Metrics Bar */}
-            <div className="grid grid-cols-4 gap-4 mt-4">
-              <div className="text-center">
-                <div className="text-xs text-muted-foreground mb-1">Health Score</div>
-                <div className={`text-lg font-bold ${getHealthScoreColor(selectedAccount.customerHealthScore)}`}>
-                  {selectedAccount.customerHealthScore}%
-                </div>
-                <Progress value={selectedAccount.customerHealthScore} className="h-2" />
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-muted-foreground mb-1">Engagement</div>
-                <div className="text-lg font-bold text-blue-600">
-                  {selectedAccount.engagementScore}%
-                </div>
-                <Progress value={selectedAccount.engagementScore} className="h-2" />
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-muted-foreground mb-1">Expansion Ready</div>
-                <div className="text-lg font-bold text-purple-600">
-                  {selectedAccount.aiExpansionReadiness}%
-                </div>
-                <Progress value={selectedAccount.aiExpansionReadiness} className="h-2" />
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-muted-foreground mb-1">Retention</div>
-                <div className="text-lg font-bold text-green-600">
-                  {(selectedAccount.aiRetentionProbability * 100).toFixed(0)}%
-                </div>
-                <Progress value={selectedAccount.aiRetentionProbability * 100} className="h-2" />
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-
-        {/* Active Alerts */}
-        {accountAlerts.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center text-orange-600">
-                <Bell className="w-5 h-5 mr-2" />
-                Active Engagement Alerts ({accountAlerts.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {accountAlerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className={`p-3 rounded border ${
-                      alert.severity === 'critical' ? 'bg-red-50 border-red-200' :
-                      alert.severity === 'high' ? 'bg-orange-50 border-orange-200' :
-                      alert.severity === 'medium' ? 'bg-yellow-50 border-yellow-200' :
-                      'bg-blue-50 border-blue-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-medium">{alert.message}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">{alert.description}</p>
-                        <div className="flex items-center space-x-4 mt-2">
-                          <Badge variant="outline" className="text-xs">
-                            {alert.severity.toUpperCase()}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            Due: {new Date(alert.dueDate!).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        Resolve
-                      </Button>
-                    </div>
-                    <div className="mt-3">
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Recommended Actions:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {alert.recommendedActions.map((action, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {action}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Enhanced Account Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="executive">Executive</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            <TabsTrigger value="portal">Portal Activity</TabsTrigger>
-            <TabsTrigger value="success">Success Metrics</TabsTrigger>
-            <TabsTrigger value="ecosystem">Ecosystem</TabsTrigger>
-            <TabsTrigger value="insights">AI Insights</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="executive" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Account Overview</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-medium mb-3">Contact Information</h4>
-                        <div className="space-y-3 text-sm">
-                          <div className="flex items-center">
-                            <Mail className="w-4 h-4 mr-3 text-muted-foreground" />
-                            <button
-                              className="text-blue-600 hover:underline"
-                              onClick={() => handleEmailClick('contact@' + selectedAccount.name.toLowerCase() + '.com')}
-                            >
-                              contact@{selectedAccount.name.toLowerCase().replace(/\s+/g, '')}.com
-                            </button>
-                          </div>
-                          <div className="flex items-center">
-                            <Phone className="w-4 h-4 mr-3 text-muted-foreground" />
-                            <button
-                              className="text-blue-600 hover:underline"
-                              onClick={() => handlePhoneClick(selectedAccount.phone || '+1 (555) 000-0000')}
-                            >
-                              {selectedAccount.phone || '+1 (555) 000-0000'}
-                            </button>
-                          </div>
-                          <div className="flex items-center">
-                            <Globe className="w-4 h-4 mr-3 text-muted-foreground" />
-                            <a
-                              href={selectedAccount.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
-                            >
-                              {selectedAccount.website}
-                            </a>
-                          </div>
-                          <div className="flex items-start">
-                            <MapPin className="w-4 h-4 mr-3 text-muted-foreground mt-0.5" />
-                            <div>
-                              <p>{selectedAccount.address?.street}</p>
-                              <p>{selectedAccount.address?.city}, {selectedAccount.address?.state} {selectedAccount.address?.zipCode}</p>
-                              <p>{selectedAccount.address?.country}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="font-medium mb-3">Key Metrics</h4>
-                        <div className="space-y-3 text-sm">
-                          <div className="flex justify-between">
-                            <span>Customer Health:</span>
-                            <span className={getHealthScoreColor(selectedAccount.customerHealthScore)}>
-                              {selectedAccount.customerHealthScore}%
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Engagement Score:</span>
-                            <span className="text-blue-600">{selectedAccount.engagementScore}/100</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Total Revenue:</span>
-                            <span className="font-medium">${selectedAccount.totalRevenue.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Portal Logins:</span>
-                            <span>{selectedAccount.portalLoginCount}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Support Tickets:</span>
-                            <span>{selectedAccount.totalSupportTickets}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Historical Activity Summary */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Historical Activity Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <div className="flex items-center justify-center mb-2">
-                          <Envelope className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div className="text-2xl font-bold text-blue-600">{selectedAccount.totalEmailCount}</div>
-                        <div className="text-sm text-muted-foreground">Total Emails</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Last: {new Date(selectedAccount.lastEmailDate!).toLocaleDateString()}
-                        </div>
-                      </div>
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <div className="flex items-center justify-center mb-2">
-                          <VideoCamera className="w-6 h-6 text-green-600" />
-                        </div>
-                        <div className="text-2xl font-bold text-green-600">{selectedAccount.totalMeetingCount}</div>
-                        <div className="text-sm text-muted-foreground">Total Meetings</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Last: {new Date(selectedAccount.lastMeetingDate!).toLocaleDateString()}
-                        </div>
-                      </div>
-                      <div className="text-center p-4 bg-purple-50 rounded-lg">
-                        <div className="flex items-center justify-center mb-2">
-                          <FileDoc className="w-6 h-6 text-purple-600" />
-                        </div>
-                        <div className="text-2xl font-bold text-purple-600">{selectedAccount.totalQuoteCount}</div>
-                        <div className="text-sm text-muted-foreground">Total Quotes</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Last: {new Date(selectedAccount.lastQuoteDate!).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <Button className="w-full justify-start" variant="outline">
-                      <Mail className="w-4 h-4 mr-2" />
-                      Send Email
-                    </Button>
-                    <Button className="w-full justify-start" variant="outline">
-                      <Phone className="w-4 h-4 mr-2" />
-                      Schedule Call
-                    </Button>
-                    <Button className="w-full justify-start" variant="outline">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      Book Meeting
-                    </Button>
-                    <Button className="w-full justify-start" variant="outline">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Create Quote
-                    </Button>
-                    <Button className="w-full justify-start" variant="outline">
-                      <Monitor className="w-4 h-4 mr-2" />
-                      Portal Access
-                    </Button>
-                    <Button className="w-full justify-start" variant="outline">
-                      <Ticket className="w-4 h-4 mr-2" />
-                      Create Ticket
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="timeline" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center">
-                    <Activity className="w-5 h-5 mr-2" />
-                    Unified Customer Timeline
+                <div className="flex items-center gap-2">
+                  {getEngagementTrendIcon(account.aiEngagementTrend)}
+                  <span className="text-sm text-muted-foreground">
+                    {account.aiEngagementTrend} engagement
                   </span>
-                  <Button variant="outline" size="sm">
-                    <ArrowsClockwise className="w-4 h-4 mr-2" />
-                    Refresh
-                  </Button>
-                </CardTitle>
-                <CardDescription>
-                  Complete chronological view of all customer interactions and activities
-                </CardDescription>
+                </div>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-96">
-                  <div className="space-y-4">
-                    {accountTimeline.map((item, index) => (
-                      <div key={item.id} className="flex space-x-4">
-                        <div className="flex flex-col items-center">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            item.timelineType === 'email' ? 'bg-blue-100 text-blue-600' :
-                            item.timelineType === 'meeting' ? 'bg-green-100 text-green-600' :
-                            item.timelineType === 'call' ? 'bg-purple-100 text-purple-600' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>
-                            {item.timelineType === 'email' && <Envelope className="w-4 h-4" />}
-                            {item.timelineType === 'meeting' && <VideoCamera className="w-4 h-4" />}
-                            {item.timelineType === 'call' && <Phone className="w-4 h-4" />}
-                            {item.timelineType === 'document' && <FileDoc className="w-4 h-4" />}
-                          </div>
-                          {index < accountTimeline.length - 1 && (
-                            <div className="w-px h-16 bg-border mt-2" />
-                          )}
-                        </div>
-                        <div className="flex-1 pb-8">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">{item.title}</h4>
-                            <div className="flex items-center space-x-2">
-                              {item.isPinned && <Star className="w-4 h-4 text-yellow-500" />}
-                              <Badge variant="outline" className="text-xs">
-                                AI Score: {item.aiImportanceScore}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(item.timelineDate).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                          {item.summary && (
-                            <p className="text-sm mt-2 p-2 bg-muted/50 rounded italic">
-                              AI Summary: {item.summary}
-                            </p>
-                          )}
-                          {item.participants && item.participants.length > 0 && (
-                            <div className="flex items-center mt-2">
-                              <Users className="w-4 h-4 text-muted-foreground mr-2" />
-                              <span className="text-xs text-muted-foreground">
-                                {item.participants.join(', ')}
-                              </span>
-                            </div>
-                          )}
-                          {item.aiExtractedInsights && item.aiExtractedInsights.length > 0 && (
-                            <div className="mt-2">
-                              <p className="text-xs font-medium text-muted-foreground mb-1">AI Insights:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {item.aiExtractedInsights.map((insight, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs">
-                                    <Brain className="w-3 h-3 mr-1" />
-                                    {insight}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Health Score</span>
+                    <span className={`font-medium ${getHealthScoreColor(account.aiHealthScore)}`}>
+                      {account.aiHealthScore}%
+                    </span>
                   </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  <Progress value={account.aiHealthScore} className="h-2" />
+                </div>
 
-          <TabsContent value="portal" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Monitor className="w-5 h-5 mr-2" />
-                    Portal Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span>Portal Access:</span>
-                      <Badge variant={selectedAccount.portalAccessEnabled ? 'default' : 'secondary'}>
-                        {selectedAccount.portalAccessEnabled ? 'Enabled' : 'Disabled'}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Total Logins:</span>
-                      <span className="font-medium">{selectedAccount.portalLoginCount}</span>
-                    </div>
-                    {selectedAccount.portalLastLogin && (
-                      <div className="flex items-center justify-between">
-                        <span>Last Login:</span>
-                        <span>{new Date(selectedAccount.portalLastLogin).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                    <Button className="w-full">
-                      <LinkSimple className="w-4 h-4 mr-2" />
-                      Open Customer Portal
-                    </Button>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Revenue</p>
+                    <p className="font-medium">{formatCurrency(account.totalRevenue)}</p>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Portal Engagement Metrics</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Session Frequency</span>
-                        <span>8.5/10</span>
-                      </div>
-                      <Progress value={85} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Feature Adoption</span>
-                        <span>6.7/10</span>
-                      </div>
-                      <Progress value={67} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Document Downloads</span>
-                        <span>9.2/10</span>
-                      </div>
-                      <Progress value={92} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Support Usage</span>
-                        <span>3.1/10</span>
-                      </div>
-                      <Progress value={31} className="h-2" />
-                    </div>
+                  <div>
+                    <p className="text-muted-foreground">Employees</p>
+                    <p className="font-medium">{account.numberOfEmployees}</p>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+                </div>
 
-          <TabsContent value="success" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <Heart className="w-6 h-6 text-red-500" />
-                    </div>
-                    <p className="text-lg font-bold">{selectedAccount.satisfactionScore}%</p>
-                    <p className="text-xs text-muted-foreground">Satisfaction Score</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      {getTrendIcon(selectedAccount.aiEngagementTrend)}
-                    </div>
-                    <p className="text-lg font-bold capitalize">{selectedAccount.aiEngagementTrend}</p>
-                    <p className="text-xs text-muted-foreground">Engagement Trend</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <Fire className="w-6 h-6 text-orange-500" />
-                    </div>
-                    <p className="text-lg font-bold">{selectedAccount.aiExpansionReadiness}%</p>
-                    <p className="text-xs text-muted-foreground">Expansion Ready</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <Shield className="w-6 h-6 text-green-500" />
-                    </div>
-                    <p className="text-lg font-bold">{(selectedAccount.aiRetentionProbability * 100).toFixed(0)}%</p>
-                    <p className="text-xs text-muted-foreground">Retention Rate</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Expansion Opportunities</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {selectedAccount.expansionOpportunities.map((opportunity, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded">
-                      <div className="flex items-center space-x-3">
-                        <Lightbulb className="w-5 h-5 text-yellow-500" />
-                        <span>{opportunity}</span>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        Explore
-                      </Button>
-                    </div>
+                <div className="flex flex-wrap gap-1">
+                  {account.tags.slice(0, 2).map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs">
+                      {tag}
+                    </Badge>
                   ))}
+                  {account.tags.length > 2 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{account.tags.length - 2}
+                    </Badge>
+                  )}
                 </div>
+
+                {account.aiInsights.length > 0 && (
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-md">
+                    <Brain size={14} className="text-blue-600" />
+                    <span className="text-xs text-blue-700 dark:text-blue-300">
+                      {account.aiInsights[0].title}
+                    </span>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </TabsContent>
+          ))}
+        </div>
 
-          <TabsContent value="ecosystem" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Network className="w-5 h-5 mr-2" />
-                  Account Ecosystem & Relationships
-                </CardTitle>
-                <CardDescription>
-                  Visualize and manage the complete business relationship network
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <TreeStructure className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Relationship Mapping</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Interactive visualization of all business relationships, partnerships, and connections
-                  </p>
-                  <Button>
-                    <Network className="w-4 h-4 mr-2" />
-                    Launch Relationship Map
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="insights" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Brain className="w-5 h-5 mr-2" />
-                  AI-Powered Intelligence & Insights
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded">
-                    <div className="flex items-start space-x-3">
-                      <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-blue-900">High Expansion Opportunity</h4>
-                        <p className="text-sm text-blue-700 mt-1">
-                          AI analysis shows {selectedAccount.aiExpansionReadiness}% readiness for upselling. 
-                          Based on usage patterns and growth trajectory, consider presenting enterprise features.
-                        </p>
-                        <div className="flex space-x-2 mt-2">
-                          <Badge variant="secondary" className="text-xs">
-                            <ChartLine className="w-3 h-3 mr-1" />
-                            Usage +45%
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            <Users className="w-3 h-3 mr-1" />
-                            Team Growth
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-green-50 border border-green-200 rounded">
-                    <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-green-900">Excellent Retention Probability</h4>
-                        <p className="text-sm text-green-700 mt-1">
-                          {(selectedAccount.aiRetentionProbability * 100).toFixed(0)}% probability of renewal based on:
-                        </p>
-                        <ul className="text-sm text-green-700 mt-2 ml-4 list-disc">
-                          <li>High engagement scores ({selectedAccount.engagementScore}%)</li>
-                          <li>Positive trend in satisfaction metrics</li>
-                          <li>Regular portal usage and feature adoption</li>
-                          <li>Strong relationship indicators</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-purple-50 border border-purple-200 rounded">
-                    <div className="flex items-start space-x-3">
-                      <Handshake className="w-5 h-5 text-purple-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-purple-900">Strong Advocacy Potential</h4>
-                        <p className="text-sm text-purple-700 mt-1">
-                          {selectedAccount.aiAdvocacyPotential}% advocacy potential. This account could become a reference customer.
-                          Consider inviting them to case study opportunities or user conferences.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-orange-50 border border-orange-200 rounded">
-                    <div className="flex items-start space-x-3">
-                      <Robot className="w-5 h-5 text-orange-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium text-orange-900">AI Recommendations</h4>
-                        <p className="text-sm text-orange-700 mt-1">Next best actions based on AI analysis:</p>
-                        <ul className="text-sm text-orange-700 mt-2 ml-4 list-disc">
-                          <li>Schedule quarterly business review within 2 weeks</li>
-                          <li>Present enterprise security features demo</li>
-                          <li>Introduce advanced analytics package</li>
-                          <li>Connect with their IT director for technical alignment</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {filteredAccounts.length === 0 && (
+          <div className="text-center py-12">
+            <Building size={48} className="mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium mb-2">No accounts found</h3>
+            <p className="text-muted-foreground">
+              {searchTerm ? `No accounts match "${searchTerm}"` : 'No accounts available'}
+            </p>
+          </div>
+        )}
       </div>
     )
   }
 
+  // Full account detail view
   return (
     <div className="space-y-6">
-      {renderAccountsList()}
-      {selectedAccount && renderAccountDetails()}
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" onClick={() => setSelectedAccount(null)}>
+          ← Back to Accounts
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold">{selectedAccount.companyName}</h1>
+          <p className="text-muted-foreground">{selectedAccount.industry} • {selectedAccount.accountNumber}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant={selectedAccount.accountStatus === 'active' ? 'default' : 'secondary'}>
+            {selectedAccount.accountStatus}
+          </Badge>
+          <Badge variant="outline" className={getHealthScoreColor(selectedAccount.aiHealthScore)}>
+            Health: {selectedAccount.aiHealthScore}%
+          </Badge>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="executive">Executive</TabsTrigger>
+          <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          <TabsTrigger value="relationships">Relationships</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="portal">Portal</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="executive" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Account Overview</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold mb-2">Contact Information</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Globe size={14} />
+                          <a 
+                            href={selectedAccount.websiteUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            {selectedAccount.websiteUrl}
+                          </a>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone size={14} />
+                          <button 
+                            onClick={() => handlePhoneClick(selectedAccount.phone || '')}
+                            className="text-blue-600 hover:underline"
+                          >
+                            {selectedAccount.phone}
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin size={14} />
+                          <span>
+                            {selectedAccount.primaryAddress?.city}, {selectedAccount.primaryAddress?.state}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold mb-2">Company Details</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Size:</span>
+                          <span>{selectedAccount.companySize}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Employees:</span>
+                          <span>{selectedAccount.numberOfEmployees?.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Revenue:</span>
+                          <span>{formatCurrency(selectedAccount.annualRevenue || 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Territory:</span>
+                          <span>{selectedAccount.territory}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold mb-2">Financial Summary</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Total Revenue:</span>
+                          <span className="font-medium">{formatCurrency(selectedAccount.totalRevenue)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Lifetime Value:</span>
+                          <span className="font-medium">{formatCurrency(selectedAccount.lifetimeValue)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Avg Deal Size:</span>
+                          <span>{formatCurrency(selectedAccount.averageDealSize)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Payment Terms:</span>
+                          <span>{selectedAccount.paymentTerms}</span>
+                        </div>
+                        {selectedAccount.creditRating && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Credit Rating:</span>
+                            <span>{selectedAccount.creditRating}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold mb-2">Activity Summary</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="text-center p-2 bg-muted/50 rounded">
+                          <p className="font-medium">{selectedAccount.totalEmailCount}</p>
+                          <p className="text-muted-foreground">Emails</p>
+                        </div>
+                        <div className="text-center p-2 bg-muted/50 rounded">
+                          <p className="font-medium">{selectedAccount.totalMeetingCount}</p>
+                          <p className="text-muted-foreground">Meetings</p>
+                        </div>
+                        <div className="text-center p-2 bg-muted/50 rounded">
+                          <p className="font-medium">{selectedAccount.totalCallCount}</p>
+                          <p className="text-muted-foreground">Calls</p>
+                        </div>
+                        <div className="text-center p-2 bg-muted/50 rounded">
+                          <p className="font-medium">{selectedAccount.totalDealCount}</p>
+                          <p className="text-muted-foreground">Deals</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedAccount.notes && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Notes</h4>
+                    <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded">
+                      {selectedAccount.notes}
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <h4 className="font-semibold mb-2">Tags</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedAccount.tags.map((tag) => (
+                      <Badge key={tag} variant="outline">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain size={18} />
+                    AI Insights
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Health Score</span>
+                      <span className={`font-medium ${getHealthScoreColor(selectedAccount.aiHealthScore)}`}>
+                        {selectedAccount.aiHealthScore}%
+                      </span>
+                    </div>
+                    <Progress value={selectedAccount.aiHealthScore} className="h-2" />
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Retention Probability</span>
+                      <span className="font-medium text-green-600">
+                        {(selectedAccount.aiRetentionProbability * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <Progress value={selectedAccount.aiRetentionProbability * 100} className="h-2" />
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Expansion Readiness</span>
+                      <span className="font-medium text-blue-600">
+                        {selectedAccount.aiExpansionReadiness}%
+                      </span>
+                    </div>
+                    <Progress value={selectedAccount.aiExpansionReadiness} className="h-2" />
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Activity size={14} />
+                      <span className="text-sm font-medium">Engagement Trend</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getEngagementTrendIcon(selectedAccount.aiEngagementTrend)}
+                      <span className="text-sm capitalize">{selectedAccount.aiEngagementTrend}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Heart size={14} />
+                      <span className="text-sm font-medium">Satisfaction Trend</span>
+                    </div>
+                    <span className="text-sm capitalize">{selectedAccount.aiSatisfactionTrend}</span>
+                  </div>
+
+                  {selectedAccount.aiNextBestAction && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Lightbulb size={14} />
+                        <span className="text-sm font-medium">Next Best Action</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-2 rounded">
+                        {selectedAccount.aiNextBestAction}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {selectedAccount.aiInsights.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>AI Recommendations</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {selectedAccount.aiInsights.map((insight) => (
+                      <div key={insight.id} className="p-3 border border-border rounded-lg">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            {insight.type === 'opportunity' && <Target size={14} className="text-green-600" />}
+                            {insight.type === 'risk' && <Warning size={14} className="text-red-600" />}
+                            {insight.type === 'recommendation' && <Lightbulb size={14} className="text-blue-600" />}
+                            <span className="font-medium text-sm">{insight.title}</span>
+                          </div>
+                          <Badge variant={insight.impact === 'high' ? 'default' : 'secondary'} className="text-xs">
+                            {insight.impact}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{insight.description}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-muted-foreground">
+                            Confidence: {insight.confidence}%
+                          </span>
+                          {insight.actionRequired && (
+                            <Badge variant="outline" className="text-xs">
+                              Action Required
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {engagementAlerts.filter(alert => alert.accountId === selectedAccount.id).length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Bell size={18} />
+                      Active Alerts
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {engagementAlerts
+                      .filter(alert => alert.accountId === selectedAccount.id)
+                      .map((alert) => (
+                        <div key={alert.id} className="p-3 border border-border rounded-lg">
+                          <div className="flex items-start justify-between mb-2">
+                            <span className="font-medium text-sm">{alert.alertTitle}</span>
+                            <Badge variant={alert.alertSeverity === 'high' ? 'destructive' : 'default'} className="text-xs">
+                              {alert.alertSeverity}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-2">{alert.alertMessage}</p>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline" className="text-xs h-6">
+                              View Details
+                            </Button>
+                            <Button size="sm" className="text-xs h-6">
+                              Take Action
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="timeline" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Unified Customer Timeline</CardTitle>
+              <CardDescription>Complete history of all interactions and touchpoints</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96">
+                <div className="space-y-4">
+                  {timelineData
+                    .filter(entry => entry.accountId === selectedAccount.id)
+                    .sort((a, b) => new Date(b.timelineDate).getTime() - new Date(a.timelineDate).getTime())
+                    .map((entry) => (
+                      <div key={entry.id} className="border-l-2 border-blue-200 pl-4 pb-4">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              {entry.timelineType === 'email' && <Mail size={16} className="text-blue-600" />}
+                              {entry.timelineType === 'meeting' && <Video size={16} className="text-green-600" />}
+                              {entry.timelineType === 'call' && <Phone size={16} className="text-orange-600" />}
+                              <span className="font-medium">{entry.title}</span>
+                              {entry.isPinned && <Star size={14} className="text-yellow-500" />}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{entry.description}</p>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <span>{entry.timelineDate.toLocaleDateString()}</span>
+                              {entry.durationMinutes > 0 && (
+                                <span>{entry.durationMinutes} min</span>
+                              )}
+                              <span>AI Score: {entry.aiImportanceScore}%</span>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {entry.timelineType}
+                          </Badge>
+                        </div>
+                        
+                        {entry.participants.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-xs font-medium mb-1">Participants:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {entry.participants.map((participant) => (
+                                <Badge key={participant.id} variant="secondary" className="text-xs">
+                                  {participant.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {entry.aiExtractedInsights.length > 0 && (
+                          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs">
+                            <p className="font-medium mb-1">AI Insights:</p>
+                            <ul className="list-disc list-inside space-y-1">
+                              {entry.aiExtractedInsights.map((insight, index) => (
+                                <li key={index} className="text-blue-700 dark:text-blue-300">{insight}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {entry.attachments.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-xs font-medium mb-1">Attachments:</p>
+                            <div className="space-y-1">
+                              {entry.attachments.map((attachment) => (
+                                <div key={attachment.id} className="flex items-center gap-2 text-xs">
+                                  <FileDoc size={12} />
+                                  <a href={attachment.url} className="text-blue-600 hover:underline">
+                                    {attachment.name}
+                                  </a>
+                                  <span className="text-muted-foreground">
+                                    ({(attachment.size / 1024 / 1024).toFixed(1)} MB)
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="relationships" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Ecosystem</CardTitle>
+              <CardDescription>Relationship mapping and stakeholder analysis</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <Network size={48} className="mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">Relationship Map</h3>
+                <p className="text-muted-foreground">
+                  Interactive relationship visualization coming soon
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Churn Risk</p>
+                    <p className="text-xl font-bold">
+                      {(selectedAccount.aiChurnRiskScore * 100).toFixed(1)}%
+                    </p>
+                  </div>
+                  <Warning className={selectedAccount.aiChurnRiskScore > 0.3 ? 'text-red-500' : 'text-green-500'} size={20} />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Portal Logins</p>
+                    <p className="text-xl font-bold">{selectedAccount.portalLoginCount}</p>
+                  </div>
+                  <Monitor className="text-blue-500" size={20} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Social Sentiment</p>
+                    <p className="text-xl font-bold">
+                      {(selectedAccount.socialSentimentScore * 100).toFixed(0)}%
+                    </p>
+                  </div>
+                  <Heart className="text-pink-500" size={20} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Advocacy Score</p>
+                    <p className="text-xl font-bold">{selectedAccount.aiAdvocacyPotential}%</p>
+                  </div>
+                  <Star className="text-yellow-500" size={20} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance Analytics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <ChartLine size={48} className="mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">Advanced Analytics</h3>
+                <p className="text-muted-foreground">
+                  Comprehensive performance charts and trends visualization
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="documents" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Document Library</CardTitle>
+              <CardDescription>Shared documents and knowledge base</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <FileDoc size={48} className="mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">Document Management</h3>
+                <p className="text-muted-foreground">
+                  Centralized document library with version control and access tracking
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="portal" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Portal Access</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span>Portal Enabled</span>
+                  <Badge variant={selectedAccount.portalAccessEnabled ? 'default' : 'secondary'}>
+                    {selectedAccount.portalAccessEnabled ? 'Enabled' : 'Disabled'}
+                  </Badge>
+                </div>
+                
+                {selectedAccount.portalAccessEnabled && (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Total Logins:</span>
+                        <span>{selectedAccount.portalLoginCount}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Last Login:</span>
+                        <span>
+                          {selectedAccount.portalLastLogin?.toLocaleDateString() || 'Never'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium mb-2">Available Features</h4>
+                      <div className="space-y-1">
+                        {selectedAccount.portalFeaturesEnabled.map((feature) => (
+                          <div key={feature} className="flex items-center gap-2">
+                            <CheckCircle size={14} className="text-green-600" />
+                            <span className="text-sm capitalize">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Portal Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Monitor size={32} className="mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Recent portal activity will appear here
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
