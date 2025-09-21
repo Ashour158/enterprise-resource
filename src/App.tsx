@@ -39,6 +39,7 @@ import { ClickableDataShowcase } from '@/components/shared/ClickableDataShowcase
 import { CRMApiDocumentation } from '@/components/CRMApiDocumentation'
 import EnhancedAccountManagement from '@/components/EnhancedAccountManagement'
 import ContactInteractionDemo from '@/components/ContactInteractionDemo'
+import CRMCalendarIntegration from '@/components/CRMCalendarIntegration'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -281,6 +282,8 @@ function App() {
                   ? 'Enhanced account management with complete historical tracking, AI insights, interactive timelines, and comprehensive customer intelligence'
                   : activeView === 'contact-interaction'
                   ? 'Interactive contact relationship mapping with comprehensive profiles, interaction history, and AI-powered insights for enhanced business relationships'
+                  : activeView === 'crm-calendar'
+                  ? 'Automated meeting scheduling, intelligent reminder notifications, and AI-powered calendar optimization for CRM activities and sales workflows'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -375,6 +378,10 @@ function App() {
                 <TabsTrigger value="contact-interaction" className="flex items-center gap-2">
                   <Network size={16} />
                   Contact Relationships
+                </TabsTrigger>
+                <TabsTrigger value="crm-calendar" className="flex items-center gap-2">
+                  <Calendar size={16} />
+                  CRM Calendar
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -707,6 +714,14 @@ function App() {
             <ContactInteractionDemo 
               companyId={currentCompany.id}
               userId={mockUser.id}
+            />
+          </TabsContent>
+
+          <TabsContent value="crm-calendar" className="space-y-6">
+            <CRMCalendarIntegration 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+              userRole="company_admin"
             />
           </TabsContent>
         </Tabs>
