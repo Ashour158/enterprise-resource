@@ -370,10 +370,6 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
               <UserPlus size={16} />
               <span className="hidden sm:inline">Leads</span>
             </TabsTrigger>
-            <TabsTrigger value="lead-aging" className="flex items-center gap-2">
-              <Clock size={16} />
-              <span className="hidden sm:inline">Lead Aging</span>
-            </TabsTrigger>
             <TabsTrigger value="contacts" className="flex items-center gap-2">
               <Users size={16} />
               <span className="hidden sm:inline">Contacts</span>
@@ -514,16 +510,6 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
             companyId={companyId}
             userId={userId}
             userRole={userRole}
-            onLeadSelect={setSelectedLeadProfile}
-          />
-        </TabsContent>
-
-        <TabsContent value="lead-aging" className="space-y-6">
-          <LeadAgingDashboard 
-            companyId={companyId}
-            userId={userId}
-            userRole={userRole}
-            assignedOnly={false}
             onLeadSelect={setSelectedLeadProfile}
           />
         </TabsContent>

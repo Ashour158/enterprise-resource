@@ -3,8 +3,12 @@ import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EnhancedClickableDataTable, ClickableTableColumn, ClickableTableRow } from '@/components/shared/EnhancedClickableDataTable'
 import { ClickableDataElement, ClickableDataGroup } from '@/components/shared/ClickableDataElements'
+import { LeadAgingDashboard } from '@/components/lead-management/LeadAgingDashboard'
+import { LeadTimelineManager } from '@/components/lead-management/LeadTimelineManager'
+import { AutomatedFollowUpReminders } from '@/components/lead-management/AutomatedFollowUpReminders'
 import { mockLeads } from '@/data/crmMockData'
 import { Lead } from '@/types/crm'
 import { 
@@ -22,7 +26,9 @@ import {
   Buildings,
   ChartLine,
   Warning,
-  CheckCircle
+  CheckCircle,
+  Activity,
+  Bell
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -35,6 +41,7 @@ interface EnhancedLeadManagementProps {
 
 export function EnhancedLeadManagement({ companyId, userId, userRole, onLeadSelect }: EnhancedLeadManagementProps) {
   const [leads, setLeads] = useKV<Lead[]>(`leads-${companyId}`, mockLeads)
+  const [activeTab, setActiveTab] = useState('overview')
   
   const safeLeads = leads || mockLeads
 
@@ -437,224 +444,367 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onLeadSele
 
   return (
     <div className="space-y-6">
-      {/* Header Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        {getLeadStats().map((stat, index) => (
-          <Card key={index}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                  <p className="text-xl font-bold">{stat.value}</p>
+      {/* Header with integrated tab navigation */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus size={20} />
+                Lead Management & Aging Analytics
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Comprehensive lead management with aging analysis, follow-up tracking, and AI-powered insights
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Tab Interface */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <UserPlus size={16} />
+              Lead Overview
+            </TabsTrigger>
+            <TabsTrigger value="aging" className="flex items-center gap-2">
+              <Clock size={16} />
+              Aging & Follow-ups
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="flex items-center gap-2">
+              <Activity size={16} />
+              Timeline Management
+            </TabsTrigger>
+            <TabsTrigger value="reminders" className="flex items-center gap-2">
+              <Bell size={16} />
+              Automated Reminders
+            </TabsTrigger>
+          </TabsList>
+          <Badge variant="outline">
+            {safeLeads.length} Total Leads
+          </Badge>
+        </div>
+
+        <TabsContent value="overview" className="space-y-6">
+          {/* Header Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            {getLeadStats().map((stat, index) => (
+              <Card key={index}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+                      <p className="text-xl font-bold">{stat.value}</p>
+                    </div>
+                    <div className={stat.color}>
+                      {stat.icon}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* AI Insights Panel */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain size={20} className="text-primary" />
+                  AI Lead Insights
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-3 bg-green-50 rounded-lg">
+                  <h4 className="font-medium text-green-900 text-sm">High-Quality Leads</h4>
+                  <p className="text-green-700 text-sm mt-1">
+                    {safeLeads.filter(l => l.leadScore >= 80).length} leads with score ≥80 ready for immediate follow-up
+                  </p>
                 </div>
-                <div className={stat.color}>
-                  {stat.icon}
+                <div className="p-3 bg-orange-50 rounded-lg">
+                  <h4 className="font-medium text-orange-900 text-sm">Overdue Follow-ups</h4>
+                  <p className="text-orange-700 text-sm mt-1">
+                    {safeLeads.filter(l => l.nextFollowUp && new Date(l.nextFollowUp) < new Date()).length} leads have overdue follow-up activities
+                  </p>
+                </div>
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-blue-900 text-sm">Today's Priority</h4>
+                  <p className="text-blue-700 text-sm mt-1">
+                    {safeLeads.filter(l => l.nextFollowUp && new Date(l.nextFollowUp).toDateString() === new Date().toDateString()).length} leads scheduled for today
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setActiveTab('aging')}
+                >
+                  <Clock size={16} className="mr-2" />
+                  View Aging Analysis
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Quick Actions & Tools</CardTitle>
+                <CardDescription>
+                  Common lead management actions and automation tools
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Button onClick={handleCreateLead} className="h-16 flex-col gap-2">
+                    <Plus size={20} />
+                    <span className="text-sm">Add Lead</span>
+                  </Button>
+                  
+                  <Button variant="outline" className="h-16 flex-col gap-2" onClick={() => toast.info('Opening import wizard')}>
+                    <UserPlus size={20} />
+                    <span className="text-sm">Import Leads</span>
+                  </Button>
+                  
+                  <Button variant="outline" className="h-16 flex-col gap-2" onClick={() => toast.info('Starting bulk qualification')}>
+                    <CheckCircle size={20} />
+                    <span className="text-sm">Bulk Qualify</span>
+                  </Button>
+                  
+                  <Button variant="outline" className="h-16 flex-col gap-2" onClick={() => toast.info('Opening assignment tool')}>
+                    <Target size={20} />
+                    <span className="text-sm">Auto Assign</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Lead Table */}
+          <EnhancedClickableDataTable
+            title="Lead Management"
+            description="Interactive lead management with AI-powered insights and clickable data elements"
+            columns={columns}
+            data={tableData}
+            companyId={companyId}
+            userId={userId}
+            pageSize={20}
+            showSearch={true}
+            showFilters={true}
+            showBulkActions={true}
+            onRowClick={(row) => onLeadSelect?.(row.id)}
+            onAction={handleAction}
+            onBulkAction={handleBulkAction}
+            className="w-full"
+          />
+
+          {/* Recent High-Priority Leads */}
+          <Card>
+            <CardHeader>
+              <CardTitle>High-Priority Leads Requiring Attention</CardTitle>
+              <CardDescription>
+                Leads with high scores or overdue follow-ups that need immediate action
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {safeLeads
+                  .filter(lead => 
+                    lead.leadScore >= 75 || 
+                    (lead.nextFollowUp && new Date(lead.nextFollowUp) <= new Date()) ||
+                    lead.priority === 'high'
+                  )
+                  .sort((a, b) => b.leadScore - a.leadScore)
+                  .slice(0, 6)
+                  .map((lead) => (
+                    <div 
+                      key={lead.id} 
+                      className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => onLeadSelect?.(lead.id)}
+                    >
+                      <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-primary">
+                          {lead.firstName[0]}{lead.lastName[0]}
+                        </span>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <ClickableDataElement
+                            type="name"
+                            value={`${lead.firstName} ${lead.lastName}`}
+                            entityId={lead.id}
+                            entityType="lead"
+                            companyId={companyId}
+                            userId={userId}
+                            className="font-medium"
+                          />
+                          {getPriorityIcon(lead.priority)}
+                          <Badge className={getStatusColor(lead.status)} variant="outline">
+                            {lead.status}
+                          </Badge>
+                          <span className={`font-semibold ${getScoreColor(lead.leadScore)}`}>
+                            Score: {lead.leadScore}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 text-sm">
+                          {lead.company && (
+                            <ClickableDataElement
+                              type="company"
+                              value={lead.company}
+                              entityId={lead.id}
+                              entityType="lead"
+                              companyId={companyId}
+                              userId={userId}
+                              className="text-muted-foreground"
+                            />
+                          )}
+                          
+                          <ClickableDataElement
+                            type="email"
+                            value={lead.email}
+                            entityId={lead.id}
+                            entityType="lead"
+                            companyId={companyId}
+                            userId={userId}
+                            className="text-muted-foreground"
+                          />
+                          
+                          {lead.estimatedValue && (
+                            <ClickableDataElement
+                              type="currency"
+                              value={lead.estimatedValue.toString()}
+                              displayValue={`$${lead.estimatedValue.toLocaleString()}`}
+                              entityId={lead.id}
+                              entityType="lead"
+                              companyId={companyId}
+                              userId={userId}
+                              className="text-green-600 font-medium"
+                            />
+                          )}
+                          
+                          {lead.nextFollowUp && (
+                            <ClickableDataElement
+                              type="date"
+                              value={lead.nextFollowUp}
+                              displayValue={new Date(lead.nextFollowUp).toLocaleDateString()}
+                              entityId={lead.id}
+                              entityType="lead"
+                              companyId={companyId}
+                              userId={userId}
+                              className={new Date(lead.nextFollowUp) < new Date() ? 'text-red-600 font-medium' : 'text-muted-foreground'}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => handleAction('call', { phone: lead.phone, name: `${lead.firstName} ${lead.lastName}` })}>
+                          <Phone size={14} />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleAction('email', { email: lead.email, name: `${lead.firstName} ${lead.lastName}` })}>
+                          <Mail size={14} />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => handleAction('meeting', { name: `${lead.firstName} ${lead.lastName}`, entityId: lead.id })}>
+                          <Calendar size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="aging" className="space-y-6">
+          <LeadAgingDashboard 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+            assignedOnly={false}
+            onLeadSelect={onLeadSelect}
+          />
+        </TabsContent>
+
+        <TabsContent value="timeline" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity size={20} />
+                Lead Timeline Management
+              </CardTitle>
+              <CardDescription>
+                Manage lead activity timelines, schedule follow-ups, and track interaction history
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <div className="space-y-4">
+                    <div className="p-4 border rounded-lg bg-muted/30">
+                      <h3 className="font-medium mb-2">Select a Lead for Timeline Management</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Choose a lead from the list below or navigate to a specific lead profile to manage their timeline and schedule follow-up activities.
+                      </p>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {safeLeads.slice(0, 10).map((lead) => (
+                          <div 
+                            key={lead.id}
+                            className="flex items-center justify-between p-2 border rounded hover:bg-background cursor-pointer"
+                            onClick={() => onLeadSelect?.(lead.id)}
+                          >
+                            <div>
+                              <p className="font-medium text-sm">{lead.firstName} {lead.lastName}</p>
+                              <p className="text-xs text-muted-foreground">{lead.company} • {lead.email}</p>
+                            </div>
+                            <Button size="sm" variant="outline">
+                              View Timeline
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Timeline Features</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <div className="p-2 border rounded">
+                        <h4 className="font-medium">Activity Tracking</h4>
+                        <p className="text-muted-foreground text-xs">Complete history of all lead interactions</p>
+                      </div>
+                      <div className="p-2 border rounded">
+                        <h4 className="font-medium">Follow-up Scheduling</h4>
+                        <p className="text-muted-foreground text-xs">Set reminders and schedule future activities</p>
+                      </div>
+                      <div className="p-2 border rounded">
+                        <h4 className="font-medium">Quote Attachments</h4>
+                        <p className="text-muted-foreground text-xs">Attach and track quotes throughout the lead lifecycle</p>
+                      </div>
+                      <div className="p-2 border rounded">
+                        <h4 className="font-medium">AI Recommendations</h4>
+                        <p className="text-muted-foreground text-xs">Smart suggestions for next best actions</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+        </TabsContent>
 
-      {/* AI Insights Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain size={20} className="text-primary" />
-              AI Lead Insights
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-3 bg-green-50 rounded-lg">
-              <h4 className="font-medium text-green-900 text-sm">High-Quality Leads</h4>
-              <p className="text-green-700 text-sm mt-1">
-                {safeLeads.filter(l => l.leadScore >= 80).length} leads with score ≥80 ready for immediate follow-up
-              </p>
-            </div>
-            <div className="p-3 bg-orange-50 rounded-lg">
-              <h4 className="font-medium text-orange-900 text-sm">Overdue Follow-ups</h4>
-              <p className="text-orange-700 text-sm mt-1">
-                {safeLeads.filter(l => l.nextFollowUp && new Date(l.nextFollowUp) < new Date()).length} leads have overdue follow-up activities
-              </p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <h4 className="font-medium text-blue-900 text-sm">Today's Priority</h4>
-              <p className="text-blue-700 text-sm mt-1">
-                {safeLeads.filter(l => l.nextFollowUp && new Date(l.nextFollowUp).toDateString() === new Date().toDateString()).length} leads scheduled for today
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Quick Actions & Tools</CardTitle>
-            <CardDescription>
-              Common lead management actions and automation tools
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button onClick={handleCreateLead} className="h-16 flex-col gap-2">
-                <Plus size={20} />
-                <span className="text-sm">Add Lead</span>
-              </Button>
-              
-              <Button variant="outline" className="h-16 flex-col gap-2" onClick={() => toast.info('Opening import wizard')}>
-                <UserPlus size={20} />
-                <span className="text-sm">Import Leads</span>
-              </Button>
-              
-              <Button variant="outline" className="h-16 flex-col gap-2" onClick={() => toast.info('Starting bulk qualification')}>
-                <CheckCircle size={20} />
-                <span className="text-sm">Bulk Qualify</span>
-              </Button>
-              
-              <Button variant="outline" className="h-16 flex-col gap-2" onClick={() => toast.info('Opening assignment tool')}>
-                <Target size={20} />
-                <span className="text-sm">Auto Assign</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Lead Table */}
-      <EnhancedClickableDataTable
-        title="Lead Management"
-        description="Interactive lead management with AI-powered insights and clickable data elements"
-        columns={columns}
-        data={tableData}
-        companyId={companyId}
-        userId={userId}
-        pageSize={20}
-        showSearch={true}
-        showFilters={true}
-        showBulkActions={true}
-        onRowClick={(row) => onLeadSelect?.(row.id)}
-        onAction={handleAction}
-        onBulkAction={handleBulkAction}
-        className="w-full"
-      />
-
-      {/* Recent High-Priority Leads */}
-      <Card>
-        <CardHeader>
-          <CardTitle>High-Priority Leads Requiring Attention</CardTitle>
-          <CardDescription>
-            Leads with high scores or overdue follow-ups that need immediate action
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {safeLeads
-              .filter(lead => 
-                lead.leadScore >= 75 || 
-                (lead.nextFollowUp && new Date(lead.nextFollowUp) <= new Date()) ||
-                lead.priority === 'high'
-              )
-              .sort((a, b) => b.leadScore - a.leadScore)
-              .slice(0, 6)
-              .map((lead) => (
-                <div 
-                  key={lead.id} 
-                  className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={() => onLeadSelect?.(lead.id)}
-                >
-                  <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-primary">
-                      {lead.firstName[0]}{lead.lastName[0]}
-                    </span>
-                  </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <ClickableDataElement
-                        type="name"
-                        value={`${lead.firstName} ${lead.lastName}`}
-                        entityId={lead.id}
-                        entityType="lead"
-                        companyId={companyId}
-                        userId={userId}
-                        className="font-medium"
-                      />
-                      {getPriorityIcon(lead.priority)}
-                      <Badge className={getStatusColor(lead.status)} variant="outline">
-                        {lead.status}
-                      </Badge>
-                      <span className={`font-semibold ${getScoreColor(lead.leadScore)}`}>
-                        Score: {lead.leadScore}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm">
-                      {lead.company && (
-                        <ClickableDataElement
-                          type="company"
-                          value={lead.company}
-                          entityId={lead.id}
-                          entityType="lead"
-                          companyId={companyId}
-                          userId={userId}
-                          className="text-muted-foreground"
-                        />
-                      )}
-                      
-                      <ClickableDataElement
-                        type="email"
-                        value={lead.email}
-                        entityId={lead.id}
-                        entityType="lead"
-                        companyId={companyId}
-                        userId={userId}
-                        className="text-muted-foreground"
-                      />
-                      
-                      {lead.estimatedValue && (
-                        <ClickableDataElement
-                          type="currency"
-                          value={lead.estimatedValue.toString()}
-                          displayValue={`$${lead.estimatedValue.toLocaleString()}`}
-                          entityId={lead.id}
-                          entityType="lead"
-                          companyId={companyId}
-                          userId={userId}
-                          className="text-green-600 font-medium"
-                        />
-                      )}
-                      
-                      {lead.nextFollowUp && (
-                        <ClickableDataElement
-                          type="date"
-                          value={lead.nextFollowUp}
-                          displayValue={new Date(lead.nextFollowUp).toLocaleDateString()}
-                          entityId={lead.id}
-                          entityType="lead"
-                          companyId={companyId}
-                          userId={userId}
-                          className={new Date(lead.nextFollowUp) < new Date() ? 'text-red-600 font-medium' : 'text-muted-foreground'}
-                        />
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => handleAction('call', { phone: lead.phone, name: `${lead.firstName} ${lead.lastName}` })}>
-                      <Phone size={14} />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleAction('email', { email: lead.email, name: `${lead.firstName} ${lead.lastName}` })}>
-                      <Mail size={14} />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleAction('meeting', { name: `${lead.firstName} ${lead.lastName}`, entityId: lead.id })}>
-                      <Calendar size={14} />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="reminders" className="space-y-6">
+          <AutomatedFollowUpReminders 
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

@@ -16,6 +16,7 @@ import { CRMPerformanceTest } from '@/components/CRMPerformanceTest'
 import { RealTimeSyncStressTesting } from '@/components/RealTimeSyncStressTesting'
 import { MultiCompanyStressDashboard } from '@/components/MultiCompanyStressDashboard'
 import { NetworkStressTestingDashboard } from '@/components/NetworkStressTestingDashboard'
+import { MergedLeadManagementTest } from '@/components/test/MergedLeadManagementTest'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -1552,6 +1553,7 @@ export function SystemTestingSuite({ companyId, userId }: { companyId: string; u
                   <TabsTrigger value="integration-tests">Integration Tests</TabsTrigger>
                   <TabsTrigger value="workflow-tests">Business Workflows</TabsTrigger>
                   <TabsTrigger value="performance-tests">Performance Testing</TabsTrigger>
+                  <TabsTrigger value="merged-lead-test">Lead Management Merge</TabsTrigger>
                   <TabsTrigger value="stress-tests">Stress Testing</TabsTrigger>
                 </TabsList>
                 
@@ -1565,6 +1567,10 @@ export function SystemTestingSuite({ companyId, userId }: { companyId: string; u
                 
                 <TabsContent value="performance-tests">
                   <CRMPerformanceTest companyId={companyId} userId={userId} />
+                </TabsContent>
+                
+                <TabsContent value="merged-lead-test">
+                  <MergedLeadManagementTest />
                 </TabsContent>
                 
                 <TabsContent value="stress-tests">
