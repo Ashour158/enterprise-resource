@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import RealTimeAccountCollaboration from '@/components/RealTimeAccountCollaboration'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,15 +28,15 @@ import {
   CaretDown,
   CaretUp,
   Filter,
-  Search,
+  MagnifyingGlass as Search,
   Plus,
-  Edit,
-  MoreHorizontal,
+  PencilSimple as Edit,
+  DotsThree as MoreHorizontal,
   ChartBar,
   Target,
   CheckCircle,
   XCircle,
-  AlertTriangle,
+  Warning as AlertTriangle,
   Brain,
   Lightbulb,
   Handshake,
@@ -45,11 +44,7 @@ import {
   Warning,
   ArrowsClockwise,
   PlayCircle,
-  Microphone,
-  CreditCard,
-  Receipt,
-  UserCircle,
-  Globe
+  Bell
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -61,29 +56,34 @@ interface Account {
   phone: string
   website: string
   industry: string
-  employees: number
   annualRevenue: number
+  employeeCount: number
   accountType: string
-  accountStatus: string
+  status: string
   healthScore: number
-  engagementScore: number
-  createdAt: string
-  lastContact: string
-  accountOwner: string
+  lastContactDate: string
+  nextFollowUp: string
+  aiLeadScore: number
+  tags: string[]
+  customFields: Record<string, any>
+  aiEngagementTrend: string
+  aiSatisfactionTrend: string
+  aiExpansionReadiness: number
+  aiRetentionProbability: number
+  aiAdvocacyPotential: number
   totalEmailCount: number
   totalMeetingCount: number
   totalCallCount: number
   totalQuoteCount: number
   totalDealCount: number
-  aiEngagementTrend: string
-  aiExpansionReadiness: number
-  address: {
-    street: string
-    city: string
-    state: string
-    country: string
-    zipCode: string
-  }
+  lastEmailDate: string
+  lastMeetingDate: string
+  lastCallDate: string
+  totalRevenue: number
+  averageDealSize: number
+  conversionRate: number
+  customerLifetimeValue: number
+  timeToClose: number
 }
 
 interface EnhancedAccountManagementProps {
@@ -97,103 +97,121 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
   userId,
   userRole
 }) => {
-  const [accounts, setAccounts] = useKV<Account[]>(`accounts-${companyId}`, [])
+  const [accounts, setAccounts] = useKV<Account[]>('enhanced-accounts', [])
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState('executive')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
 
+  // Mock data
   useEffect(() => {
-    // Initialize with sample data
-    const sampleAccounts: Account[] = [
-      {
-        id: 'acc-001',
-        companyName: 'TechCorp Solutions Inc.',
-        contactName: 'Sarah Williams',
-        email: 'sarah.williams@techcorp.example.com',
-        phone: '+1 (555) 123-4567',
-        website: 'https://techcorp.example.com',
-        industry: 'Technology',
-        employees: 2500,
-        annualRevenue: 25000000,
-        accountType: 'Enterprise',
-        accountStatus: 'active',
-        healthScore: 87,
-        engagementScore: 82,
-        createdAt: '2023-09-20T10:00:00Z',
-        lastContact: '2024-01-15T14:30:00Z',
-        accountOwner: 'John Smith',
-        totalEmailCount: 67,
-        totalMeetingCount: 12,
-        totalCallCount: 28,
-        totalQuoteCount: 3,
-        totalDealCount: 2,
-        aiEngagementTrend: 'increasing',
-        aiExpansionReadiness: 85,
-        address: {
-          street: '123 Innovation Drive',
-          city: 'San Francisco',
-          state: 'CA',
-          country: 'United States',
-          zipCode: '94105'
+    if (accounts.length === 0) {
+      const mockAccounts: Account[] = [
+        {
+          id: '1',
+          companyName: 'Acme Corporation',
+          contactName: 'John Smith',
+          email: 'john.smith@acme.com',
+          phone: '+1 (555) 123-4567',
+          website: 'https://acme.com',
+          industry: 'Technology',
+          annualRevenue: 5000000,
+          employeeCount: 250,
+          accountType: 'Enterprise',
+          status: 'Active',
+          healthScore: 87,
+          lastContactDate: '2024-01-15',
+          nextFollowUp: '2024-01-20',
+          aiLeadScore: 92,
+          tags: ['High Value', 'Strategic', 'Expansion Ready'],
+          customFields: {},
+          aiEngagementTrend: 'increasing',
+          aiSatisfactionTrend: 'stable',
+          aiExpansionReadiness: 85,
+          aiRetentionProbability: 0.92,
+          aiAdvocacyPotential: 78,
+          totalEmailCount: 124,
+          totalMeetingCount: 18,
+          totalCallCount: 32,
+          totalQuoteCount: 8,
+          totalDealCount: 12,
+          lastEmailDate: '2024-01-14',
+          lastMeetingDate: '2024-01-10',
+          lastCallDate: '2024-01-12',
+          totalRevenue: 750000,
+          averageDealSize: 62500,
+          conversionRate: 0.75,
+          customerLifetimeValue: 1250000,
+          timeToClose: 45
+        },
+        {
+          id: '2',
+          companyName: 'TechFlow Solutions',
+          contactName: 'Sarah Johnson',
+          email: 'sarah.johnson@techflow.com',
+          phone: '+1 (555) 987-6543',
+          website: 'https://techflow.com',
+          industry: 'Software',
+          annualRevenue: 2500000,
+          employeeCount: 120,
+          accountType: 'Mid-Market',
+          status: 'Active',
+          healthScore: 73,
+          lastContactDate: '2024-01-12',
+          nextFollowUp: '2024-01-18',
+          aiLeadScore: 78,
+          tags: ['Growth Potential', 'Tech Savvy'],
+          customFields: {},
+          aiEngagementTrend: 'stable',
+          aiSatisfactionTrend: 'improving',
+          aiExpansionReadiness: 68,
+          aiRetentionProbability: 0.84,
+          aiAdvocacyPotential: 65,
+          totalEmailCount: 89,
+          totalMeetingCount: 12,
+          totalCallCount: 24,
+          totalQuoteCount: 5,
+          totalDealCount: 8,
+          lastEmailDate: '2024-01-11',
+          lastMeetingDate: '2024-01-08',
+          lastCallDate: '2024-01-09',
+          totalRevenue: 320000,
+          averageDealSize: 40000,
+          conversionRate: 0.62,
+          customerLifetimeValue: 680000,
+          timeToClose: 32
         }
-      },
-      {
-        id: 'acc-002',
-        companyName: 'Global Industries Ltd.',
-        contactName: 'Michael Chen',
-        email: 'michael.chen@global.example.com',
-        phone: '+1 (555) 234-5678',
-        website: 'https://global.example.com',
-        industry: 'Manufacturing',
-        employees: 5000,
-        annualRevenue: 50000000,
-        accountType: 'Enterprise',
-        accountStatus: 'active',
-        healthScore: 72,
-        engagementScore: 68,
-        createdAt: '2023-08-15T09:00:00Z',
-        lastContact: '2024-01-14T16:45:00Z',
-        accountOwner: 'Jane Davis',
-        totalEmailCount: 45,
-        totalMeetingCount: 8,
-        totalCallCount: 18,
-        totalQuoteCount: 2,
-        totalDealCount: 1,
-        aiEngagementTrend: 'stable',
-        aiExpansionReadiness: 62,
-        address: {
-          street: '456 Industry Blvd',
-          city: 'Chicago',
-          state: 'IL',
-          country: 'United States',
-          zipCode: '60601'
-        }
-      }
-    ]
-    setAccounts(sampleAccounts)
-  }, [setAccounts])
+      ]
+      setAccounts(mockAccounts)
+      setSelectedAccount(mockAccounts[0])
+    }
+  }, [accounts, setAccounts])
 
-  const filteredAccounts = accounts.filter(account =>
-    account.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    account.contactName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    account.email.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredAccounts = accounts.filter(account => {
+    const matchesSearch = account.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         account.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         account.industry.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesFilter = filterStatus === 'all' || account.status === filterStatus
+    return matchesSearch && matchesFilter
+  })
 
   const handleAccountClick = (account: Account) => {
     setSelectedAccount(account)
-    toast.success(`Opened ${account.companyName}`)
+    toast.success(`Viewing ${account.companyName} details`)
+  }
+
+  const handleEmailClick = (email: string) => {
+    toast.info(`Opening email composer for ${email}`)
+  }
+
+  const handlePhoneClick = (phone: string) => {
+    toast.info(`Initiating call to ${phone}`)
   }
 
   const getHealthScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600'
     if (score >= 60) return 'text-yellow-600'
     return 'text-red-600'
-  }
-
-  const getHealthScoreBadge = (score: number) => {
-    if (score >= 80) return <Badge className="bg-green-100 text-green-800">Excellent</Badge>
-    if (score >= 60) return <Badge className="bg-yellow-100 text-yellow-800">Good</Badge>
-    return <Badge className="bg-red-100 text-red-800">Needs Attention</Badge>
   }
 
   const getTrendIcon = (trend: string) => {
@@ -203,11 +221,99 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
       case 'decreasing':
         return <TrendDown className="w-4 h-4 text-red-600" />
       default:
-        return <Activity className="w-4 h-4 text-gray-600" />
+        return <Activity className="w-4 h-4 text-blue-600" />
     }
   }
 
-  if (selectedAccount) {
+  const renderAccountsList = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Enhanced Account Management</span>
+          <Button size="sm">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Account
+          </Button>
+        </CardTitle>
+        <CardDescription>
+          Comprehensive account intelligence with AI insights and real-time collaboration
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center space-x-4 mb-6">
+          <div className="flex-1">
+            <Input
+              placeholder="Search accounts by name, contact, or industry..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <Button variant="outline" size="sm">
+            <Filter className="w-4 h-4 mr-2" />
+            Filter
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          {filteredAccounts.map((account) => (
+            <div
+              key={account.id}
+              className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+              onClick={() => handleAccountClick(account)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Avatar>
+                    <AvatarImage src={`/api/placeholder/40/40`} />
+                    <AvatarFallback>{account.companyName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold">{account.companyName}</h3>
+                    <p className="text-sm text-muted-foreground">{account.contactName}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <Badge variant={account.status === 'Active' ? 'default' : 'secondary'}>
+                    {account.status}
+                  </Badge>
+                  <div className={`text-sm font-medium ${getHealthScoreColor(account.healthScore)}`}>
+                    {account.healthScore}% Health
+                  </div>
+                  <button
+                    className="text-sm text-blue-600 hover:underline"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleEmailClick(account.email)
+                    }}
+                  >
+                    {account.email}
+                  </button>
+                  <button
+                    className="text-sm text-blue-600 hover:underline"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handlePhoneClick(account.phone)
+                    }}
+                  >
+                    {account.phone}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const renderAccountDetails = () => {
+    if (!selectedAccount) return null
+
     return (
       <div className="space-y-6">
         {/* Account Header */}
@@ -215,46 +321,39 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <Avatar className="w-12 h-12">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src={`/api/placeholder/64/64`} />
+                  <AvatarFallback className="text-lg">
                     {selectedAccount.companyName.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h1 className="text-2xl font-bold">{selectedAccount.companyName}</h1>
-                  <p className="text-muted-foreground flex items-center">
-                    <UserCircle className="w-4 h-4 mr-2" />
-                    {selectedAccount.contactName} • {selectedAccount.accountOwner}
-                  </p>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Badge variant={
-                      selectedAccount.accountStatus === 'active' ? 'default' :
-                      selectedAccount.accountStatus === 'pending' ? 'secondary' :
-                      selectedAccount.accountStatus === 'suspended' ? 'destructive' : 'outline'
-                    }>
-                      {selectedAccount.accountStatus}
-                    </Badge>
-                    <Badge>{selectedAccount.accountType}</Badge>
+                  <h2 className="text-2xl font-bold">{selectedAccount.companyName}</h2>
+                  <p className="text-muted-foreground">{selectedAccount.industry}</p>
+                  <div className="flex items-center space-x-4 mt-2">
+                    <div className="flex items-center text-sm">
+                      <DollarSign className="w-4 h-4 mr-2 text-muted-foreground" />
+                      <span>${(selectedAccount.annualRevenue / 1000000).toFixed(1)}M revenue</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <Users className="w-4 h-4 mr-2 text-muted-foreground" />
+                      <span>{selectedAccount.employeeCount} employees</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <Building className="w-4 h-4 mr-2 text-muted-foreground" />
+                      <span>{selectedAccount.accountType}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="text-right space-y-2">
-                <div className="flex items-center justify-end space-x-2">
-                  <span className="text-sm text-muted-foreground">Health Score:</span>
-                  <span className={`text-2xl font-bold ${getHealthScoreColor(selectedAccount.healthScore)}`}>
-                    {selectedAccount.healthScore}%
-                  </span>
-                  {getTrendIcon(selectedAccount.aiEngagementTrend)}
-                </div>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" onClick={() => setSelectedAccount(null)}>
-                    ← Back
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </Button>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Button size="sm" variant="outline">
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </Button>
+                <Button size="sm" variant="outline">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -262,139 +361,146 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
 
         {/* Account Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="collaboration">Live Collaboration</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="executive">Executive</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="financial">Financial</TabsTrigger>
+            <TabsTrigger value="success">Success</TabsTrigger>
             <TabsTrigger value="insights">AI Insights</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="executive" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle>Company Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Website</label>
-                      <p className="text-primary cursor-pointer hover:underline">{selectedAccount.website}</p>
+              <div className="lg:col-span-2 space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Account Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-medium mb-2">Contact Information</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center">
+                            <Mail className="w-4 h-4 mr-2 text-muted-foreground" />
+                            <button
+                              className="text-blue-600 hover:underline"
+                              onClick={() => handleEmailClick(selectedAccount.email)}
+                            >
+                              {selectedAccount.email}
+                            </button>
+                          </div>
+                          <div className="flex items-center">
+                            <Phone className="w-4 h-4 mr-2 text-muted-foreground" />
+                            <button
+                              className="text-blue-600 hover:underline"
+                              onClick={() => handlePhoneClick(selectedAccount.phone)}
+                            >
+                              {selectedAccount.phone}
+                            </button>
+                          </div>
+                          <div className="flex items-center">
+                            <Building className="w-4 h-4 mr-2 text-muted-foreground" />
+                            <span>{selectedAccount.website}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Key Metrics</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Health Score:</span>
+                            <span className={getHealthScoreColor(selectedAccount.healthScore)}>
+                              {selectedAccount.healthScore}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>AI Lead Score:</span>
+                            <span>{selectedAccount.aiLeadScore}/100</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Total Revenue:</span>
+                            <span>${selectedAccount.totalRevenue.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Industry</label>
-                      <p>{selectedAccount.industry}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Employees</label>
-                      <p>{selectedAccount.employees.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Annual Revenue</label>
-                      <p className="text-green-600 font-medium">${selectedAccount.annualRevenue.toLocaleString()}</p>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Address</label>
-                    <div className="text-sm">
-                      {selectedAccount.address.street}<br />
-                      {selectedAccount.address.city}, {selectedAccount.address.state} {selectedAccount.address.zipCode}<br />
-                      {selectedAccount.address.country}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Stats</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Health Score</span>
-                    <div className="flex items-center space-x-2">
-                      <span className={`font-bold ${getHealthScoreColor(selectedAccount.healthScore)}`}>
-                        {selectedAccount.healthScore}%
-                      </span>
-                      {getTrendIcon(selectedAccount.aiEngagementTrend)}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Engagement Score</span>
-                    <span className="font-bold">{selectedAccount.engagementScore}%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Expansion Readiness</span>
-                    <span className="font-bold text-blue-600">{selectedAccount.aiExpansionReadiness}%</span>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="text-center">
-                      <p className="font-bold text-lg">{selectedAccount.totalEmailCount}</p>
-                      <p className="text-muted-foreground">Emails</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-bold text-lg">{selectedAccount.totalMeetingCount}</p>
-                      <p className="text-muted-foreground">Meetings</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-bold text-lg">{selectedAccount.totalQuoteCount}</p>
-                      <p className="text-muted-foreground">Quotes</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-bold text-lg">{selectedAccount.totalDealCount}</p>
-                      <p className="text-muted-foreground">Deals</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Button className="w-full justify-start" variant="outline">
+                      <Mail className="w-4 h-4 mr-2" />
+                      Send Email
+                    </Button>
+                    <Button className="w-full justify-start" variant="outline">
+                      <Phone className="w-4 h-4 mr-2" />
+                      Schedule Call
+                    </Button>
+                    <Button className="w-full justify-start" variant="outline">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Book Meeting
+                    </Button>
+                    <Button className="w-full justify-start" variant="outline">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Create Quote
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="collaboration" className="space-y-6">
-            <RealTimeAccountCollaboration
-              accountId={selectedAccount.id}
-              companyId={companyId}
-              userId={userId}
-              userName="John Smith"
-              userAvatar="/api/placeholder/32/32"
-            />
           </TabsContent>
 
           <TabsContent value="activity" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Recent Activity</span>
+                  <Button variant="outline" size="sm">
+                    <ArrowsClockwise className="w-4 h-4 mr-2" />
+                    Refresh
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded">
-                    <Mail className="w-5 h-5 text-blue-600" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Email sent to {selectedAccount.contactName}</p>
-                      <p className="text-xs text-muted-foreground">2 hours ago</p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <div>
+                        <p className="text-sm font-medium text-green-900">Health Score Improved</p>
+                        <p className="text-xs text-green-700">Account health increased to {selectedAccount.healthScore}%</p>
+                      </div>
                     </div>
+                    <span className="text-xs text-green-600">2 min ago</span>
                   </div>
-                  <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded">
-                    <Calendar className="w-5 h-5 text-green-600" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Meeting scheduled for next week</p>
-                      <p className="text-xs text-muted-foreground">1 day ago</p>
+
+                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">Email Opened</p>
+                        <p className="text-xs text-blue-700">Latest proposal email opened by {selectedAccount.contactName}</p>
+                      </div>
                     </div>
+                    <span className="text-xs text-blue-600">5 min ago</span>
                   </div>
-                  <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded">
-                    <FileText className="w-5 h-5 text-purple-600" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Quote generated and sent</p>
-                      <p className="text-xs text-muted-foreground">3 days ago</p>
+
+                  <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                      <div>
+                        <p className="text-sm font-medium text-yellow-900">Follow-up Scheduled</p>
+                        <p className="text-xs text-yellow-700">Next meeting scheduled for {selectedAccount.nextFollowUp}</p>
+                      </div>
                     </div>
+                    <span className="text-xs text-yellow-600">1 hour ago</span>
                   </div>
                 </div>
               </CardContent>
@@ -402,112 +508,142 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
           </TabsContent>
 
           <TabsContent value="financial" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Financial Overview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-green-700">${selectedAccount.annualRevenue.toLocaleString()}</p>
-                    <p className="text-sm text-green-600">Annual Revenue</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Revenue</p>
+                      <p className="text-2xl font-bold">${selectedAccount.totalRevenue.toLocaleString()}</p>
+                    </div>
+                    <DollarSign className="w-8 h-8 text-green-600" />
                   </div>
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <TrendUp className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-blue-700">+15%</p>
-                    <p className="text-sm text-blue-600">Growth Rate</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Avg Deal Size</p>
+                      <p className="text-2xl font-bold">${selectedAccount.averageDealSize.toLocaleString()}</p>
+                    </div>
+                    <Target className="w-8 h-8 text-blue-600" />
                   </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <Target className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-purple-700">{selectedAccount.aiExpansionReadiness}%</p>
-                    <p className="text-sm text-purple-600">Expansion Ready</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Conversion Rate</p>
+                      <p className="text-2xl font-bold">{(selectedAccount.conversionRate * 100).toFixed(1)}%</p>
+                    </div>
+                    <TrendUp className="w-8 h-8 text-purple-600" />
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="success" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-2">
+                      <Star className="w-6 h-6 text-yellow-500" />
+                    </div>
+                    <p className="text-lg font-bold">{selectedAccount.healthScore}%</p>
+                    <p className="text-xs text-muted-foreground">Health Score</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-2">
+                      {getTrendIcon(selectedAccount.aiEngagementTrend)}
+                    </div>
+                    <p className="text-lg font-bold capitalize">{selectedAccount.aiEngagementTrend}</p>
+                    <p className="text-xs text-muted-foreground">Engagement</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-2">
+                      {getTrendIcon(selectedAccount.aiSatisfactionTrend)}
+                    </div>
+                    <p className="text-lg font-bold capitalize">{selectedAccount.aiSatisfactionTrend}</p>
+                    <p className="text-xs text-muted-foreground">Satisfaction</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-2">
+                      <Activity className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <p className="text-lg font-bold">{selectedAccount.aiExpansionReadiness}%</p>
+                    <p className="text-xs text-muted-foreground">Expansion Ready</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="w-5 h-5" />
+                <CardTitle className="flex items-center">
+                  <Brain className="w-5 h-5 mr-2" />
                   AI-Powered Insights
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Lightbulb className="w-5 h-5 text-blue-600" />
-                      <span className="font-medium text-blue-800">Expansion Opportunity</span>
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded">
+                    <div className="flex items-start space-x-3">
+                      <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-blue-900">Expansion Opportunity Detected</h4>
+                        <p className="text-sm text-blue-700 mt-1">
+                          AI analysis shows {selectedAccount.aiExpansionReadiness}% readiness for upselling. 
+                          Consider presenting our Enterprise package based on their growth trajectory.
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-sm text-blue-700">
-                      Based on usage patterns and engagement metrics, this account shows {selectedAccount.aiExpansionReadiness}% 
-                      readiness for upselling to premium features.
-                    </p>
                   </div>
-                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="font-medium text-green-800">Health Status</span>
-                    </div>
-                    <p className="text-sm text-green-700">
-                      Account health is {selectedAccount.healthScore >= 80 ? 'excellent' : selectedAccount.healthScore >= 60 ? 'good' : 'concerning'} 
-                      with {selectedAccount.aiEngagementTrend} engagement trends.
-                    </p>
-                  </div>
-                  <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Star className="w-5 h-5 text-yellow-600" />
-                      <span className="font-medium text-yellow-800">Recommended Actions</span>
-                    </div>
-                    <ul className="text-sm text-yellow-700 space-y-1">
-                      <li>• Schedule quarterly business review</li>
-                      <li>• Present new feature roadmap</li>
-                      <li>• Explore additional use cases</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Notification Preferences</h4>
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-2">
-                        <input type="checkbox" defaultChecked />
-                        <span className="text-sm">Health score changes</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input type="checkbox" defaultChecked />
-                        <span className="text-sm">New activities</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input type="checkbox" />
-                        <span className="text-sm">Weekly summary reports</span>
-                      </label>
+                  <div className="p-4 bg-green-50 border border-green-200 rounded">
+                    <div className="flex items-start space-x-3">
+                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-green-900">High Retention Probability</h4>
+                        <p className="text-sm text-green-700 mt-1">
+                          {(selectedAccount.aiRetentionProbability * 100).toFixed(0)}% probability of renewal based on engagement patterns and satisfaction metrics.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <Separator />
-                  <div>
-                    <h4 className="font-medium mb-2">Data Sync</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Last synced: {new Date().toLocaleString()}
-                    </p>
-                    <Button variant="outline" size="sm">
-                      <ArrowsClockwise className="w-4 h-4 mr-2" />
-                      Sync Now
-                    </Button>
+
+                  <div className="p-4 bg-purple-50 border border-purple-200 rounded">
+                    <div className="flex items-start space-x-3">
+                      <Handshake className="w-5 h-5 text-purple-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-purple-900">Advocacy Potential</h4>
+                        <p className="text-sm text-purple-700 mt-1">
+                          {selectedAccount.aiAdvocacyPotential}% advocacy potential. This account could become a reference customer.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -520,123 +656,8 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Enhanced Account Management</h2>
-          <p className="text-muted-foreground">
-            Complete 360-degree customer views with AI insights and real-time collaboration
-          </p>
-        </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          New Account
-        </Button>
-      </div>
-
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search accounts by name, contact, or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline">
-              <Filter className="w-4 h-4 mr-2" />
-              Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Accounts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredAccounts.map((account) => (
-          <Card key={account.id} className="cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => handleAccountClick(account)}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {account.companyName.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold">{account.companyName}</h3>
-                    <p className="text-sm text-muted-foreground">{account.contactName}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  {getHealthScoreBadge(account.healthScore)}
-                  <p className="text-xs text-muted-foreground mt-1">Health Score</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex items-center text-sm">
-                  <Mail className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <span className="truncate">{account.email}</span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <Phone className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <span>{account.phone}</span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <Building className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <span>{account.industry}</span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <DollarSign className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <span className="text-green-600 font-medium">${(account.annualRevenue / 1000000).toFixed(1)}M</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                  <span className="flex items-center">
-                    <Mail className="w-3 h-3 mr-1" />
-                    {account.totalEmailCount}
-                  </span>
-                  <span className="flex items-center">
-                    <Video className="w-3 h-3 mr-1" />
-                    {account.totalMeetingCount}
-                  </span>
-                  <span className="flex items-center">
-                    <FileText className="w-3 h-3 mr-1" />
-                    {account.totalQuoteCount}
-                  </span>
-                </div>
-                <Button variant="outline" size="sm" className="h-7 px-2">
-                  <Eye size={12} className="mr-1" />
-                  View
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredAccounts.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Building className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No accounts found</h3>
-            <p className="text-muted-foreground mb-4">
-              Try adjusting your search criteria or create a new account.
-            </p>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Account
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {renderAccountsList()}
+      {selectedAccount && renderAccountDetails()}
     </div>
   )
 }
