@@ -97,7 +97,9 @@ import {
   CloudArrowUp,
   CloudArrowDown,
   Trash,
-  Warning as WarningIcon
+  Warning as WarningIcon,
+  Network,
+  Bell
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -477,6 +479,41 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
     name: string
     accountId: string
   } | null>(null)
+
+  // Real-time collaboration state
+  const [activeUsers, setActiveUsers] = useState<string[]>([])
+  const [liveNotifications, setLiveNotifications] = useState<any[]>([])
+  const [teamNotes, setTeamNotes] = useState<any[]>([])
+  const [sharedTasks, setSharedTasks] = useState<any[]>([])
+
+  // Simulate real-time updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Simulate live user activity
+      setActiveUsers(['sarah.johnson', 'mike.rodriguez', 'jessica.chen'])
+      
+      // Simulate live notifications
+      const notifications = [
+        {
+          id: Date.now(),
+          type: 'health_score',
+          message: 'Health score improved to 87% (+5 points)',
+          timestamp: new Date().toISOString(),
+          severity: 'positive'
+        },
+        {
+          id: Date.now() + 1,
+          type: 'expansion',
+          message: 'AI detected 95% confidence for upsell opportunity',
+          timestamp: new Date().toISOString(),
+          severity: 'info'
+        }
+      ]
+      setLiveNotifications(notifications)
+    }, 30000) // Update every 30 seconds
+
+    return () => clearInterval(interval)
+  }, [])
 
   // Initialize with sample data
   useEffect(() => {
@@ -1473,18 +1510,1112 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
 
         {/* Account Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-10">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-12">
+            <TabsTrigger value="executive">Executive</TabsTrigger>
+            <TabsTrigger value="relationship">Relationships</TabsTrigger>
+            <TabsTrigger value="activity">Activity Stream</TabsTrigger>
+            <TabsTrigger value="financial-overview">Financial</TabsTrigger>
+            <TabsTrigger value="success-metrics">Success</TabsTrigger>
+            <TabsTrigger value="expansion">Expansion</TabsTrigger>
+            <TabsTrigger value="risk">Risk</TabsTrigger>
+            <TabsTrigger value="collaboration">Team</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            <TabsTrigger value="emails">Email History</TabsTrigger>
+            <TabsTrigger value="emails">Emails</TabsTrigger>
             <TabsTrigger value="meetings">Meetings</TabsTrigger>
-            <TabsTrigger value="deals">Deals & Quotes</TabsTrigger>
-            <TabsTrigger value="support">Support Journey</TabsTrigger>
-            <TabsTrigger value="financial">Financial</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
-            <TabsTrigger value="metrics">Metrics</TabsTrigger>
             <TabsTrigger value="insights">AI Insights</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="executive" className="space-y-6">
+            {/* Executive Summary Dashboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Key Metrics Cards */}
+              <Card className="lg:col-span-4">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Executive Summary</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <span className="text-xs text-muted-foreground">Live Data</span>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="text-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+                      <h3 className="text-2xl font-bold text-green-700">{selectedAccount.healthScore}%</h3>
+                      <p className="text-sm text-green-600">Overall Health</p>
+                      <div className="flex items-center justify-center mt-2">
+                        {getTrendIcon(selectedAccount.aiEngagementTrend)}
+                        <span className="text-xs ml-1 capitalize">{selectedAccount.aiEngagementTrend}</span>
+                      </div>
+                    </div>
+                    <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                      <h3 className="text-2xl font-bold text-blue-700">${selectedAccount.annualRevenue.toLocaleString()}</h3>
+                      <p className="text-sm text-blue-600">Annual Revenue</p>
+                      <p className="text-xs text-blue-500 mt-2">+15% YoY Growth</p>
+                    </div>
+                    <div className="text-center p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+                      <h3 className="text-2xl font-bold text-purple-700">{Math.round(selectedAccount.aiRetentionProbability * 100)}%</h3>
+                      <p className="text-sm text-purple-600">Retention Probability</p>
+                      <p className="text-xs text-purple-500 mt-2">AI Confidence: High</p>
+                    </div>
+                    <div className="text-center p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border border-orange-200">
+                      <h3 className="text-2xl font-bold text-orange-700">{selectedAccount.aiExpansionReadiness}%</h3>
+                      <p className="text-sm text-orange-600">Expansion Ready</p>
+                      <p className="text-xs text-orange-500 mt-2">Opportunity Score</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button className="w-full justify-start" variant="outline" onClick={() => toast.success('Scheduling expansion call...')}>
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Schedule Expansion Call
+                  </Button>
+                  <Button className="w-full justify-start" variant="outline" onClick={() => toast.success('Creating upsell proposal...')}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    Create Upsell Proposal
+                  </Button>
+                  <Button className="w-full justify-start" variant="outline" onClick={() => toast.success('Requesting case study...')}>
+                    <Star className="w-4 h-4 mr-2" />
+                    Request Case Study
+                  </Button>
+                  <Button className="w-full justify-start" variant="outline" onClick={() => toast.success('Opening health check...')}>
+                    <Pulse className="w-4 h-4 mr-2" />
+                    Health Check Review
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Recent Activity */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Recent Activity</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {accountTimeline.slice(0, 4).map((entry) => (
+                      <div key={entry.id} className="flex items-center space-x-3 p-2 hover:bg-muted/50 rounded cursor-pointer"
+                           onClick={() => handleTimelineEntryClick(entry)}>
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          {getTimelineIcon(entry.timelineType)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{entry.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(entry.timelineDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {entry.aiImportanceScore}/100
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="relationship" className="space-y-6">
+            {/* Interactive Relationship Map */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Network className="w-5 h-5 mr-2" />
+                  Relationship Ecosystem Map
+                </CardTitle>
+                <CardDescription>
+                  Interactive visualization of all stakeholders and their relationships
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Decision Makers */}
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center">
+                      <UserCircle className="w-4 h-4 mr-2" />
+                      Decision Makers
+                    </h4>
+                    <div className="space-y-2">
+                      {[
+                        { name: 'Sarah Williams', role: 'CEO', influence: 'Very High', lastContact: '2 days ago' },
+                        { name: 'Michael Chen', role: 'CTO', influence: 'High', lastContact: '1 week ago' },
+                        { name: 'David Park', role: 'CFO', influence: 'High', lastContact: '3 weeks ago' }
+                      ].map((contact, index) => (
+                        <Card key={index} className="p-3 cursor-pointer hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <button 
+                                className="clickable-data hover:text-primary transition-colors font-medium" 
+                                data-type="contact-name"
+                                onClick={() => handleContactNameClick(contact.name, `decision-maker-${index}`)}
+                              >
+                                {contact.name}
+                              </button>
+                              <p className="text-xs text-muted-foreground">{contact.role}</p>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={contact.influence === 'Very High' ? 'default' : 'secondary'}>
+                                {contact.influence}
+                              </Badge>
+                              <p className="text-xs text-muted-foreground mt-1">{contact.lastContact}</p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Technical Team */}
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center">
+                      <Users className="w-4 h-4 mr-2" />
+                      Technical Team
+                    </h4>
+                    <div className="space-y-2">
+                      {[
+                        { name: 'Alex Rodriguez', role: 'Dev Lead', engagement: 'High', satisfaction: '4.8/5' },
+                        { name: 'Jennifer Liu', role: 'DevOps', engagement: 'Medium', satisfaction: '4.2/5' },
+                        { name: 'Mark Thompson', role: 'QA Lead', engagement: 'High', satisfaction: '4.5/5' }
+                      ].map((contact, index) => (
+                        <Card key={index} className="p-3 cursor-pointer hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <button 
+                                className="clickable-data hover:text-primary transition-colors font-medium" 
+                                data-type="contact-name"
+                                onClick={() => handleContactNameClick(contact.name, `tech-team-${index}`)}
+                              >
+                                {contact.name}
+                              </button>
+                              <p className="text-xs text-muted-foreground">{contact.role}</p>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={contact.engagement === 'High' ? 'default' : 'secondary'}>
+                                {contact.engagement}
+                              </Badge>
+                              <p className="text-xs text-muted-foreground mt-1">{contact.satisfaction}</p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Champions & Influencers */}
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center">
+                      <Star className="w-4 h-4 mr-2" />
+                      Champions & Influencers
+                    </h4>
+                    <div className="space-y-2">
+                      {[
+                        { name: 'Lisa Chen', role: 'Product Manager', type: 'Champion', advocacy: '85%' },
+                        { name: 'Tom Wilson', role: 'Team Lead', type: 'Influencer', advocacy: '72%' },
+                        { name: 'Maria Garcia', role: 'Operations', type: 'Supporter', advocacy: '68%' }
+                      ].map((contact, index) => (
+                        <Card key={index} className="p-3 cursor-pointer hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <button 
+                                className="clickable-data hover:text-primary transition-colors font-medium" 
+                                data-type="contact-name"
+                                onClick={() => handleContactNameClick(contact.name, `champion-${index}`)}
+                              >
+                                {contact.name}
+                              </button>
+                              <p className="text-xs text-muted-foreground">{contact.role}</p>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={contact.type === 'Champion' ? 'default' : 'outline'}>
+                                {contact.type}
+                              </Badge>
+                              <p className="text-xs text-muted-foreground mt-1">{contact.advocacy} advocacy</p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <h5 className="font-medium text-blue-900 mb-2">Relationship Health Insights</h5>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="text-center">
+                      <p className="font-medium text-blue-700">Decision Maker Coverage</p>
+                      <p className="text-blue-600">3/4 Engaged</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-blue-700">Champion Strength</p>
+                      <p className="text-blue-600">Strong (85%)</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-blue-700">Technical Adoption</p>
+                      <p className="text-blue-600">High Usage</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-blue-700">Risk Factors</p>
+                      <p className="text-blue-600">Low Risk</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="activity" className="space-y-6">
+            {/* Real-time Activity Stream */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Activity className="w-5 h-5 mr-2" />
+                    Real-Time Activity Stream
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <span className="text-xs text-muted-foreground">Live Updates</span>
+                    <Button size="sm" variant="outline">
+                      <Filter className="w-4 h-4 mr-2" />
+                      Filter
+                    </Button>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Live Activity Feed */}
+                  {[
+                    {
+                      type: 'email',
+                      user: 'Sarah Williams',
+                      action: 'opened quote proposal',
+                      time: '2 minutes ago',
+                      importance: 'high',
+                      details: 'Viewed for 5 minutes, downloaded PDF'
+                    },
+                    {
+                      type: 'website',
+                      user: 'Michael Chen',
+                      action: 'visited pricing page',
+                      time: '15 minutes ago',
+                      importance: 'medium',
+                      details: '3rd visit this week'
+                    },
+                    {
+                      type: 'support',
+                      user: 'Alex Rodriguez',
+                      action: 'submitted feature request',
+                      time: '1 hour ago',
+                      importance: 'medium',
+                      details: 'API enhancement for integration'
+                    },
+                    {
+                      type: 'meeting',
+                      user: 'Internal Team',
+                      action: 'scheduled follow-up call',
+                      time: '2 hours ago',
+                      importance: 'high',
+                      details: 'Executive stakeholder meeting'
+                    }
+                  ].map((activity, index) => (
+                    <div key={index} className="flex items-start space-x-4 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        {getTimelineIcon(activity.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-medium">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="activity-user"
+                              onClick={() => handleContactNameClick(activity.user, `activity-${index}`)}
+                            >
+                              {activity.user}
+                            </button>
+                            <span className="text-muted-foreground ml-1">{activity.action}</span>
+                          </p>
+                          <div className="flex items-center space-x-2">
+                            <Badge variant={activity.importance === 'high' ? 'default' : 'outline'}>
+                              {activity.importance}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">{activity.time}</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{activity.details}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="financial-overview" className="space-y-6">
+            {/* Comprehensive Financial Overview */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Revenue Metrics */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Revenue & Profitability Analysis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-6 mb-6">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <h3 className="text-2xl font-bold text-green-700">
+                        <button 
+                          className="clickable-data hover:text-green-600 transition-colors" 
+                          data-type="total-revenue"
+                          onClick={() => handleFinancialAmountClick('total-revenue', 250000, 'Total Revenue')}
+                        >
+                          $250,000
+                        </button>
+                      </h3>
+                      <p className="text-sm text-green-600">Total Revenue (YTD)</p>
+                      <p className="text-xs text-green-500 mt-1">+15% vs last year</p>
+                    </div>
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <h3 className="text-2xl font-bold text-blue-700">
+                        <button 
+                          className="clickable-data hover:text-blue-600 transition-colors" 
+                          data-type="gross-margin"
+                          onClick={() => toast.info('Gross Margin: 78% - Industry above average')}
+                        >
+                          78%
+                        </button>
+                      </h3>
+                      <p className="text-sm text-blue-600">Gross Margin</p>
+                      <p className="text-xs text-blue-500 mt-1">Above industry avg</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Monthly Recurring Revenue</span>
+                        <span className="text-sm font-bold">
+                          <button 
+                            className="clickable-data hover:text-primary transition-colors" 
+                            data-type="mrr"
+                            onClick={() => handleFinancialAmountClick('mrr', 21000, 'Monthly Recurring Revenue')}
+                          >
+                            $21,000/month
+                          </button>
+                        </span>
+                      </div>
+                      <div className="w-full bg-muted h-2 rounded-full">
+                        <div className="w-4/5 bg-green-500 h-2 rounded-full" />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Contract Value Realization</span>
+                        <span className="text-sm font-bold">82%</span>
+                      </div>
+                      <div className="w-full bg-muted h-2 rounded-full">
+                        <div className="w-4/5 bg-blue-500 h-2 rounded-full" />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Payment Timeliness</span>
+                        <span className="text-sm font-bold text-green-600">Excellent</span>
+                      </div>
+                      <div className="w-full bg-muted h-2 rounded-full">
+                        <div className="w-full bg-green-500 h-2 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Payment History */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payment History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {getAccountTransactions(selectedAccount.id).slice(0, 6).map((transaction) => (
+                      <div key={transaction.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded cursor-pointer"
+                           onClick={() => handleFinancialAmountClick(transaction.id, transaction.amount, transaction.description)}>
+                        <div>
+                          <p className="text-sm font-medium">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors text-left" 
+                              data-type="payment-amount"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleFinancialAmountClick(transaction.id, transaction.amount, transaction.description)
+                              }}
+                            >
+                              ${transaction.amount.toLocaleString()}
+                            </button>
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(transaction.transactionDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge className={getTransactionStatusColor(transaction.status)}>
+                          {transaction.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="success-metrics" className="space-y-6">
+            {/* Customer Health & Satisfaction Scores */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Customer Health Dashboard</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="text-center">
+                      <div className="relative w-32 h-32 mx-auto mb-4">
+                        <div className="absolute inset-0 rounded-full border-8 border-muted" />
+                        <div 
+                          className={`absolute inset-0 rounded-full border-8 border-t-transparent ${getHealthScoreColor(selectedAccount.healthScore).replace('text-', 'border-l-').replace('text-', 'border-b-').replace('text-', 'border-r-')}`}
+                          style={{ 
+                            transform: `rotate(${(selectedAccount.healthScore / 100) * 360}deg)`,
+                            borderLeftColor: selectedAccount.healthScore >= 80 ? '#22c55e' : selectedAccount.healthScore >= 60 ? '#eab308' : '#ef4444',
+                            borderBottomColor: selectedAccount.healthScore >= 80 ? '#22c55e' : selectedAccount.healthScore >= 60 ? '#eab308' : '#ef4444',
+                            borderRightColor: selectedAccount.healthScore >= 80 ? '#22c55e' : selectedAccount.healthScore >= 60 ? '#eab308' : '#ef4444'
+                          }}
+                        />
+                        <div className="absolute inset-4 rounded-full bg-background flex items-center justify-center">
+                          <span className={`text-2xl font-bold ${getHealthScoreColor(selectedAccount.healthScore)}`}>
+                            {selectedAccount.healthScore}%
+                          </span>
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-semibold">Overall Health Score</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedAccount.healthScore >= 80 ? 'Excellent health with strong engagement' :
+                         selectedAccount.healthScore >= 60 ? 'Good health with room for improvement' :
+                         'Needs attention - schedule health check call'}
+                      </p>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Product Usage</span>
+                        <span className="text-sm font-medium">85%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Feature Adoption</span>
+                        <span className="text-sm font-medium">72%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Support Satisfaction</span>
+                        <span className="text-sm font-medium">4.8/5</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Login Frequency</span>
+                        <span className="text-sm font-medium">Daily</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Satisfaction Metrics</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-4 bg-green-50 rounded-lg">
+                        <h3 className="text-xl font-bold text-green-700">{selectedAccount.npsScore}</h3>
+                        <p className="text-sm text-green-600">NPS Score</p>
+                        <p className="text-xs text-green-500 mt-1">Promoter</p>
+                      </div>
+                      <div className="text-center p-4 bg-blue-50 rounded-lg">
+                        <h3 className="text-xl font-bold text-blue-700">{selectedAccount.csatScore}/5</h3>
+                        <p className="text-sm text-blue-600">CSAT Score</p>
+                        <p className="text-xs text-blue-500 mt-1">Very Satisfied</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm">Email Engagement</span>
+                          <span className="text-sm font-medium">78%</span>
+                        </div>
+                        <div className="w-full bg-muted h-2 rounded-full">
+                          <div className="w-3/4 bg-blue-500 h-2 rounded-full" />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm">Meeting Attendance</span>
+                          <span className="text-sm font-medium">92%</span>
+                        </div>
+                        <div className="w-full bg-muted h-2 rounded-full">
+                          <div className="w-11/12 bg-green-500 h-2 rounded-full" />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm">Response Time</span>
+                          <span className="text-sm font-medium">1.2 hrs avg</span>
+                        </div>
+                        <div className="w-full bg-muted h-2 rounded-full">
+                          <div className="w-5/6 bg-green-500 h-2 rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="expansion" className="space-y-6">
+            {/* AI-Identified Expansion Opportunities */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Target className="w-5 h-5 mr-2" />
+                  AI-Identified Expansion Opportunities
+                </CardTitle>
+                <CardDescription>
+                  Machine learning insights for upsell and cross-sell opportunities
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-start justify-between mb-3">
+                        <h4 className="font-medium text-green-900">High-Value Upsell Opportunity</h4>
+                        <Badge className="bg-green-100 text-green-800">95% Confidence</Badge>
+                      </div>
+                      <p className="text-sm text-green-700 mb-3">
+                        Enterprise tier upgrade recommended based on usage patterns showing 
+                        85% feature adoption and consistent overages in current plan.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-green-700">
+                          Potential Revenue: <button 
+                            className="clickable-data hover:text-green-600 transition-colors" 
+                            data-type="expansion-revenue"
+                            onClick={() => handleFinancialAmountClick('expansion-1', 150000, 'Enterprise Tier Upgrade')}
+                          >
+                            $150,000/year
+                          </button>
+                        </span>
+                        <Button size="sm" onClick={() => toast.success('Creating expansion proposal...')}>
+                          Create Proposal
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start justify-between mb-3">
+                        <h4 className="font-medium text-blue-900">Cross-Sell: Analytics Module</h4>
+                        <Badge className="bg-blue-100 text-blue-800">82% Confidence</Badge>
+                      </div>
+                      <p className="text-sm text-blue-700 mb-3">
+                        Customer frequently exports data for external analytics. 
+                        Our analytics module would save them 15+ hours weekly.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-blue-700">
+                          Potential Revenue: <button 
+                            className="clickable-data hover:text-blue-600 transition-colors" 
+                            data-type="cross-sell-revenue"
+                            onClick={() => handleFinancialAmountClick('cross-sell-1', 48000, 'Analytics Module')}
+                          >
+                            $48,000/year
+                          </button>
+                        </span>
+                        <Button size="sm" variant="outline" onClick={() => toast.success('Scheduling demo...')}>
+                          Schedule Demo
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-start justify-between mb-3">
+                        <h4 className="font-medium text-yellow-900">Professional Services</h4>
+                        <Badge className="bg-yellow-100 text-yellow-800">68% Confidence</Badge>
+                      </div>
+                      <p className="text-sm text-yellow-700 mb-3">
+                        Recent support tickets indicate need for custom integration help. 
+                        Professional services could accelerate their implementation.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-yellow-700">
+                          Potential Revenue: <button 
+                            className="clickable-data hover:text-yellow-600 transition-colors" 
+                            data-type="services-revenue"
+                            onClick={() => handleFinancialAmountClick('services-1', 25000, 'Professional Services')}
+                          >
+                            $25,000 one-time
+                          </button>
+                        </span>
+                        <Button size="sm" variant="outline" onClick={() => toast.success('Connecting with services team...')}>
+                          Connect Services
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-4">Expansion Readiness Factors</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                        <span className="text-sm">Budget Approval Status</span>
+                        <Badge className="bg-green-100 text-green-800">Confirmed</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                        <span className="text-sm">Decision Maker Engagement</span>
+                        <Badge className="bg-green-100 text-green-800">High</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                        <span className="text-sm">Technical Fit</span>
+                        <Badge className="bg-green-100 text-green-800">Excellent</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                        <span className="text-sm">Timing Indicators</span>
+                        <Badge className="bg-yellow-100 text-yellow-800">Q1 Budget Cycle</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                        <span className="text-sm">Competitive Pressure</span>
+                        <Badge className="bg-green-100 text-green-800">Low Risk</Badge>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-primary/5 rounded-lg">
+                      <h5 className="font-medium mb-2">Recommended Next Steps</h5>
+                      <ul className="space-y-2 text-sm">
+                        <li className="flex items-center">
+                          <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                          Schedule expansion discussion with CFO
+                        </li>
+                        <li className="flex items-center">
+                          <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                          Prepare ROI analysis for analytics module
+                        </li>
+                        <li className="flex items-center">
+                          <Clock className="w-4 h-4 mr-2 text-yellow-600" />
+                          Coordinate with technical team for demo
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="risk" className="space-y-6">
+            {/* Risk Assessment & Mitigation */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <AlertTriangle className="w-5 h-5 mr-2" />
+                  Risk Assessment & Mitigation
+                </CardTitle>
+                <CardDescription>
+                  AI-powered churn risk analysis with recommended mitigation strategies
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-4">
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-green-900">Overall Risk Level</h4>
+                        <Badge className="bg-green-100 text-green-800">Low Risk</Badge>
+                      </div>
+                      <p className="text-sm text-green-700 mb-3">
+                        Account shows strong health indicators with minimal churn risk factors. 
+                        Proactive engagement maintains positive trajectory.
+                      </p>
+                      <div className="w-full bg-green-200 h-3 rounded-full">
+                        <div className="w-1/4 bg-green-500 h-3 rounded-full" />
+                      </div>
+                      <p className="text-xs text-green-600 mt-1">25% churn probability (Low)</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium mb-3">Risk Factors Analysis</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                          <span className="text-sm">Payment History</span>
+                          <div className="flex items-center space-x-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-green-600">Excellent</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                          <span className="text-sm">Engagement Trend</span>
+                          <div className="flex items-center space-x-2">
+                            <TrendUp className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-green-600">Increasing</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                          <span className="text-sm">Support Satisfaction</span>
+                          <div className="flex items-center space-x-2">
+                            <Star className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-green-600">4.8/5 Rating</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-yellow-50 rounded">
+                          <span className="text-sm">Contract Renewal Date</span>
+                          <div className="flex items-center space-x-2">
+                            <Clock className="w-4 h-4 text-yellow-600" />
+                            <span className="text-sm text-yellow-600">6 months out</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                          <span className="text-sm">Competitive Activity</span>
+                          <div className="flex items-center space-x-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-green-600">No threats detected</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-4">Mitigation Strategies</h4>
+                    <div className="space-y-3">
+                      <div className="p-3 border border-border rounded">
+                        <h5 className="font-medium text-sm mb-2">Proactive Engagement</h5>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Schedule quarterly business reviews to maintain alignment
+                        </p>
+                        <Button size="sm" className="w-full" onClick={() => toast.success('Scheduling QBR...')}>
+                          Schedule QBR
+                        </Button>
+                      </div>
+                      
+                      <div className="p-3 border border-border rounded">
+                        <h5 className="font-medium text-sm mb-2">Renewal Preparation</h5>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Begin renewal discussions 90 days early
+                        </p>
+                        <Button size="sm" variant="outline" className="w-full" onClick={() => toast.success('Creating renewal timeline...')}>
+                          Create Timeline
+                        </Button>
+                      </div>
+                      
+                      <div className="p-3 border border-border rounded">
+                        <h5 className="font-medium text-sm mb-2">Value Reinforcement</h5>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Share success metrics and ROI analysis
+                        </p>
+                        <Button size="sm" variant="outline" className="w-full" onClick={() => toast.success('Preparing ROI report...')}>
+                          Generate Report
+                        </Button>
+                      </div>
+                      
+                      <div className="p-3 border border-border rounded">
+                        <h5 className="font-medium text-sm mb-2">Stakeholder Mapping</h5>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Expand relationships beyond current contacts
+                        </p>
+                        <Button size="sm" variant="outline" className="w-full" onClick={() => setActiveTab('relationship')}>
+                          View Map
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 p-3 bg-blue-50 rounded">
+                      <h5 className="font-medium text-blue-900 text-sm mb-2">AI Monitoring</h5>
+                      <p className="text-xs text-blue-700">
+                        Continuous monitoring of engagement patterns, usage metrics, 
+                        and sentiment analysis for early risk detection.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="collaboration" className="space-y-6">
+            {/* Real-time Team Collaboration */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Users className="w-5 h-5 mr-2" />
+                      Team Collaboration
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <span className="text-xs text-muted-foreground">3 team members active</span>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-3 bg-blue-50 border-l-4 border-l-blue-500 rounded">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <span className="font-medium text-sm">Sarah Johnson</span>
+                          <span className="text-xs text-muted-foreground ml-2">Account Manager</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">2 min ago</span>
+                      </div>
+                      <p className="text-sm text-blue-700">
+                        "Just spoke with Michael Chen - they're ready to move forward with the enterprise upgrade. 
+                        Scheduling final stakeholder meeting for Friday."
+                      </p>
+                      <div className="flex items-center space-x-2 mt-2">
+                        <Button size="sm" variant="outline" onClick={() => toast.success('Reply sent')}>
+                          <Reply className="w-3 h-3 mr-1" />
+                          Reply
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => toast.success('Added to task list')}>
+                          <Plus className="w-3 h-3 mr-1" />
+                          Add Task
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-green-50 border-l-4 border-l-green-500 rounded">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <span className="font-medium text-sm">Mike Rodriguez</span>
+                          <span className="text-xs text-muted-foreground ml-2">Solutions Engineer</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">15 min ago</span>
+                      </div>
+                      <p className="text-sm text-green-700">
+                        "Technical integration requirements documented and sent to their dev team. 
+                        No blockers identified - smooth implementation expected."
+                      </p>
+                      <div className="flex items-center space-x-2 mt-2">
+                        <Badge variant="outline" className="text-xs">
+                          <FileText className="w-3 h-3 mr-1" />
+                          Integration Guide Attached
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-orange-50 border-l-4 border-l-orange-500 rounded">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <span className="font-medium text-sm">Jessica Chen</span>
+                          <span className="text-xs text-muted-foreground ml-2">Customer Success</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">1 hour ago</span>
+                      </div>
+                      <p className="text-sm text-orange-700">
+                        "Health score dipped slightly due to reduced login frequency. 
+                        Reaching out proactively to ensure everything is going well."
+                      </p>
+                    </div>
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  <div>
+                    <h5 className="font-medium mb-3">Add Team Note</h5>
+                    <div className="space-y-2">
+                      <textarea 
+                        className="w-full p-2 border rounded-md text-sm" 
+                        rows={3}
+                        placeholder="Share an update, insight, or next steps with the team..."
+                      />
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                          <input type="checkbox" className="rounded" />
+                          <span>Mark as high priority</span>
+                        </div>
+                        <Button size="sm" onClick={() => toast.success('Team note added')}>
+                          <PaperPlaneTilt className="w-3 h-3 mr-1" />
+                          Share
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Shared Tasks & Action Items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[
+                      {
+                        task: 'Prepare enterprise tier proposal',
+                        assignee: 'Sarah Johnson',
+                        due: '2024-01-18',
+                        priority: 'high',
+                        status: 'in-progress'
+                      },
+                      {
+                        task: 'Schedule stakeholder meeting',
+                        assignee: 'Sarah Johnson',
+                        due: '2024-01-17',
+                        priority: 'high',
+                        status: 'pending'
+                      },
+                      {
+                        task: 'Send technical integration docs',
+                        assignee: 'Mike Rodriguez',
+                        due: '2024-01-16',
+                        priority: 'medium',
+                        status: 'completed'
+                      },
+                      {
+                        task: 'Health check follow-up call',
+                        assignee: 'Jessica Chen',
+                        due: '2024-01-19',
+                        priority: 'medium',
+                        status: 'pending'
+                      }
+                    ].map((task, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border border-border rounded hover:bg-muted/50 transition-colors">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{task.task}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="text-xs text-muted-foreground">
+                              Assigned to: <button 
+                                className="clickable-data hover:text-primary transition-colors" 
+                                data-type="task-assignee"
+                                onClick={() => handleContactNameClick(task.assignee, `task-${index}`)}
+                              >
+                                {task.assignee}
+                              </button>
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Due: <button 
+                                className="clickable-data hover:text-primary transition-colors" 
+                                data-type="task-due-date"
+                                onClick={() => toast.info(`Due date: ${new Date(task.due).toLocaleString()}`)}
+                              >
+                                {new Date(task.due).toLocaleDateString()}
+                              </button>
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant={
+                            task.priority === 'high' ? 'destructive' :
+                            task.priority === 'medium' ? 'default' : 'secondary'
+                          }>
+                            {task.priority}
+                          </Badge>
+                          <Badge variant={
+                            task.status === 'completed' ? 'default' :
+                            task.status === 'in-progress' ? 'secondary' : 'outline'
+                          }>
+                            {task.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  <div>
+                    <h5 className="font-medium mb-3">Create New Task</h5>
+                    <div className="space-y-2">
+                      <Input placeholder="Task description..." />
+                      <div className="flex items-center space-x-2">
+                        <select className="flex-1 px-3 py-1 border rounded-md text-sm">
+                          <option>Assign to...</option>
+                          <option>Sarah Johnson</option>
+                          <option>Mike Rodriguez</option>
+                          <option>Jessica Chen</option>
+                        </select>
+                        <Input type="date" className="flex-1" />
+                        <Button size="sm" onClick={() => toast.success('Task created')}>
+                          Create
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Live Activity & Notifications */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Bell className="w-5 h-5 mr-2" />
+                    Live Notifications & Alerts
+                  </div>
+                  <Button size="sm" variant="outline">
+                    <Wrench className="w-4 h-4 mr-2" />
+                    Configure Alerts
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <div>
+                        <p className="text-sm font-medium text-green-900">Health Score Improved</p>
+                        <p className="text-xs text-green-700">Account health increased to 87% (+5 points)</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-green-600">2 min ago</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">Expansion Opportunity</p>
+                        <p className="text-xs text-blue-700">AI detected 95% confidence for upsell opportunity</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-blue-600">5 min ago</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                      <div>
+                        <p className="text-sm font-medium text-yellow-900">Task Due Soon</p>
+                        <p className="text-xs text-yellow-700">Enterprise proposal due tomorrow (assigned to Sarah)</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-yellow-600">1 hour ago</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
