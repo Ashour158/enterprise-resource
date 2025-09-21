@@ -385,3 +385,5 @@ export function QuoteAttachmentManager({ leadId, companyId, userId, onClose }: Q
     </div>
   )
 }
+
+export default QuoteAttachmentManager

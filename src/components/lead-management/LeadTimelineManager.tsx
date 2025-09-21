@@ -864,3 +864,5 @@ export function LeadTimelineManager({ leadId, companyId, userId, onClose }: Lead
     </div>
   )
 }
+
+export default LeadTimelineManager

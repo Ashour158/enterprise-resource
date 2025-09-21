@@ -567,3 +567,5 @@ export function FollowUpNotificationSystem({ companyId, userId, onNotificationAc
     </>
   )
 }
+
+export default FollowUpNotificationSystem

@@ -716,3 +716,5 @@ export function LeadAgingDashboard({ companyId, userId, userRole = 'user', assig
     </div>
   )
 }
+
+export default LeadAgingDashboard
