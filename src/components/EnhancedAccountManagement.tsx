@@ -9,8 +9,10 @@ import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { EnhancedAccount, CustomerTimelineEntry, AccountEngagementAlert, CustomerSuccessMetrics } from '@/types/enhanced-accounts'
 import CustomerUnifiedTimeline from '@/components/CustomerUnifiedTimeline'
+import AccountPageView from '@/components/AccountPageView'
 import { 
   Building, 
   Users, 
@@ -84,6 +86,8 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
 }) => {
   const [accounts, setAccounts] = useKV<EnhancedAccount[]>('enhanced-accounts-v3', [])
   const [selectedAccount, setSelectedAccount] = useState<EnhancedAccount | null>(null)
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
+  const [showFullPageView, setShowFullPageView] = useState(false)
   const [activeTab, setActiveTab] = useState('executive')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -422,6 +426,12 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
     toast.success(`Opened account: ${account.companyName}`)
   }
 
+  const handleAccountFullView = (accountId: string) => {
+    setSelectedAccountId(accountId)
+    setShowFullPageView(true)
+    toast.success('Opening full account view...')
+  }
+
   const handleEmailClick = (email: string) => {
     window.open(`mailto:${email}`, '_blank')
     toast.info(`Opening email to ${email}`)
@@ -453,6 +463,35 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
       currency: 'USD',
       minimumFractionDigits: 0
     }).format(amount)
+  }
+
+  // Show full-page account view when selected
+  if (showFullPageView && selectedAccountId) {
+    return (
+      <div className="relative">
+        <div className="fixed top-4 right-4 z-50">
+          <Button 
+            variant="outline"
+            onClick={() => {
+              setShowFullPageView(false)
+              setSelectedAccountId(null)
+            }}
+            className="shadow-lg"
+          >
+            Back to Account List
+          </Button>
+        </div>
+        <AccountPageView
+          accountId={selectedAccountId}
+          companyId={companyId}
+          userId={userId}
+          onClose={() => {
+            setShowFullPageView(false)
+            setSelectedAccountId(null)
+          }}
+        />
+      </div>
+    )
   }
 
   if (!selectedAccount) {
@@ -499,7 +538,15 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
               <CardHeader className="space-y-2">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="text-lg">{account.companyName}</CardTitle>
+                    <CardTitle 
+                      className="text-lg hover:text-primary transition-colors cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleAccountFullView(account.id)
+                      }}
+                    >
+                      {account.companyName}
+                    </CardTitle>
                     <CardDescription>{account.industry}</CardDescription>
                   </div>
                   <Badge variant={account.accountStatus === 'active' ? 'default' : 'secondary'}>
@@ -582,10 +629,23 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
           ← Back to Accounts
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">{selectedAccount.companyName}</h1>
+          <h1 
+            className="text-2xl font-bold hover:text-primary cursor-pointer transition-colors"
+            onClick={() => handleAccountFullView(selectedAccount.id)}
+          >
+            {selectedAccount.companyName}
+          </h1>
           <p className="text-muted-foreground">{selectedAccount.industry} • {selectedAccount.accountNumber}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAccountFullView(selectedAccount.id)}
+            className="flex items-center gap-2"
+          >
+            <Eye size={16} />
+            Full View
+          </Button>
           <Badge variant={selectedAccount.accountStatus === 'active' ? 'default' : 'secondary'}>
             {selectedAccount.accountStatus}
           </Badge>

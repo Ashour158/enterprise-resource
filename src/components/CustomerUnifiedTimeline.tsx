@@ -1,1117 +1,948 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { 
-  Calendar, 
-  EnvelopeSimple as Mail, 
+  Clock, 
+  User, 
   Phone, 
+  Mail, 
+  Calendar, 
   FileText, 
-  CurrencyDollar as DollarSign, 
+  DollarSign, 
+  TrendUp, 
+  MessageSquare, 
+  MapPin, 
+  Globe, 
+  Eye, 
+  Pin, 
+  PinOff, 
+  Filter, 
+  Search, 
+  Play, 
+  Pause, 
   Users, 
-  Video,
-  ChatCircle as MessageCircle,
+  Heart, 
+  Brain, 
+  Lightbulb, 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle, 
+  ArrowUp, 
+  ArrowDown, 
+  Minus,
+  Paperclip,
   Download,
-  Eye,
-  Funnel as Filter,
-  MagnifyingGlass as Search,
-  Plus,
-  PushPin as Pin,
-  ShareNetwork,
-  ArrowSquareOut as ExternalLink,
-  Activity,
-  Star,
-  Clock,
-  Brain,
-  TrendUp,
-  Warning,
-  CheckCircle,
-  XCircle,
-  Globe,
-  Handshake,
-  Ticket,
-  CreditCard,
-  Monitor,
-  Robot,
-  ChatCircle,
-  LinkSimple,
-  ArrowRight,
-  DotsThree as MoreHorizontal,
-  CaretDown,
-  CaretUp,
-  Heart,
-  ThumbsUp,
-  ThumbsDown,
-  X
+  ExternalLink,
+  MousePointer,
+  Sparkle
 } from '@phosphor-icons/react'
+import { format, formatDistanceToNow, isToday, isYesterday, isThisWeek, startOfDay } from 'date-fns'
 import { toast } from 'sonner'
 
-// Enhanced interfaces based on the SQL schema
-interface CustomerUnifiedTimelineEntry {
+interface TimelineEntry {
   id: string
-  customerId: string
-  companyId: string
-  
-  // Timeline Entry Details
-  timelineType: 'email' | 'call' | 'meeting' | 'quote' | 'deal' | 'support' | 'payment' | 'document' | 'social' | 'website'
-  timelineSubtype: string // email_sent, email_received, meeting_scheduled, quote_sent, deal_won, etc.
-  
-  // Entry Content
+  customer_id: string
+  timeline_type: string
+  timeline_subtype: string
   title: string
-  description?: string
-  summary?: string // AI-generated summary for complex entries
-  
-  // Related Records
-  relatedContactId?: string
-  relatedDealId?: string
-  relatedQuoteId?: string
-  relatedSupportTicketId?: string
-  relatedDocumentId?: string
-  
-  // External System References
-  externalSystem?: string // gmail, outlook, zoom, teams, support_system
-  externalId?: string
-  externalUrl?: string // link to external system
-  
-  // Timeline Metadata
-  timelineDate: Date
-  durationMinutes?: number
-  participants: TimelineParticipant[]
-  attachments: TimelineAttachment[]
-  
-  // AI Analysis
-  aiImportanceScore: number // AI-calculated importance (0-100)
-  aiSentimentScore: number // AI sentiment analysis (-1 to 1)
-  aiImpactOnRelationship: number // impact on customer relationship
-  aiExtractedInsights: string[] // AI-extracted key insights
-  
-  // Visibility and Access
-  isPublic: boolean // visible to all team members
-  visibleToRoles: string[] // specific roles that can see this
-  createdBy?: string
-  
-  // Real-time Features
-  isPinned: boolean // pinned to top of timeline
-  viewCount: number
-  lastViewed?: Date
-  
-  createdAt: Date
-  updatedAt: Date
-}
-
-interface TimelineParticipant {
-  id: string
-  name: string
-  email?: string
-  role?: string
-  type: 'internal' | 'external'
-  avatarUrl?: string
-}
-
-interface TimelineAttachment {
-  id: string
-  name: string
-  url: string
-  type: string
-  size: number
-  thumbnailUrl?: string
+  description: string
+  summary?: string
+  related_contact_id?: string
+  related_deal_id?: string
+  related_quote_id?: string
+  related_support_ticket_id?: string
+  related_document_id?: string
+  external_system?: string
+  external_id?: string
+  external_url?: string
+  timeline_date: string
+  duration_minutes?: number
+  participants: Array<{
+    id: string
+    name: string
+    type: 'internal' | 'external'
+    role?: string
+    avatar?: string
+  }>
+  attachments: Array<{
+    id: string
+    name: string
+    type: string
+    size: number
+    url: string
+  }>
+  ai_importance_score: number
+  ai_sentiment_score: number
+  ai_impact_on_relationship: number
+  ai_extracted_insights: Array<{
+    type: string
+    insight: string
+    confidence: number
+  }>
+  is_public: boolean
+  visible_to_roles: string[]
+  created_by: string
+  is_pinned: boolean
+  view_count: number
+  last_viewed?: string
+  created_at: string
+  updated_at: string
 }
 
 interface CustomerUnifiedTimelineProps {
   customerId: string
   companyId: string
   userId: string
-  onEntryClick?: (entry: CustomerUnifiedTimelineEntry) => void
+  onEntryClick?: (entry: TimelineEntry) => void
+  height?: string
+  showFilters?: boolean
+  showAIInsights?: boolean
+  allowEditing?: boolean
+}
+
+interface TimelineFilter {
+  types: string[]
+  dateRange: 'all' | 'today' | 'week' | 'month' | 'quarter'
+  participants: string[]
+  importance: 'all' | 'high' | 'medium' | 'low'
+  sentiment: 'all' | 'positive' | 'neutral' | 'negative'
+  searchQuery: string
+  pinnedOnly: boolean
 }
 
 const CustomerUnifiedTimeline: React.FC<CustomerUnifiedTimelineProps> = ({
   customerId,
   companyId,
   userId,
-  onEntryClick
+  onEntryClick,
+  height = '600px',
+  showFilters = true,
+  showAIInsights = true,
+  allowEditing = true
 }) => {
-  const [timelineEntries, setTimelineEntries] = useKV<CustomerUnifiedTimelineEntry[]>(`timeline-${customerId}`, [])
-  const [filteredEntries, setFilteredEntries] = useState<CustomerUnifiedTimelineEntry[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [dateFilter, setDateFilter] = useState<string>('all')
-  const [showOnlyPinned, setShowOnlyPinned] = useState(false)
-  const [selectedEntry, setSelectedEntry] = useState<CustomerUnifiedTimelineEntry | null>(null)
-  const [showAddEntry, setShowAddEntry] = useState(false)
-  const [newEntry, setNewEntry] = useState<Partial<CustomerUnifiedTimelineEntry>>({
-    timelineType: 'email',
-    timelineSubtype: 'email_sent',
-    title: '',
-    description: '',
-    isPublic: true,
-    isPinned: false
+  const [timelineEntries, setTimelineEntries] = useKV<TimelineEntry[]>(`timeline-entries-${customerId}`, [])
+  const [filteredEntries, setFilteredEntries] = useState<TimelineEntry[]>([])
+  const [filters, setFilters] = useState<TimelineFilter>({
+    types: [],
+    dateRange: 'all',
+    participants: [],
+    importance: 'all',
+    sentiment: 'all',
+    searchQuery: '',
+    pinnedOnly: false
   })
+  const [selectedEntry, setSelectedEntry] = useState<TimelineEntry | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playbackSpeed, setPlaybackSpeed] = useState(1)
+  const [currentPlayIndex, setCurrentPlayIndex] = useState(0)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [realTimeUsers, setRealTimeUsers] = useKV<Array<{id: string, name: string, avatar?: string, cursor?: {x: number, y: number}}>>(`timeline-viewers-${customerId}`, [])
+  
+  const timelineRef = useRef<HTMLDivElement>(null)
+  const playbackTimer = useRef<NodeJS.Timeout | null>(null)
 
-  // Initialize with mock data if empty
+  // Simulate real-time user presence
+  useEffect(() => {
+    const updatePresence = () => {
+      setRealTimeUsers(current => {
+        const updated = current.filter(u => u.id !== userId)
+        updated.push({
+          id: userId,
+          name: 'Current User',
+          avatar: undefined,
+          cursor: { x: Math.random() * 100, y: Math.random() * 100 }
+        })
+        return updated
+      })
+    }
+
+    const interval = setInterval(updatePresence, 3000)
+    updatePresence()
+
+    return () => clearInterval(interval)
+  }, [userId, setRealTimeUsers])
+
+  // Generate comprehensive timeline data
   useEffect(() => {
     if (timelineEntries.length === 0) {
-      const mockEntries: CustomerUnifiedTimelineEntry[] = [
-        {
-          id: 'timeline-001',
-          customerId,
-          companyId,
-          timelineType: 'email',
-          timelineSubtype: 'email_sent',
-          title: 'Welcome Email Campaign',
-          description: 'Automated welcome email with onboarding materials',
-          summary: 'Customer received welcome package with 95% engagement score',
-          timelineDate: new Date('2024-01-15T10:30:00'),
-          participants: [
-            {
-              id: 'user-001',
-              name: 'Sarah Marketing',
-              email: 'sarah@company.com',
-              role: 'Marketing Manager',
-              type: 'internal'
-            },
-            {
-              id: 'contact-001',
-              name: 'John Customer',
-              email: 'john@customer.com',
-              role: 'CEO',
-              type: 'external'
-            }
-          ],
-          attachments: [
-            {
-              id: 'att-001',
-              name: 'Welcome_Package.pdf',
-              url: '/docs/welcome.pdf',
-              type: 'pdf',
-              size: 2048000
-            }
-          ],
-          aiImportanceScore: 85,
-          aiSentimentScore: 0.8,
-          aiImpactOnRelationship: 0.7,
-          aiExtractedInsights: ['High engagement', 'Positive response', 'Ready for next step'],
-          isPublic: true,
-          visibleToRoles: [],
-          isPinned: true,
-          viewCount: 12,
-          lastViewed: new Date(),
-          createdBy: userId,
-          createdAt: new Date('2024-01-15T10:30:00'),
-          updatedAt: new Date('2024-01-15T10:30:00')
-        },
-        {
-          id: 'timeline-002',
-          customerId,
-          companyId,
-          timelineType: 'meeting',
-          timelineSubtype: 'demo_scheduled',
-          title: 'Product Demo Meeting',
-          description: 'Comprehensive product demonstration and Q&A session',
-          summary: 'Successful 45-minute demo with strong buying signals detected',
-          relatedDealId: 'deal-001',
-          externalSystem: 'zoom',
-          externalId: 'zoom-meeting-123',
-          externalUrl: 'https://zoom.us/j/123456789',
-          timelineDate: new Date('2024-01-20T14:00:00'),
-          durationMinutes: 45,
-          participants: [
-            {
-              id: 'user-002',
-              name: 'Mike Sales',
-              email: 'mike@company.com',
-              role: 'Sales Representative',
-              type: 'internal'
-            },
-            {
-              id: 'contact-001',
-              name: 'John Customer',
-              email: 'john@customer.com',
-              role: 'CEO',
-              type: 'external'
-            },
-            {
-              id: 'contact-002',
-              name: 'Jane Tech',
-              email: 'jane@customer.com',
-              role: 'CTO',
-              type: 'external'
-            }
-          ],
-          attachments: [
-            {
-              id: 'att-002',
-              name: 'Demo_Recording.mp4',
-              url: '/recordings/demo.mp4',
-              type: 'video',
-              size: 150000000
-            }
-          ],
-          aiImportanceScore: 95,
-          aiSentimentScore: 0.9,
-          aiImpactOnRelationship: 0.85,
-          aiExtractedInsights: ['Strong buying intent', 'Technical concerns addressed', 'Decision maker engaged'],
-          isPublic: true,
-          visibleToRoles: [],
-          isPinned: true,
-          viewCount: 8,
-          createdBy: userId,
-          createdAt: new Date('2024-01-20T14:00:00'),
-          updatedAt: new Date('2024-01-20T14:00:00')
-        },
-        {
-          id: 'timeline-003',
-          customerId,
-          companyId,
-          timelineType: 'quote',
-          timelineSubtype: 'quote_sent',
-          title: 'Enterprise Package Quote',
-          description: 'Detailed quote for enterprise solution with custom integrations',
-          summary: 'Quote sent for $50k annual contract with 30-day validity',
-          relatedQuoteId: 'quote-001',
-          timelineDate: new Date('2024-01-22T09:15:00'),
-          participants: [
-            {
-              id: 'user-002',
-              name: 'Mike Sales',
-              email: 'mike@company.com',
-              role: 'Sales Representative',
-              type: 'internal'
-            }
-          ],
-          attachments: [
-            {
-              id: 'att-003',
-              name: 'Enterprise_Quote_v2.pdf',
-              url: '/quotes/ent_quote.pdf',
-              type: 'pdf',
-              size: 1024000
-            }
-          ],
-          aiImportanceScore: 90,
-          aiSentimentScore: 0.6,
-          aiImpactOnRelationship: 0.8,
-          aiExtractedInsights: ['High-value opportunity', 'Custom requirements', 'Decision pending'],
-          isPublic: true,
-          visibleToRoles: [],
-          isPinned: false,
-          viewCount: 15,
-          createdBy: userId,
-          createdAt: new Date('2024-01-22T09:15:00'),
-          updatedAt: new Date('2024-01-22T09:15:00')
-        },
-        {
-          id: 'timeline-004',
-          customerId,
-          companyId,
-          timelineType: 'support',
-          timelineSubtype: 'ticket_created',
-          title: 'Integration Support Request',
-          description: 'Customer needs help with API integration setup',
-          summary: 'Technical support ticket for API configuration assistance',
-          relatedSupportTicketId: 'ticket-001',
-          timelineDate: new Date('2024-01-25T16:30:00'),
-          participants: [
-            {
-              id: 'user-003',
-              name: 'Alex Support',
-              email: 'alex@company.com',
-              role: 'Technical Support',
-              type: 'internal'
-            },
-            {
-              id: 'contact-002',
-              name: 'Jane Tech',
-              email: 'jane@customer.com',
-              role: 'CTO',
-              type: 'external'
-            }
-          ],
-          attachments: [],
-          aiImportanceScore: 70,
-          aiSentimentScore: -0.2,
-          aiImpactOnRelationship: 0.4,
-          aiExtractedInsights: ['Technical challenge', 'Implementation concern', 'Needs immediate attention'],
-          isPublic: true,
-          visibleToRoles: [],
-          isPinned: false,
-          viewCount: 5,
-          createdBy: userId,
-          createdAt: new Date('2024-01-25T16:30:00'),
-          updatedAt: new Date('2024-01-25T16:30:00')
-        },
-        {
-          id: 'timeline-005',
-          customerId,
-          companyId,
-          timelineType: 'deal',
-          timelineSubtype: 'deal_won',
-          title: 'Deal Closed Successfully',
-          description: 'Enterprise contract signed for $50,000 annual value',
-          summary: 'Customer signed enterprise contract with 2-year commitment',
-          relatedDealId: 'deal-001',
-          timelineDate: new Date('2024-01-28T11:00:00'),
-          participants: [
-            {
-              id: 'user-002',
-              name: 'Mike Sales',
-              email: 'mike@company.com',
-              role: 'Sales Representative',
-              type: 'internal'
-            },
-            {
-              id: 'contact-001',
-              name: 'John Customer',
-              email: 'john@customer.com',
-              role: 'CEO',
-              type: 'external'
-            }
-          ],
-          attachments: [
-            {
-              id: 'att-004',
-              name: 'Signed_Contract.pdf',
-              url: '/contracts/signed.pdf',
-              type: 'pdf',
-              size: 3072000
-            }
-          ],
-          aiImportanceScore: 100,
-          aiSentimentScore: 1.0,
-          aiImpactOnRelationship: 1.0,
-          aiExtractedInsights: ['Major milestone', 'Strong relationship', 'Expansion opportunity'],
-          isPublic: true,
-          visibleToRoles: [],
-          isPinned: true,
-          viewCount: 25,
-          createdBy: userId,
-          createdAt: new Date('2024-01-28T11:00:00'),
-          updatedAt: new Date('2024-01-28T11:00:00')
+      const generateTimelineData = async () => {
+        const prompt = spark.llmPrompt`Generate 25 diverse customer timeline entries for customer ID ${customerId}. Include various interaction types like emails, calls, meetings, quotes, deals, support tickets, documents, and social media interactions. Each entry should have realistic AI scores and insights. Return as JSON array with the exact structure needed.`
+        
+        try {
+          const response = await spark.llm(prompt, 'gpt-4o', true)
+          const data = JSON.parse(response)
+          const entries = data.entries || data
+          
+          const processedEntries: TimelineEntry[] = entries.map((entry: any, index: number) => ({
+            id: `timeline-${Date.now()}-${index}`,
+            customer_id: customerId,
+            timeline_type: entry.timeline_type || ['email', 'call', 'meeting', 'quote', 'deal', 'support', 'document'][index % 7],
+            timeline_subtype: entry.timeline_subtype || 'interaction',
+            title: entry.title || `Customer Interaction ${index + 1}`,
+            description: entry.description || 'Customer interaction details',
+            summary: entry.summary,
+            timeline_date: entry.timeline_date || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+            duration_minutes: entry.duration_minutes || Math.floor(Math.random() * 120) + 15,
+            participants: entry.participants || [
+              { id: 'user-1', name: 'John Smith', type: 'internal', role: 'Sales Rep' },
+              { id: 'contact-1', name: 'Jane Doe', type: 'external', role: 'Decision Maker' }
+            ],
+            attachments: entry.attachments || [],
+            ai_importance_score: entry.ai_importance_score || Math.floor(Math.random() * 100),
+            ai_sentiment_score: entry.ai_sentiment_score || (Math.random() * 2 - 1),
+            ai_impact_on_relationship: entry.ai_impact_on_relationship || Math.random(),
+            ai_extracted_insights: entry.ai_extracted_insights || [
+              { type: 'opportunity', insight: 'Customer showed interest in premium features', confidence: 85 },
+              { type: 'risk', insight: 'Mentioned budget constraints', confidence: 70 }
+            ],
+            is_public: entry.is_public !== false,
+            visible_to_roles: entry.visible_to_roles || [],
+            created_by: entry.created_by || userId,
+            is_pinned: entry.is_pinned || false,
+            view_count: entry.view_count || Math.floor(Math.random() * 50),
+            last_viewed: entry.last_viewed,
+            created_at: entry.created_at || new Date().toISOString(),
+            updated_at: entry.updated_at || new Date().toISOString()
+          }))
+
+          setTimelineEntries(processedEntries)
+        } catch (error) {
+          console.error('Error generating timeline data:', error)
+          toast.error('Failed to generate timeline data')
         }
-      ]
+      }
 
-      setTimelineEntries(mockEntries)
+      generateTimelineData()
     }
-  }, [customerId, companyId, userId, timelineEntries.length, setTimelineEntries])
+  }, [customerId, userId, timelineEntries.length, setTimelineEntries])
 
-  // Filter timeline entries
+  // Filter and sort timeline entries
   useEffect(() => {
     let filtered = [...timelineEntries]
 
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(entry =>
-        entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.summary?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.participants.some(p => 
-          p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.email?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      )
+    // Apply filters
+    if (filters.types.length > 0) {
+      filtered = filtered.filter(entry => filters.types.includes(entry.timeline_type))
     }
 
-    // Type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(entry => entry.timelineType === typeFilter)
-    }
-
-    // Date filter
-    if (dateFilter !== 'all') {
-      const now = new Date()
-      const filterDate = new Date()
-      
-      switch (dateFilter) {
-        case 'today':
-          filterDate.setDate(now.getDate())
-          break
-        case 'week':
-          filterDate.setDate(now.getDate() - 7)
-          break
-        case 'month':
-          filterDate.setMonth(now.getMonth() - 1)
-          break
-        case 'quarter':
-          filterDate.setMonth(now.getMonth() - 3)
-          break
-        case 'year':
-          filterDate.setFullYear(now.getFullYear() - 1)
-          break
-        default:
-          filterDate.setFullYear(1970)
-      }
-      
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase()
       filtered = filtered.filter(entry => 
-        new Date(entry.timelineDate) >= filterDate
+        entry.title.toLowerCase().includes(query) ||
+        entry.description.toLowerCase().includes(query) ||
+        entry.participants.some(p => p.name.toLowerCase().includes(query))
       )
     }
 
-    // Pinned filter
-    if (showOnlyPinned) {
-      filtered = filtered.filter(entry => entry.isPinned)
+    if (filters.pinnedOnly) {
+      filtered = filtered.filter(entry => entry.is_pinned)
     }
 
-    // Sort by date (newest first) and pinned items first
+    if (filters.importance !== 'all') {
+      const threshold = filters.importance === 'high' ? 70 : filters.importance === 'medium' ? 40 : 0
+      filtered = filtered.filter(entry => entry.ai_importance_score >= threshold)
+    }
+
+    if (filters.sentiment !== 'all') {
+      filtered = filtered.filter(entry => {
+        if (filters.sentiment === 'positive') return entry.ai_sentiment_score > 0.2
+        if (filters.sentiment === 'negative') return entry.ai_sentiment_score < -0.2
+        return Math.abs(entry.ai_sentiment_score) <= 0.2
+      })
+    }
+
+    // Date range filter
+    if (filters.dateRange !== 'all') {
+      const now = new Date()
+      filtered = filtered.filter(entry => {
+        const entryDate = new Date(entry.timeline_date)
+        switch (filters.dateRange) {
+          case 'today':
+            return isToday(entryDate)
+          case 'week':
+            return isThisWeek(entryDate)
+          case 'month':
+            return entryDate.getMonth() === now.getMonth() && entryDate.getFullYear() === now.getFullYear()
+          case 'quarter':
+            const quarter = Math.floor(now.getMonth() / 3)
+            const entryQuarter = Math.floor(entryDate.getMonth() / 3)
+            return entryQuarter === quarter && entryDate.getFullYear() === now.getFullYear()
+          default:
+            return true
+        }
+      })
+    }
+
+    // Sort by date (newest first) and pinned status
     filtered.sort((a, b) => {
-      if (a.isPinned && !b.isPinned) return -1
-      if (!a.isPinned && b.isPinned) return 1
-      return new Date(b.timelineDate).getTime() - new Date(a.timelineDate).getTime()
+      if (a.is_pinned && !b.is_pinned) return -1
+      if (!a.is_pinned && b.is_pinned) return 1
+      return new Date(b.timeline_date).getTime() - new Date(a.timeline_date).getTime()
     })
 
     setFilteredEntries(filtered)
-  }, [timelineEntries, searchTerm, typeFilter, dateFilter, showOnlyPinned])
+  }, [timelineEntries, filters])
 
-  const getTimelineIcon = (type: string, subtype?: string) => {
+  // Timeline playback functionality
+  useEffect(() => {
+    if (isPlaying && filteredEntries.length > 0) {
+      playbackTimer.current = setTimeout(() => {
+        setCurrentPlayIndex(prev => {
+          if (prev < filteredEntries.length - 1) {
+            return prev + 1
+          } else {
+            setIsPlaying(false)
+            return 0
+          }
+        })
+      }, 2000 / playbackSpeed)
+    }
+
+    return () => {
+      if (playbackTimer.current) {
+        clearTimeout(playbackTimer.current)
+      }
+    }
+  }, [isPlaying, currentPlayIndex, filteredEntries.length, playbackSpeed])
+
+  const getTimelineTypeIcon = (type: string) => {
     switch (type) {
-      case 'email':
-        return <Mail size={16} className="text-blue-500" />
-      case 'call':
-        return <Phone size={16} className="text-green-500" />
-      case 'meeting':
-        return <Video size={16} className="text-purple-500" />
-      case 'quote':
-        return <FileText size={16} className="text-orange-500" />
-      case 'deal':
-        return subtype === 'deal_won' ? <CheckCircle size={16} className="text-green-600" /> : <DollarSign size={16} className="text-yellow-500" />
-      case 'support':
-        return <Ticket size={16} className="text-red-500" />
-      case 'payment':
-        return <CreditCard size={16} className="text-emerald-500" />
-      case 'document':
-        return <FileText size={16} className="text-gray-500" />
-      case 'social':
-        return <ShareNetwork size={16} className="text-pink-500" />
-      case 'website':
-        return <Globe size={16} className="text-indigo-500" />
-      default:
-        return <Activity size={16} className="text-gray-400" />
+      case 'email': return <Mail size={16} />
+      case 'call': return <Phone size={16} />
+      case 'meeting': return <Calendar size={16} />
+      case 'quote': return <FileText size={16} />
+      case 'deal': return <DollarSign size={16} />
+      case 'support': return <MessageSquare size={16} />
+      case 'document': return <FileText size={16} />
+      case 'social': return <Globe size={16} />
+      case 'website': return <Globe size={16} />
+      default: return <MessageSquare size={16} />
     }
   }
 
   const getSentimentIcon = (score: number) => {
-    if (score > 0.5) return <ThumbsUp size={14} className="text-green-500" />
-    if (score < -0.5) return <ThumbsDown size={14} className="text-red-500" />
-    return <MessageCircle size={14} className="text-gray-400" />
+    if (score > 0.2) return <Heart size={16} className="text-green-500" />
+    if (score < -0.2) return <XCircle size={16} className="text-red-500" />
+    return <Minus size={16} className="text-yellow-500" />
   }
 
-  const getImportanceColor = (score: number) => {
-    if (score >= 90) return 'text-red-600 bg-red-50'
-    if (score >= 70) return 'text-orange-600 bg-orange-50'
-    if (score >= 50) return 'text-yellow-600 bg-yellow-50'
-    return 'text-gray-600 bg-gray-50'
+  const getImportanceIcon = (score: number) => {
+    if (score >= 70) return <ArrowUp size={16} className="text-red-500" />
+    if (score >= 40) return <ArrowUp size={16} className="text-yellow-500" />
+    return <ArrowDown size={16} className="text-gray-500" />
   }
 
-  const handleEntryClick = (entry: CustomerUnifiedTimelineEntry) => {
-    setSelectedEntry(entry)
-    
-    // Update view count
-    const updatedEntries = timelineEntries.map(e => 
+  const handleEntryClick = (entry: TimelineEntry) => {
+    // Update view count and last viewed
+    setTimelineEntries(current => current.map(e => 
       e.id === entry.id 
-        ? { ...e, viewCount: e.viewCount + 1, lastViewed: new Date() }
+        ? { ...e, view_count: e.view_count + 1, last_viewed: new Date().toISOString() }
         : e
-    )
-    setTimelineEntries(updatedEntries)
-    
+    ))
+
+    setSelectedEntry(entry)
     onEntryClick?.(entry)
-    toast.info(`Viewing: ${entry.title}`)
+    toast.success(`Opened ${entry.title}`)
   }
 
-  const handlePinToggle = (entryId: string) => {
-    const updatedEntries = timelineEntries.map(entry =>
-      entry.id === entryId
-        ? { ...entry, isPinned: !entry.isPinned }
+  const togglePin = (entryId: string) => {
+    setTimelineEntries(current => current.map(entry => 
+      entry.id === entryId 
+        ? { ...entry, is_pinned: !entry.is_pinned }
         : entry
-    )
-    setTimelineEntries(updatedEntries)
-    toast.success('Timeline entry updated')
+    ))
   }
 
-  const handleAddEntry = () => {
-    if (!newEntry.title) {
-      toast.error('Please provide a title for the timeline entry')
-      return
-    }
+  const formatTimelineDate = (dateString: string) => {
+    const date = new Date(dateString)
+    if (isToday(date)) return `Today, ${format(date, 'HH:mm')}`
+    if (isYesterday(date)) return `Yesterday, ${format(date, 'HH:mm')}`
+    return format(date, 'MMM dd, yyyy HH:mm')
+  }
 
-    const entry: CustomerUnifiedTimelineEntry = {
-      id: `timeline-${Date.now()}`,
-      customerId,
-      companyId,
-      timelineType: newEntry.timelineType!,
-      timelineSubtype: newEntry.timelineSubtype || '',
-      title: newEntry.title,
-      description: newEntry.description || '',
-      summary: '', // Would be AI-generated in real system
-      timelineDate: new Date(),
-      participants: [],
-      attachments: [],
-      aiImportanceScore: 50, // Default score
-      aiSentimentScore: 0,
-      aiImpactOnRelationship: 0.5,
-      aiExtractedInsights: [],
-      isPublic: newEntry.isPublic!,
-      visibleToRoles: [],
-      isPinned: newEntry.isPinned!,
-      viewCount: 0,
-      createdBy: userId,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-
-    setTimelineEntries(prev => [entry, ...prev])
-    setNewEntry({
-      timelineType: 'email',
-      timelineSubtype: 'email_sent',
-      title: '',
-      description: '',
-      isPublic: true,
-      isPinned: false
+  const groupEntriesByDate = (entries: TimelineEntry[]) => {
+    const groups: { [key: string]: TimelineEntry[] } = {}
+    
+    entries.forEach(entry => {
+      const date = startOfDay(new Date(entry.timeline_date)).toISOString()
+      if (!groups[date]) groups[date] = []
+      groups[date].push(entry)
     })
-    setShowAddEntry(false)
-    toast.success('Timeline entry added successfully')
+
+    return Object.entries(groups).sort(([a], [b]) => 
+      new Date(b).getTime() - new Date(a).getTime()
+    )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header and Controls */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Customer Timeline</h3>
-          <p className="text-sm text-muted-foreground">
-            Complete interaction history with AI insights
-          </p>
+    <div className="space-y-4">
+      {/* Timeline Controls */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant={isPlaying ? "default" : "outline"}
+            size="sm"
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="flex items-center gap-2"
+          >
+            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+            {isPlaying ? 'Pause' : 'Play'} Timeline
+          </Button>
+          
+          <Select value={playbackSpeed.toString()} onValueChange={(value) => setPlaybackSpeed(Number(value))}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0.5">0.5x</SelectItem>
+              <SelectItem value="1">1x</SelectItem>
+              <SelectItem value="2">2x</SelectItem>
+              <SelectItem value="4">4x</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Button onClick={() => setShowAddEntry(true)} size="sm">
-          <Plus size={16} className="mr-2" />
-          Add Entry
-        </Button>
-      </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search timeline entries..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+        {showFilters && (
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search timeline..."
+                value={filters.searchQuery}
+                onChange={(e) => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
+                className="pl-10 w-64"
+              />
             </div>
             
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="call">Call</SelectItem>
-                <SelectItem value="meeting">Meeting</SelectItem>
-                <SelectItem value="quote">Quote</SelectItem>
-                <SelectItem value="deal">Deal</SelectItem>
-                <SelectItem value="support">Support</SelectItem>
-                <SelectItem value="payment">Payment</SelectItem>
-                <SelectItem value="document">Document</SelectItem>
-                <SelectItem value="social">Social</SelectItem>
-                <SelectItem value="website">Website</SelectItem>
-              </SelectContent>
-            </Select>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter size={16} className="mr-2" />
+                  Filters
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Timeline Filters</SheetTitle>
+                  <SheetDescription>
+                    Customize your timeline view with advanced filtering options
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="space-y-6 mt-6">
+                  <div>
+                    <Label>Interaction Types</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {['email', 'call', 'meeting', 'quote', 'deal', 'support', 'document', 'social'].map(type => (
+                        <label key={type} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={filters.types.includes(type)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFilters(prev => ({ ...prev, types: [...prev.types, type] }))
+                              } else {
+                                setFilters(prev => ({ ...prev, types: prev.types.filter(t => t !== type) }))
+                              }
+                            }}
+                          />
+                          <span className="capitalize">{type}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
 
-            <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All Time" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">Past Week</SelectItem>
-                <SelectItem value="month">Past Month</SelectItem>
-                <SelectItem value="quarter">Past Quarter</SelectItem>
-                <SelectItem value="year">Past Year</SelectItem>
-              </SelectContent>
-            </Select>
+                  <div>
+                    <Label>Date Range</Label>
+                    <Select 
+                      value={filters.dateRange} 
+                      onValueChange={(value: any) => setFilters(prev => ({ ...prev, dateRange: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Time</SelectItem>
+                        <SelectItem value="today">Today</SelectItem>
+                        <SelectItem value="week">This Week</SelectItem>
+                        <SelectItem value="month">This Month</SelectItem>
+                        <SelectItem value="quarter">This Quarter</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            <Button
-              variant={showOnlyPinned ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowOnlyPinned(!showOnlyPinned)}
-            >
-              <Pin size={16} className="mr-2" />
-              Pinned Only
-            </Button>
+                  <div>
+                    <Label>Importance Level</Label>
+                    <Select 
+                      value={filters.importance} 
+                      onValueChange={(value: any) => setFilters(prev => ({ ...prev, importance: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Levels</SelectItem>
+                        <SelectItem value="high">High (70+)</SelectItem>
+                        <SelectItem value="medium">Medium (40-69)</SelectItem>
+                        <SelectItem value="low">Low (0-39)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Sentiment</Label>
+                    <Select 
+                      value={filters.sentiment} 
+                      onValueChange={(value: any) => setFilters(prev => ({ ...prev, sentiment: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sentiments</SelectItem>
+                        <SelectItem value="positive">Positive</SelectItem>
+                        <SelectItem value="neutral">Neutral</SelectItem>
+                        <SelectItem value="negative">Negative</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="pinnedOnly"
+                      checked={filters.pinnedOnly}
+                      onChange={(e) => setFilters(prev => ({ ...prev, pinnedOnly: e.target.checked }))}
+                    />
+                    <Label htmlFor="pinnedOnly">Show pinned only</Label>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
+      </div>
+
+      {/* Real-time User Presence */}
+      {realTimeUsers.length > 1 && (
+        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+          <Users size={16} className="text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            {realTimeUsers.length - 1} other{realTimeUsers.length > 2 ? 's' : ''} viewing this timeline
+          </span>
+          <div className="flex -space-x-2">
+            {realTimeUsers.slice(0, 3).map(user => (
+              <Avatar key={user.id} className="w-6 h-6 border-2 border-background">
+                <AvatarFallback className="text-xs">
+                  {user.name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Timeline Statistics */}
+      <div className="grid grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Interactions</p>
+                <p className="text-2xl font-bold">{filteredEntries.length}</p>
+              </div>
+              <MessageSquare size={20} className="text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Avg Importance</p>
+                <p className="text-2xl font-bold">
+                  {filteredEntries.length > 0 
+                    ? Math.round(filteredEntries.reduce((sum, e) => sum + e.ai_importance_score, 0) / filteredEntries.length)
+                    : 0
+                  }
+                </p>
+              </div>
+              <TrendUp size={20} className="text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Pinned Items</p>
+                <p className="text-2xl font-bold">{filteredEntries.filter(e => e.is_pinned).length}</p>
+              </div>
+              <Pin size={20} className="text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Views</p>
+                <p className="text-2xl font-bold">
+                  {filteredEntries.reduce((sum, e) => sum + e.view_count, 0)}
+                </p>
+              </div>
+              <Eye size={20} className="text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Timeline */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock size={20} />
+            Customer Timeline
+            {isPlaying && (
+              <Badge variant="outline" className="ml-2">
+                Playing: {currentPlayIndex + 1} / {filteredEntries.length}
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Complete interaction history with AI insights and collaboration features
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div 
+            ref={timelineRef}
+            className="space-y-6 overflow-y-auto pr-4"
+            style={{ maxHeight: height }}
+          >
+            {groupEntriesByDate(filteredEntries).map(([dateKey, entries]) => (
+              <div key={dateKey} className="space-y-4">
+                <div className="sticky top-0 bg-background/90 backdrop-blur-sm py-2 border-b">
+                  <h3 className="font-semibold text-sm text-muted-foreground">
+                    {format(new Date(dateKey), 'EEEE, MMMM dd, yyyy')}
+                  </h3>
+                </div>
+                
+                <div className="space-y-3 pl-4">
+                  {entries.map((entry, index) => (
+                    <div
+                      key={entry.id}
+                      className={`relative border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        isPlaying && currentPlayIndex === filteredEntries.findIndex(e => e.id === entry.id)
+                          ? 'ring-2 ring-primary shadow-lg'
+                          : ''
+                      } ${entry.is_pinned ? 'border-primary/50 bg-primary/5' : 'hover:border-primary/30'}`}
+                      onClick={() => handleEntryClick(entry)}
+                    >
+                      {/* Timeline Line */}
+                      <div className="absolute left-0 top-0 w-0.5 h-full bg-gradient-to-b from-primary to-primary/30" />
+                      
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3 flex-1">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
+                            {getTimelineTypeIcon(entry.timeline_type)}
+                          </div>
+                          
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium hover:text-primary transition-colors">
+                                {entry.title}
+                              </h4>
+                              {entry.is_pinned && (
+                                <Pin size={14} className="text-primary" />
+                              )}
+                              <Badge variant="outline" className="text-xs">
+                                {entry.timeline_type}
+                              </Badge>
+                            </div>
+                            
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {entry.description}
+                            </p>
+                            
+                            {entry.summary && (
+                              <div className="p-2 bg-muted/50 rounded text-xs">
+                                <div className="flex items-center gap-1 mb-1">
+                                  <Brain size={12} />
+                                  <span className="font-medium">AI Summary</span>
+                                </div>
+                                <p>{entry.summary}</p>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock size={12} />
+                                {formatTimelineDate(entry.timeline_date)}
+                              </span>
+                              
+                              {entry.duration_minutes && (
+                                <span className="flex items-center gap-1">
+                                  <Play size={12} />
+                                  {entry.duration_minutes}m
+                                </span>
+                              )}
+                              
+                              <span className="flex items-center gap-1">
+                                <Eye size={12} />
+                                {entry.view_count} views
+                              </span>
+                              
+                              {entry.participants.length > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <Users size={12} />
+                                  {entry.participants.length} participants
+                                </span>
+                              )}
+                              
+                              {entry.attachments.length > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <Paperclip size={12} />
+                                  {entry.attachments.length} files
+                                </span>
+                              )}
+                            </div>
+                            
+                            {showAIInsights && (
+                              <div className="flex items-center gap-3 pt-2">
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="flex items-center gap-1">
+                                        {getImportanceIcon(entry.ai_importance_score)}
+                                        <span className="text-xs">{entry.ai_importance_score}</span>
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Importance Score: {entry.ai_importance_score}/100</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="flex items-center gap-1">
+                                        {getSentimentIcon(entry.ai_sentiment_score)}
+                                        <span className="text-xs">
+                                          {entry.ai_sentiment_score > 0 ? '+' : ''}{(entry.ai_sentiment_score * 100).toFixed(0)}%
+                                        </span>
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Sentiment Score: {(entry.ai_sentiment_score * 100).toFixed(1)}%</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                
+                                {entry.ai_extracted_insights.length > 0 && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="flex items-center gap-1 text-primary">
+                                          <Lightbulb size={12} />
+                                          <span className="text-xs">{entry.ai_extracted_insights.length}</span>
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <div className="space-y-1">
+                                          {entry.ai_extracted_insights.map((insight, i) => (
+                                            <p key={i} className="text-xs">
+                                              <span className="font-medium capitalize">{insight.type}:</span> {insight.insight}
+                                            </p>
+                                          ))}
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              togglePin(entry.id)
+                            }}
+                            className="h-8 w-8 p-0"
+                          >
+                            {entry.is_pinned ? (
+                              <PinOff size={14} className="text-primary" />
+                            ) : (
+                              <Pin size={14} className="text-muted-foreground" />
+                            )}
+                          </Button>
+                          
+                          {entry.external_url && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                window.open(entry.external_url, '_blank')
+                              }}
+                              className="h-8 w-8 p-0"
+                            >
+                              <ExternalLink size={14} />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            
+            {filteredEntries.length === 0 && (
+              <div className="text-center py-12">
+                <Clock size={48} className="mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="font-medium mb-2">No timeline entries found</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {filters.searchQuery || filters.types.length > 0
+                    ? 'Try adjusting your filters to see more results'
+                    : 'Timeline entries will appear here as customer interactions occur'
+                  }
+                </p>
+                {allowEditing && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAddForm(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <MousePointer size={16} />
+                    Add Timeline Entry
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Timeline Entries */}
-      <div className="space-y-4">
-        {filteredEntries.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <Activity size={32} className="mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                {searchTerm || typeFilter !== 'all' || dateFilter !== 'all' || showOnlyPinned
-                  ? 'No timeline entries match your filters'
-                  : 'No timeline entries found'}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredEntries.map((entry) => (
-            <Card 
-              key={entry.id} 
-              className={`transition-all hover:shadow-md cursor-pointer ${entry.isPinned ? 'ring-1 ring-primary/20 bg-primary/5' : ''}`}
-              onClick={() => handleEntryClick(entry)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      {getTimelineIcon(entry.timelineType, entry.timelineSubtype)}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{entry.title}</h4>
-                          {entry.isPinned && (
-                            <Pin size={14} className="text-primary" />
-                          )}
-                          <Badge variant="outline" className="text-xs">
-                            {entry.timelineType}
-                          </Badge>
-                          {entry.timelineSubtype && (
-                            <Badge variant="secondary" className="text-xs">
-                              {entry.timelineSubtype.replace('_', ' ')}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {entry.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* AI Summary */}
-                    {entry.summary && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Robot size={14} className="text-blue-600" />
-                          <span className="text-xs font-medium text-blue-700">AI Summary</span>
-                        </div>
-                        <p className="text-sm text-blue-800">{entry.summary}</p>
-                      </div>
-                    )}
-
-                    {/* Participants */}
-                    {entry.participants.length > 0 && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <Users size={14} className="text-muted-foreground" />
-                        <div className="flex -space-x-1">
-                          {entry.participants.slice(0, 4).map((participant, index) => (
-                            <Avatar key={participant.id} className="w-6 h-6 border border-background">
-                              <AvatarFallback className="text-xs">
-                                {participant.name.split(' ').map(n => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                          ))}
-                          {entry.participants.length > 4 && (
-                            <div className="w-6 h-6 bg-muted rounded-full border border-background flex items-center justify-center">
-                              <span className="text-xs text-muted-foreground">+{entry.participants.length - 4}</span>
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {entry.participants.length} participant{entry.participants.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Attachments */}
-                    {entry.attachments.length > 0 && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText size={14} className="text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {entry.attachments.length} attachment{entry.attachments.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* AI Insights */}
-                    {entry.aiExtractedInsights.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {entry.aiExtractedInsights.map((insight, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            <Brain size={10} className="mr-1" />
-                            {insight}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* External Link */}
-                    {entry.externalUrl && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <LinkSimple size={14} className="text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {entry.externalSystem}
-                        </span>
-                        <ExternalLink size={12} className="text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col items-end gap-2">
-                    {/* Importance Score */}
-                    <Badge className={`text-xs ${getImportanceColor(entry.aiImportanceScore)}`}>
-                      {entry.aiImportanceScore}/100
-                    </Badge>
-
-                    {/* Sentiment */}
-                    <div className="flex items-center gap-1">
-                      {getSentimentIcon(entry.aiSentimentScore)}
-                      <span className="text-xs text-muted-foreground">
-                        {entry.aiSentimentScore > 0 ? '+' : ''}{(entry.aiSentimentScore * 100).toFixed(0)}%
-                      </span>
-                    </div>
-
-                    {/* Date and Time */}
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(entry.timelineDate).toLocaleDateString()}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(entry.timelineDate).toLocaleTimeString()}
-                      </p>
-                    </div>
-
-                    {/* Actions */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handlePinToggle(entry.id)
-                      }}
-                    >
-                      <Pin size={12} className={entry.isPinned ? 'text-primary' : 'text-muted-foreground'} />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* View count */}
-                <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Eye size={12} />
-                      <span>{entry.viewCount} views</span>
-                    </div>
-                    {entry.durationMinutes && (
-                      <div className="flex items-center gap-1">
-                        <Clock size={12} />
-                        <span>{entry.durationMinutes} min</span>
-                      </div>
-                    )}
-                    {entry.lastViewed && (
-                      <div className="flex items-center gap-1">
-                        <Clock size={12} />
-                        <span>Last viewed {new Date(entry.lastViewed).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    {entry.externalUrl && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          window.open(entry.externalUrl, '_blank')
-                        }}
-                      >
-                        <ExternalLink size={12} />
-                      </Button>
-                    )}
-                    <ArrowRight size={12} className="text-muted-foreground" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-
-      {/* Add Entry Modal */}
-      {showAddEntry && (
-        <Card className="fixed inset-4 z-50 bg-background border shadow-lg">
-          <CardHeader>
-            <CardTitle>Add Timeline Entry</CardTitle>
-            <CardDescription>
-              Record a new customer interaction or event
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Type</label>
-                <Select 
-                  value={newEntry.timelineType} 
-                  onValueChange={(value) => setNewEntry(prev => ({ ...prev, timelineType: value as any }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="call">Call</SelectItem>
-                    <SelectItem value="meeting">Meeting</SelectItem>
-                    <SelectItem value="quote">Quote</SelectItem>
-                    <SelectItem value="deal">Deal</SelectItem>
-                    <SelectItem value="support">Support</SelectItem>
-                    <SelectItem value="payment">Payment</SelectItem>
-                    <SelectItem value="document">Document</SelectItem>
-                    <SelectItem value="social">Social</SelectItem>
-                    <SelectItem value="website">Website</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium">Subtype</label>
-                <Input
-                  placeholder="e.g., email_sent, meeting_scheduled"
-                  value={newEntry.timelineSubtype}
-                  onChange={(e) => setNewEntry(prev => ({ ...prev, timelineSubtype: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Title</label>
-              <Input
-                placeholder="Brief title for this entry"
-                value={newEntry.title}
-                onChange={(e) => setNewEntry(prev => ({ ...prev, title: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Description</label>
-              <Textarea
-                placeholder="Detailed description of the interaction"
-                value={newEntry.description}
-                onChange={(e) => setNewEntry(prev => ({ ...prev, description: e.target.value }))}
-                rows={3}
-              />
-            </div>
-
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={newEntry.isPublic}
-                  onChange={(e) => setNewEntry(prev => ({ ...prev, isPublic: e.target.checked }))}
-                />
-                <span className="text-sm">Visible to team</span>
-              </label>
-              
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={newEntry.isPinned}
-                  onChange={(e) => setNewEntry(prev => ({ ...prev, isPinned: e.target.checked }))}
-                />
-                <span className="text-sm">Pin to top</span>
-              </label>
-            </div>
-          </CardContent>
-          
-          <div className="flex justify-end gap-2 p-4 border-t">
-            <Button variant="outline" onClick={() => setShowAddEntry(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddEntry}>
-              Add Entry
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* Detailed Entry View */}
+      {/* Selected Entry Detail Sheet */}
       {selectedEntry && (
-        <Card className="fixed inset-4 z-50 bg-background border shadow-lg overflow-auto">
-          <CardHeader>
-            <div className="flex items-center justify-between">
+        <Sheet open={!!selectedEntry} onOpenChange={() => setSelectedEntry(null)}>
+          <SheetContent className="w-full max-w-2xl">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                {getTimelineTypeIcon(selectedEntry.timeline_type)}
+                {selectedEntry.title}
+              </SheetTitle>
+              <SheetDescription>
+                {formatTimelineDate(selectedEntry.timeline_date)} • {selectedEntry.duration_minutes}m
+              </SheetDescription>
+            </SheetHeader>
+            
+            <div className="space-y-6 mt-6">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  {getTimelineIcon(selectedEntry.timelineType, selectedEntry.timelineSubtype)}
-                  {selectedEntry.title}
-                  {selectedEntry.isPinned && <Pin size={16} className="text-primary" />}
-                </CardTitle>
-                <CardDescription>
-                  {selectedEntry.description}
-                </CardDescription>
+                <h4 className="font-medium mb-2">Description</h4>
+                <p className="text-sm text-muted-foreground">{selectedEntry.description}</p>
               </div>
-              <Button variant="ghost" onClick={() => setSelectedEntry(null)}>
-                <X size={16} />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* AI Summary */}
-            {selectedEntry.summary && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Robot size={16} className="text-blue-600" />
-                  <span className="font-medium text-blue-700">AI Summary</span>
+              
+              {selectedEntry.summary && (
+                <div>
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Sparkle size={16} />
+                    AI Summary
+                  </h4>
+                  <p className="text-sm">{selectedEntry.summary}</p>
                 </div>
-                <p className="text-blue-800">{selectedEntry.summary}</p>
-              </div>
-            )}
-
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-medium mb-2">Event Details</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date:</span>
-                    <span>{new Date(selectedEntry.timelineDate).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Type:</span>
-                    <span className="capitalize">{selectedEntry.timelineType}</span>
-                  </div>
-                  {selectedEntry.timelineSubtype && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subtype:</span>
-                      <span className="capitalize">{selectedEntry.timelineSubtype.replace('_', ' ')}</span>
-                    </div>
-                  )}
-                  {selectedEntry.durationMinutes && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Duration:</span>
-                      <span>{selectedEntry.durationMinutes} minutes</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-medium mb-2">AI Analysis</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Importance:</span>
-                    <Badge className={getImportanceColor(selectedEntry.aiImportanceScore)}>
-                      {selectedEntry.aiImportanceScore}/100
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Sentiment:</span>
-                    <div className="flex items-center gap-1">
-                      {getSentimentIcon(selectedEntry.aiSentimentScore)}
-                      <span>{(selectedEntry.aiSentimentScore * 100).toFixed(0)}%</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Relationship Impact:</span>
-                    <span>{(selectedEntry.aiImpactOnRelationship * 100).toFixed(0)}%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Participants */}
-            {selectedEntry.participants.length > 0 && (
+              )}
+              
               <div>
                 <h4 className="font-medium mb-2">Participants</h4>
-                <div className="grid grid-cols-1 gap-2">
-                  {selectedEntry.participants.map((participant) => (
-                    <div key={participant.id} className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+                <div className="space-y-2">
+                  {selectedEntry.participants.map(participant => (
+                    <div key={participant.id} className="flex items-center gap-3 p-2 rounded border">
                       <Avatar className="w-8 h-8">
+                        <AvatarImage src={participant.avatar} />
                         <AvatarFallback>
                           {participant.name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{participant.name}</p>
+                        <p className="font-medium text-sm">{participant.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {participant.email} • {participant.role} • {participant.type}
+                          {participant.role} • {participant.type}
                         </p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
-
-            {/* AI Insights */}
-            {selectedEntry.aiExtractedInsights.length > 0 && (
-              <div>
-                <h4 className="font-medium mb-2">AI Insights</h4>
-                <div className="space-y-2">
-                  {selectedEntry.aiExtractedInsights.map((insight, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
-                      <Brain size={14} className="text-blue-600" />
-                      <span className="text-sm text-blue-800">{insight}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Attachments */}
-            {selectedEntry.attachments.length > 0 && (
-              <div>
-                <h4 className="font-medium mb-2">Attachments</h4>
-                <div className="space-y-2">
-                  {selectedEntry.attachments.map((attachment) => (
-                    <div key={attachment.id} className="flex items-center gap-3 p-2 bg-muted rounded-lg">
-                      <FileText size={16} className="text-muted-foreground" />
-                      <div className="flex-1">
-                        <p className="font-medium">{attachment.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {attachment.type.toUpperCase()} • {(attachment.size / 1024 / 1024).toFixed(1)} MB
-                        </p>
+              
+              {selectedEntry.attachments.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Attachments</h4>
+                  <div className="space-y-2">
+                    {selectedEntry.attachments.map(attachment => (
+                      <div key={attachment.id} className="flex items-center justify-between p-2 rounded border">
+                        <div className="flex items-center gap-2">
+                          <FileText size={16} />
+                          <div>
+                            <p className="font-medium text-sm">{attachment.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {attachment.type.toUpperCase()} • {(attachment.size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <Download size={14} />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm">
-                        <Download size={14} />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* External System */}
-            {selectedEntry.externalUrl && (
-              <div>
-                <h4 className="font-medium mb-2">External System</h4>
-                <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                  <Globe size={16} className="text-muted-foreground" />
-                  <div className="flex-1">
-                    <p className="font-medium capitalize">{selectedEntry.externalSystem}</p>
-                    <p className="text-xs text-muted-foreground">ID: {selectedEntry.externalId}</p>
+                    ))}
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => window.open(selectedEntry.externalUrl, '_blank')}>
-                    <ExternalLink size={14} />
-                  </Button>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+              
+              {selectedEntry.ai_extracted_insights.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Brain size={16} />
+                    AI Insights
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedEntry.ai_extracted_insights.map((insight, index) => (
+                      <div key={index} className="p-3 rounded border">
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge variant="outline" className="capitalize">
+                            {insight.type}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {insight.confidence}% confidence
+                          </span>
+                        </div>
+                        <p className="text-sm">{insight.insight}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       )}
     </div>
   )

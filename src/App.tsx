@@ -41,6 +41,7 @@ import EnhancedAccountManagement from '@/components/EnhancedAccountManagement'
 import RealTimeSystemStatus from '@/components/RealTimeSystemStatus'
 import ContactInteractionDemo from '@/components/ContactInteractionDemo'
 import CRMCalendarIntegration from '@/components/CRMCalendarIntegration'
+import CustomerTimelineTest from '@/components/CustomerTimelineTest'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -285,6 +286,8 @@ function App() {
                   ? 'Interactive contact relationship mapping with comprehensive profiles, interaction history, and AI-powered insights for enhanced business relationships'
                   : activeView === 'crm-calendar'
                   ? 'Automated meeting scheduling, intelligent reminder notifications, and AI-powered calendar optimization for CRM activities and sales workflows'
+                  : activeView === 'timeline-demo'
+                  ? 'Comprehensive customer timeline system with AI-powered insights, real-time collaboration, and complete interaction history tracking'
                   : activeView === 'enhanced-account-test'
                   ? 'Comprehensive test suite for enhanced account management with AI intelligence, portal integration, and engagement monitoring'
                   : 'Manage access and switch between multiple companies'
@@ -389,6 +392,10 @@ function App() {
                 <TabsTrigger value="crm-calendar" className="flex items-center gap-2">
                   <Calendar size={16} />
                   CRM Calendar
+                </TabsTrigger>
+                <TabsTrigger value="timeline-demo" className="flex items-center gap-2">
+                  <Clock size={16} />
+                  Timeline Demo
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -749,6 +756,13 @@ function App() {
 
           <TabsContent value="crm-calendar" className="space-y-6">
             <CRMCalendarIntegration 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+            />
+          </TabsContent>
+
+          <TabsContent value="timeline-demo" className="space-y-6">
+            <CustomerTimelineTest
               companyId={currentCompany.id}
               userId={mockUser.id}
             />
