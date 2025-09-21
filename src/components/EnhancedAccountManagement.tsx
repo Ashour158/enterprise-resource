@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { FullPageAccountDashboard } from './FullPageAccountDashboard'
 import ContactRelationshipMapping from '@/components/ContactRelationshipMapping'
+import RealTimeAccountCollaboration from '@/components/RealTimeAccountCollaboration'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -67,6 +68,7 @@ import {
   X as XIcon,
   Archive,
   Share,
+  ArrowsClockwise,
   Copy,
   Folders,
   Tag,
@@ -1534,12 +1536,12 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
           <TabsList className="grid w-full grid-cols-12">
             <TabsTrigger value="executive">Executive</TabsTrigger>
             <TabsTrigger value="relationship">Relationships</TabsTrigger>
+            <TabsTrigger value="collaboration">Live Collaboration</TabsTrigger>
             <TabsTrigger value="activity">Activity Stream</TabsTrigger>
             <TabsTrigger value="financial-overview">Financial</TabsTrigger>
             <TabsTrigger value="success-metrics">Success</TabsTrigger>
             <TabsTrigger value="expansion">Expansion</TabsTrigger>
             <TabsTrigger value="risk">Risk</TabsTrigger>
-            <TabsTrigger value="collaboration">Team</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="emails">Emails</TabsTrigger>
             <TabsTrigger value="meetings">Meetings</TabsTrigger>
@@ -1792,7 +1794,67 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
             </Card>
           </TabsContent>
 
+          <TabsContent value="collaboration" className="space-y-6">
+            {/* Real-Time Account Collaboration */}
+            <RealTimeAccountCollaboration
+              accountId={selectedAccount.id}
+              companyId={companyId}
+              userId={userId}
+              userName="John Smith"
+              userAvatar="/api/placeholder/32/32"
+            />
+          </TabsContent>
+
           <TabsContent value="activity" className="space-y-6">
+            {/* Real-time Activity Stream */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Real-Time Account Activity</span>
+                  <Button variant="outline" size="sm">
+                    <ArrowsClockwise className="w-4 h-4 mr-2" />
+                    Refresh
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <div>
+                        <p className="text-sm font-medium text-green-900">Health Score Improved</p>
+                        <p className="text-xs text-green-700">Account health increased to 87% (+5 points)</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-green-600">2 min ago</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">Expansion Opportunity</p>
+                        <p className="text-xs text-blue-700">AI detected 95% confidence for upsell opportunity</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-blue-600">5 min ago</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                      <div>
+                        <p className="text-sm font-medium text-yellow-900">Task Due Soon</p>
+                        <p className="text-xs text-yellow-700">Enterprise proposal due tomorrow (assigned to Sarah)</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-yellow-600">1 hour ago</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
             {/* Real-time Activity Stream */}
             <Card>
               <CardHeader>

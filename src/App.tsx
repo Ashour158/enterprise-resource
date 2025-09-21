@@ -37,7 +37,8 @@ import { CRMProductivitySummary } from '@/components/CRMProductivitySummary'
 import { SystemTestingSuite } from '@/components/SystemTestingSuite'
 import { ClickableDataShowcase } from '@/components/shared/ClickableDataShowcase'
 import { CRMApiDocumentation } from '@/components/CRMApiDocumentation'
-import EnhancedAccountManagement from '@/components/EnhancedAccountManagement'
+import EnhancedAccountManagement from '@/components/EnhancedAccountManagementSimple'
+import RealTimeSystemStatus from '@/components/RealTimeSystemStatus'
 import ContactInteractionDemo from '@/components/ContactInteractionDemo'
 import CRMCalendarIntegration from '@/components/CRMCalendarIntegration'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -703,11 +704,27 @@ function App() {
           </TabsContent>
 
           <TabsContent value="enhanced-accounts" className="space-y-6">
-            <EnhancedAccountManagement 
-              companyId={currentCompany.id}
-              userId={mockUser.id}
-              userRole="company_admin"
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2">
+                <EnhancedAccountManagement 
+                  companyId={currentCompany.id}
+                  userId={mockUser.id}
+                  userRole="company_admin"
+                />
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Real-Time Collaboration Status</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RealTimeSystemStatus
+                    companyId={currentCompany.id}
+                    userId={mockUser.id}
+                    userName={mockUser.name}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="contact-interaction" className="space-y-6">
