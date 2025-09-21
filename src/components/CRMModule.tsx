@@ -17,6 +17,7 @@ import { AIEnhancedLeadManagement } from '@/components/crm/enhanced/AIEnhancedLe
 import { AIEnhancedDealPipeline } from '@/components/crm/enhanced/AIEnhancedDealPipeline'
 import { AccountManagement } from '@/components/crm/AccountManagement'
 import { EnhancedAccountManagement } from '@/components/crm/enhanced/EnhancedAccountManagement'
+import EnhancedAccountManagementSystem from '@/components/EnhancedAccountManagement'
 import { EnhancedQuoteManagement } from '@/components/crm/enhanced/EnhancedQuoteManagement'
 import { QuoteWorkspace } from '@/components/crm/quote/QuoteWorkspace'
 import { ActivityManagement } from '@/components/crm/ActivityManagement'
@@ -525,7 +526,7 @@ export function CRMModule({ companyId, userId, userRole }: CRMModuleProps) {
         </TabsContent>
 
         <TabsContent value="accounts" className="space-y-6">
-          <EnhancedAccountManagement 
+          <EnhancedAccountManagementSystem 
             companyId={companyId}
             userId={userId}
             userRole={userRole}

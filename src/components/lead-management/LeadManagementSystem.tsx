@@ -58,7 +58,8 @@ interface Lead {
   lastName: string
   email: string
   phone?: string
-  companyName?: string
+  accountId?: string // Changed from companyName to accountId for proper integration
+  accountName?: string // Display name for the linked account
   jobTitle?: string
   leadStatus: 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted' | 'lost'
   leadRating: 'hot' | 'warm' | 'cold'
@@ -140,7 +141,8 @@ export function LeadManagementSystem({ companyId, userId, userRole, onOpenTimeli
           lastName: 'Smith',
           email: 'john.smith@techcorp.com',
           phone: '+1-555-0123',
-          companyName: 'TechCorp Industries',
+          accountId: 'account-001',
+          accountName: 'TechCorp Industries',
           jobTitle: 'CTO',
           leadStatus: 'qualified',
           leadRating: 'hot',
@@ -183,7 +185,8 @@ export function LeadManagementSystem({ companyId, userId, userRole, onOpenTimeli
           lastName: 'Johnson',
           email: 'sarah.johnson@healthcare.com',
           phone: '+1-555-0456',
-          companyName: 'Healthcare Solutions Inc',
+          accountId: 'account-002',
+          accountName: 'Healthcare Solutions Inc',
           jobTitle: 'VP Operations',
           leadStatus: 'contacted',
           leadRating: 'warm',
@@ -215,7 +218,8 @@ export function LeadManagementSystem({ companyId, userId, userRole, onOpenTimeli
           firstName: 'Michael',
           lastName: 'Chen',
           email: 'michael.chen@startup.io',
-          companyName: 'InnovateTech Startup',
+          accountId: 'account-003',
+          accountName: 'InnovateTech Startup',
           jobTitle: 'Founder & CEO',
           leadStatus: 'new',
           leadRating: 'cold',
@@ -247,7 +251,7 @@ export function LeadManagementSystem({ companyId, userId, userRole, onOpenTimeli
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
-        const searchableText = `${lead.firstName} ${lead.lastName} ${lead.email} ${lead.companyName} ${lead.jobTitle}`.toLowerCase()
+        const searchableText = `${lead.firstName} ${lead.lastName} ${lead.email} ${lead.accountName} ${lead.jobTitle}`.toLowerCase()
         if (!searchableText.includes(query)) return false
       }
 
@@ -317,7 +321,8 @@ export function LeadManagementSystem({ companyId, userId, userRole, onOpenTimeli
       lastName: leadData.lastName || '',
       email: leadData.email || '',
       phone: leadData.phone,
-      companyName: leadData.companyName,
+      accountId: leadData.accountId,
+      accountName: leadData.accountName,
       jobTitle: leadData.jobTitle,
       leadStatus: 'new',
       leadRating: 'cold',
@@ -413,7 +418,7 @@ export function LeadManagementSystem({ companyId, userId, userRole, onOpenTimeli
       (l.email.toLowerCase() === lead.email.toLowerCase() ||
        (l.firstName.toLowerCase() === lead.firstName.toLowerCase() && 
         l.lastName.toLowerCase() === lead.lastName.toLowerCase() &&
-        l.companyName?.toLowerCase() === lead.companyName?.toLowerCase()))
+        l.accountName?.toLowerCase() === lead.accountName?.toLowerCase()))
     )
 
     if (duplicates.length > 0) {

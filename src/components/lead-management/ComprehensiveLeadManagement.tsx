@@ -37,7 +37,8 @@ interface Lead {
   lastName: string
   email: string
   phone?: string
-  companyName?: string
+  accountName?: string // Changed from companyName to accountName
+  accountId?: string // Added for proper account integration
   jobTitle?: string
   leadStatus: string
   leadRating: string
@@ -76,7 +77,7 @@ export function ComprehensiveLeadManagement({
         lastName: 'Smith',
         email: 'john.smith@techcorp.com',
         phone: '+1-555-0123',
-        companyName: 'TechCorp Industries',
+        accountName: 'TechCorp Industries',
         jobTitle: 'CTO',
         leadStatus: 'qualified',
         leadRating: 'hot',
@@ -94,7 +95,7 @@ export function ComprehensiveLeadManagement({
         lastName: 'Johnson',
         email: 'sarah.johnson@healthcare.com',
         phone: '+1-555-0456',
-        companyName: 'Healthcare Solutions Inc',
+        accountName: 'Healthcare Solutions Inc',
         jobTitle: 'VP Operations',
         leadStatus: 'contacted',
         leadRating: 'warm',
@@ -111,7 +112,7 @@ export function ComprehensiveLeadManagement({
         firstName: 'Michael',
         lastName: 'Chen',
         email: 'michael.chen@startup.io',
-        companyName: 'InnovateTech Startup',
+        accountName: 'InnovateTech Startup',
         jobTitle: 'Founder & CEO',
         leadStatus: 'new',
         leadRating: 'cold',
