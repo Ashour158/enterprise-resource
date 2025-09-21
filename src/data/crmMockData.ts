@@ -8,11 +8,16 @@ export const mockLeads: Lead[] = [
     lastName: 'Johnson',
     email: 'sarah.johnson@techcorp.com',
     phone: '+1-555-0123',
-    company: 'TechCorp Industries',
-    title: 'VP of Sales',
+    accountId: 'acc-001',
+    accountName: 'TechCorp Industries',
+    company: 'TechCorp Industries', // Deprecated but kept for compatibility
+    jobTitle: 'VP of Sales',
+    title: 'VP of Sales', // Deprecated but kept for compatibility
     source: 'Website',
     status: 'qualified',
     score: 85,
+    leadScore: 85,
+    priority: 'high',
     estimatedValue: 250000,
     assignedTo: 'user-002',
     tags: ['enterprise', 'hot-lead', 'decision-maker'],
@@ -24,10 +29,14 @@ export const mockLeads: Lead[] = [
     },
     activities: [],
     files: [],
-    createdAt: new Date('2024-01-15T10:30:00Z'),
-    updatedAt: new Date('2024-01-20T14:45:00Z'),
-    lastContactDate: new Date('2024-01-18T09:15:00Z'),
-    nextFollowUpDate: new Date('2024-01-25T10:00:00Z')
+    createdAt: '2024-01-15T10:30:00Z',
+    updatedAt: '2024-01-20T14:45:00Z',
+    lastContactDate: '2024-01-18T09:15:00Z',
+    nextFollowUpDate: '2024-01-25T10:00:00Z',
+    nextFollowUp: '2024-01-25T10:00:00Z',
+    leadAge: 8,
+    lastActivityDate: '2024-01-18T09:15:00Z',
+    overdueDays: 0
   },
   {
     id: 'lead-002',
@@ -36,11 +45,16 @@ export const mockLeads: Lead[] = [
     lastName: 'Chen',
     email: 'michael.chen@innovate.io',
     phone: '+1-555-0234',
-    company: 'Innovate Solutions',
-    title: 'CTO',
+    accountId: 'acc-002',
+    accountName: 'Innovate Solutions',
+    company: 'Innovate Solutions', // Deprecated but kept for compatibility
+    jobTitle: 'CTO',
+    title: 'CTO', // Deprecated but kept for compatibility
     source: 'Referral',
     status: 'converted',
     score: 92,
+    leadScore: 92,
+    priority: 'high',
     estimatedValue: 120000,
     assignedTo: 'user-003',
     tags: ['technical', 'early-adopter', 'customer'],
@@ -52,10 +66,14 @@ export const mockLeads: Lead[] = [
     },
     activities: [],
     files: [],
-    createdAt: new Date('2023-12-10T08:20:00Z'),
-    updatedAt: new Date('2024-01-19T16:30:00Z'),
-    lastContactDate: new Date('2024-01-19T11:00:00Z'),
-    nextFollowUpDate: new Date('2024-02-01T14:00:00Z')
+    createdAt: '2023-12-10T08:20:00Z',
+    updatedAt: '2024-01-19T16:30:00Z',
+    lastContactDate: '2024-01-19T11:00:00Z',
+    nextFollowUpDate: '2024-02-01T14:00:00Z',
+    nextFollowUp: '2024-02-01T14:00:00Z',
+    leadAge: 45,
+    lastActivityDate: '2024-01-19T11:00:00Z',
+    overdueDays: 0
   },
   {
     id: 'lead-003',
@@ -64,11 +82,16 @@ export const mockLeads: Lead[] = [
     lastName: 'Rodriguez',
     email: 'emily.rodriguez@startupxyz.com',
     phone: '+1-555-0345',
-    company: 'StartupXYZ',
-    title: 'Founder & CEO',
+    accountId: 'acc-003',
+    accountName: 'StartupXYZ',
+    company: 'StartupXYZ', // Deprecated but kept for compatibility
+    jobTitle: 'Founder & CEO',
+    title: 'Founder & CEO', // Deprecated but kept for compatibility
     source: 'Cold Call',
     status: 'new',
     score: 67,
+    leadScore: 67,
+    priority: 'medium',
     estimatedValue: 45000,
     assignedTo: 'user-002',
     tags: ['startup', 'price-sensitive', 'growth-potential'],
@@ -80,10 +103,14 @@ export const mockLeads: Lead[] = [
     },
     activities: [],
     files: [],
-    createdAt: new Date('2024-01-22T13:45:00Z'),
-    updatedAt: new Date('2024-01-22T13:45:00Z'),
-    lastContactDate: new Date('2024-01-22T13:45:00Z'),
-    nextFollowUpDate: new Date('2024-01-26T10:00:00Z')
+    createdAt: '2024-01-22T13:45:00Z',
+    updatedAt: '2024-01-22T13:45:00Z',
+    lastContactDate: '2024-01-22T13:45:00Z',
+    nextFollowUpDate: '2024-01-26T10:00:00Z',
+    nextFollowUp: '2024-01-26T10:00:00Z',
+    leadAge: 1,
+    lastActivityDate: '2024-01-22T13:45:00Z',
+    overdueDays: 0
   },
   {
     id: 'lead-004',
@@ -92,11 +119,16 @@ export const mockLeads: Lead[] = [
     lastName: 'Thompson',
     email: 'david.thompson@midcorp.com',
     phone: '+1-555-0456',
-    company: 'MidCorp Industries',
-    title: 'IT Director',
+    accountId: 'acc-004',
+    accountName: 'MidCorp Industries',
+    company: 'MidCorp Industries', // Deprecated but kept for compatibility
+    jobTitle: 'IT Director',
+    title: 'IT Director', // Deprecated but kept for compatibility
     source: 'Email Campaign',
     status: 'contacted',
     score: 78,
+    leadScore: 78,
+    priority: 'medium',
     estimatedValue: 85000,
     assignedTo: 'user-002',
     tags: ['enterprise', 'technical', 'decision-maker'],
@@ -168,6 +200,180 @@ export const mockLeads: Lead[] = [
     updatedAt: new Date('2024-01-10T17:00:00Z'),
     lastContactDate: new Date('2024-01-10T17:00:00Z'),
     nextFollowUpDate: new Date('2024-06-01T10:00:00Z')
+  }
+]
+
+// Enhanced mock accounts that integrate with leads
+export const mockAccounts: Account[] = [
+  {
+    id: 'acc-001',
+    companyId: 'comp-001',
+    name: 'TechCorp Industries',
+    website: 'https://techcorp.com',
+    industry: 'Technology',
+    size: 'large',
+    revenue: 50000000,
+    employees: 500,
+    address: {
+      street: '123 Tech Boulevard',
+      city: 'San Francisco',
+      state: 'CA',
+      country: 'USA',
+      zipCode: '94105'
+    },
+    phone: '+1-555-0100',
+    description: 'Leading enterprise technology solutions provider specializing in cloud infrastructure and data analytics.',
+    accountType: 'prospect',
+    status: 'active',
+    owner: 'user-002',
+    tags: ['enterprise', 'technology', 'high-value'],
+    customFields: {
+      vertical: 'Enterprise Software',
+      priority: 'high',
+      decisionMakers: 3,
+      budgetCycle: 'Q2'
+    },
+    createdAt: '2024-01-10T08:00:00Z',
+    updatedAt: '2024-01-20T15:30:00Z',
+    totalRevenue: 250000,
+    lastActivityDate: '2024-01-18T14:20:00Z',
+    nextReviewDate: '2024-02-15T10:00:00Z'
+  },
+  {
+    id: 'acc-002',
+    companyId: 'comp-001',
+    name: 'Innovate Solutions',
+    website: 'https://innovatesolutions.io',
+    industry: 'Software Development',
+    size: 'medium',
+    revenue: 8000000,
+    employees: 120,
+    address: {
+      street: '456 Innovation Drive',
+      city: 'Austin',
+      state: 'TX',
+      country: 'USA',
+      zipCode: '78701'
+    },
+    phone: '+1-555-0200',
+    description: 'Mid-size software development company focused on fintech and healthcare solutions.',
+    accountType: 'customer',
+    status: 'active',
+    owner: 'user-003',
+    tags: ['customer', 'fintech', 'reference-customer'],
+    customFields: {
+      vertical: 'Fintech',
+      priority: 'high',
+      contractValue: 120000,
+      renewalDate: '2024-12-01'
+    },
+    createdAt: '2023-11-15T10:00:00Z',
+    updatedAt: '2024-01-19T16:30:00Z',
+    totalRevenue: 480000,
+    lastActivityDate: '2024-01-19T11:00:00Z',
+    nextReviewDate: '2024-03-01T09:00:00Z'
+  },
+  {
+    id: 'acc-003',
+    companyId: 'comp-001',
+    name: 'StartupXYZ',
+    website: 'https://startupxyz.com',
+    industry: 'E-commerce',
+    size: 'small',
+    revenue: 2500000,
+    employees: 25,
+    address: {
+      street: '789 Startup Lane',
+      city: 'Boulder',
+      state: 'CO',
+      country: 'USA',
+      zipCode: '80301'
+    },
+    phone: '+1-555-0300',
+    description: 'Fast-growing e-commerce startup with innovative product recommendation engine.',
+    accountType: 'prospect',
+    status: 'active',
+    owner: 'user-002',
+    tags: ['startup', 'e-commerce', 'growth-potential'],
+    customFields: {
+      vertical: 'E-commerce',
+      priority: 'medium',
+      fundingStage: 'Series A',
+      growthRate: '150%'
+    },
+    createdAt: '2024-01-20T12:00:00Z',
+    updatedAt: '2024-01-22T13:45:00Z',
+    totalRevenue: 0,
+    lastActivityDate: '2024-01-22T13:45:00Z',
+    nextReviewDate: '2024-02-20T11:00:00Z'
+  },
+  {
+    id: 'acc-004',
+    companyId: 'comp-001',
+    name: 'MidCorp Industries',
+    website: 'https://midcorp.com',
+    industry: 'Manufacturing',
+    size: 'large',
+    revenue: 75000000,
+    employees: 850,
+    address: {
+      street: '321 Industrial Way',
+      city: 'Detroit',
+      state: 'MI',
+      country: 'USA',
+      zipCode: '48201'
+    },
+    phone: '+1-555-0400',
+    description: 'Traditional manufacturing company modernizing their operations with digital transformation.',
+    accountType: 'prospect',
+    status: 'active',
+    owner: 'user-001',
+    tags: ['manufacturing', 'digital-transformation', 'enterprise'],
+    customFields: {
+      vertical: 'Manufacturing',
+      priority: 'medium',
+      digitalMaturity: 'Low',
+      transformationBudget: 1000000
+    },
+    createdAt: '2024-01-05T09:30:00Z',
+    updatedAt: '2024-01-15T14:20:00Z',
+    totalRevenue: 85000,
+    lastActivityDate: '2024-01-15T14:20:00Z',
+    nextReviewDate: '2024-02-05T10:00:00Z'
+  },
+  {
+    id: 'acc-005',
+    companyId: 'comp-001',
+    name: 'Global Enterprises Ltd',
+    website: 'https://globalenterprises.com',
+    industry: 'Consulting',
+    size: 'enterprise',
+    revenue: 150000000,
+    employees: 2500,
+    address: {
+      street: '100 Corporate Plaza',
+      city: 'New York',
+      state: 'NY',
+      country: 'USA',
+      zipCode: '10001'
+    },
+    phone: '+1-555-0500',
+    description: 'Large multinational consulting firm serving Fortune 500 companies across various industries.',
+    accountType: 'customer',
+    status: 'active',
+    owner: 'user-001',
+    tags: ['enterprise', 'consulting', 'multinational', 'strategic-partner'],
+    customFields: {
+      vertical: 'Management Consulting',
+      priority: 'high',
+      partnerLevel: 'Strategic',
+      globalPresence: true
+    },
+    createdAt: '2023-10-01T08:00:00Z',
+    updatedAt: '2024-01-10T17:00:00Z',
+    totalRevenue: 2500000,
+    lastActivityDate: '2024-01-10T17:00:00Z',
+    nextReviewDate: '2024-04-01T10:00:00Z'
   }
 ]
 

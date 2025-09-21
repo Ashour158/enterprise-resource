@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 
 // Interface for clickable data configuration
 export interface ClickableDataConfig {
-  type: 'name' | 'company' | 'phone' | 'email' | 'address' | 'tag' | 'date' | 'currency' | 'website' | 'custom'
+  type: 'name' | 'company' | 'account' | 'phone' | 'email' | 'address' | 'tag' | 'date' | 'currency' | 'website' | 'custom'
   value: string
   displayValue?: string
   entityId?: string
@@ -65,9 +65,10 @@ export function ClickableDataElement({
         break
       
       case 'company':
+      case 'account':
         if (onProfileView && entityId) {
           onProfileView(entityId, 'account')
-          toast.info(`Opening company profile: ${displayValue || value}`)
+          toast.info(`Opening account profile: ${displayValue || value}`)
         }
         break
       
@@ -125,6 +126,7 @@ export function ClickableDataElement({
       case 'name':
         return <User size={14} />
       case 'company':
+      case 'account':
         return <Building size={14} />
       case 'phone':
         return <Phone size={14} />
@@ -150,7 +152,8 @@ export function ClickableDataElement({
       case 'name':
         return `Click to view ${entityType} profile`
       case 'company':
-        return 'Click to view company details'
+      case 'account':
+        return 'Click to view account details'
       case 'phone':
         return 'Click to initiate call'
       case 'email':

@@ -6,11 +6,14 @@ export interface Lead {
   lastName: string
   email: string
   phone: string
-  company: string
-  title: string
+  accountId?: string // Reference to Account instead of company string
+  accountName?: string // Display name for account
+  jobTitle?: string // Renamed from title
   source: string
   status: 'new' | 'contacted' | 'qualified' | 'converted' | 'lost'
   score: number
+  leadScore: number // AI-powered lead score
+  priority: 'low' | 'medium' | 'high'
   estimatedValue: number
   assignedTo: string
   tags: string[]
@@ -18,10 +21,18 @@ export interface Lead {
   customFields: Record<string, any>
   activities: LeadActivity[]
   files: CRMFile[]
-  createdAt: Date
-  updatedAt: Date
-  lastContactDate: Date | null
-  nextFollowUpDate: Date | null
+  createdAt: Date | string
+  updatedAt: Date | string
+  lastContactDate: Date | string | null
+  nextFollowUpDate: Date | string | null
+  nextFollowUp?: Date | string | null // Alias for compatibility
+  // Lead aging and timeline fields
+  leadAge?: number // Days since creation
+  lastActivityDate?: Date | string | null
+  overdueDays?: number // Days overdue for follow-up
+  // Integration with accounts
+  company?: string // Deprecated, use accountName instead
+  title?: string // Deprecated, use jobTitle instead
 }
 
 export interface LeadActivity {

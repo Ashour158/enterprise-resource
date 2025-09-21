@@ -9,8 +9,9 @@ import { ClickableDataElement, ClickableDataGroup } from '@/components/shared/Cl
 import { LeadAgingDashboard } from '@/components/lead-management/LeadAgingDashboard'
 import { LeadTimelineManager } from '@/components/lead-management/LeadTimelineManager'
 import { AutomatedFollowUpReminders } from '@/components/lead-management/AutomatedFollowUpReminders'
-import { mockLeads } from '@/data/crmMockData'
-import { Lead } from '@/types/crm'
+import { LeadFormWithAccountIntegration } from '@/components/lead-management/LeadFormWithAccountIntegration'
+import { mockLeads, mockAccounts } from '@/data/crmMockData'
+import { Lead, Account } from '@/types/crm'
 import { 
   Plus, 
   UserPlus, 
@@ -41,9 +42,26 @@ interface EnhancedLeadManagementProps {
 
 export function EnhancedLeadManagement({ companyId, userId, userRole, onLeadSelect }: EnhancedLeadManagementProps) {
   const [leads, setLeads] = useKV<Lead[]>(`leads-${companyId}`, mockLeads)
+  const [accounts, setAccounts] = useKV<Account[]>(`accounts-${companyId}`, mockAccounts)
   const [activeTab, setActiveTab] = useState('overview')
+  const [showLeadForm, setShowLeadForm] = useState(false)
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   
   const safeLeads = leads || mockLeads
+  const safeAccounts = accounts || mockAccounts
+
+  // Helper function to get account name by ID
+  const getAccountName = (accountId?: string) => {
+    if (!accountId) return 'No Account'
+    const account = safeAccounts.find(acc => acc.id === accountId)
+    return account?.name || 'Unknown Account'
+  }
+
+  // Helper function to get account by ID
+  const getAccount = (accountId?: string): Account | undefined => {
+    if (!accountId) return undefined
+    return safeAccounts.find(acc => acc.id === accountId)
+  }
 
   // Define table columns with clickable configuration
   const columns: ClickableTableColumn[] = [
@@ -77,26 +95,36 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onLeadSele
       )
     },
     {
-      key: 'company',
-      label: 'Company',
+      key: 'account',
+      label: 'Account',
       clickable: true,
       sortable: true,
-      render: (value, row) => value ? (
-        <div className="flex items-center gap-2">
-          <Buildings size={14} className="text-muted-foreground" />
-          <ClickableDataElement
-            type="company"
-            value={value}
-            entityId={row.id}
-            entityType="lead"
-            companyId={companyId}
-            userId={userId}
-            className="text-sm"
-          />
-        </div>
-      ) : (
-        <span className="text-muted-foreground text-sm">No company</span>
-      )
+      render: (value, row) => {
+        const accountName = row.accountName || getAccountName(row.accountId)
+        const account = getAccount(row.accountId)
+        
+        return accountName && accountName !== 'No Account' ? (
+          <div className="flex items-center gap-2">
+            <Buildings size={14} className="text-muted-foreground" />
+            <div>
+              <ClickableDataElement
+                type="account"
+                value={accountName}
+                entityId={row.accountId || row.id}
+                entityType="account"
+                companyId={companyId}
+                userId={userId}
+                className="text-sm font-medium hover:text-primary"
+              />
+              {account?.industry && (
+                <div className="text-xs text-muted-foreground">{account.industry}</div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-sm">No account</span>
+        )
+      }
     },
     {
       key: 'contact',
@@ -280,14 +308,16 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onLeadSele
     lastName: lead.lastName,
     email: lead.email,
     phone: lead.phone,
-    company: lead.company,
-    jobTitle: lead.jobTitle,
+    accountId: lead.accountId,
+    accountName: lead.accountName || getAccountName(lead.accountId),
+    company: lead.accountName || getAccountName(lead.accountId), // For backward compatibility
+    jobTitle: lead.jobTitle || lead.title, // Support both new and old field names
     status: lead.status,
     priority: lead.priority,
-    leadScore: lead.leadScore,
+    leadScore: lead.leadScore || lead.score, // Support both field names
     estimatedValue: lead.estimatedValue,
     source: lead.source,
-    nextFollowUp: lead.nextFollowUp,
+    nextFollowUp: lead.nextFollowUp || lead.nextFollowUpDate,
     tags: lead.tags,
     createdAt: lead.createdAt,
     updatedAt: lead.updatedAt
@@ -393,9 +423,20 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onLeadSele
         toast.success(`Scheduling meeting with ${data.name}`)
         // Integrate with calendar
         break
-      case 'view_company':
-        toast.info(`Opening company profile: ${data.company}`)
-        // Navigate to company view
+      case 'view_account':
+        const account = getAccount(data.accountId)
+        if (account) {
+          toast.info(`Opening account profile: ${account.name}`)
+          // Navigate to account view - this would integrate with the account management system
+        } else {
+          toast.error('Account not found')
+        }
+        break
+      case 'edit_lead':
+        const leadToEdit = safeLeads.find(lead => lead.id === data.leadId)
+        if (leadToEdit) {
+          handleEditLead(leadToEdit)
+        }
         break
       case 'filter_by_tag':
         toast.info(`Filtering leads by tag: ${data.tag}`)
@@ -438,8 +479,47 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onLeadSele
   }
 
   const handleCreateLead = () => {
-    toast.info('Opening new lead form')
-    // Open lead creation form
+    setSelectedLead(null)
+    setShowLeadForm(true)
+  }
+
+  const handleEditLead = (lead: Lead) => {
+    setSelectedLead(lead)
+    setShowLeadForm(true)
+  }
+
+  const handleSaveLead = (leadData: Partial<Lead>) => {
+    if (selectedLead) {
+      // Update existing lead
+      setLeads(current => {
+        if (!current) return []
+        return current.map(lead =>
+          lead.id === selectedLead.id
+            ? { ...lead, ...leadData, updatedAt: new Date().toISOString() }
+            : lead
+        )
+      })
+    } else {
+      // Create new lead
+      const newLead: Lead = {
+        id: `lead-${Date.now()}`,
+        ...leadData,
+        companyId,
+        assignedTo: userId,
+        leadScore: 50,
+        score: 50,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastContactDate: null,
+        nextFollowUpDate: null,
+        activities: [],
+        files: []
+      } as Lead
+
+      setLeads(current => [...(current || []), newLead])
+    }
+    setShowLeadForm(false)
+    setSelectedLead(null)
   }
 
   return (
@@ -648,12 +728,12 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onLeadSele
                         </div>
                         
                         <div className="flex items-center gap-4 text-sm">
-                          {lead.company && (
+                          {lead.accountName && (
                             <ClickableDataElement
-                              type="company"
-                              value={lead.company}
-                              entityId={lead.id}
-                              entityType="lead"
+                              type="account"
+                              value={lead.accountName}
+                              entityId={lead.accountId || lead.id}
+                              entityType="account"
                               companyId={companyId}
                               userId={userId}
                               className="text-muted-foreground"
@@ -805,6 +885,19 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onLeadSele
           />
         </TabsContent>
       </Tabs>
+
+      {/* Lead Form Modal */}
+      <LeadFormWithAccountIntegration
+        companyId={companyId}
+        userId={userId}
+        isOpen={showLeadForm}
+        onClose={() => {
+          setShowLeadForm(false)
+          setSelectedLead(null)
+        }}
+        onSave={handleSaveLead}
+        existingLead={selectedLead}
+      />
     </div>
   )
 }
