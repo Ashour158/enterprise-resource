@@ -10,24 +10,23 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Textarea } from '@/components/ui/textarea'
 import { 
   Calendar, 
-  Mail, 
+  EnvelopeSimple as Mail, 
   Phone, 
   FileText, 
-  DollarSign, 
+  CurrencyDollar as DollarSign, 
   Users, 
   Video,
-  MessageCircle,
+  ChatCircle as MessageCircle,
   Download,
   Eye,
-  Filter,
+  Funnel as Filter,
   MagnifyingGlass as Search,
   Plus,
   PushPin as Pin,
   ShareNetwork,
-  ExternalLink,
+  ArrowSquareOut as ExternalLink,
   Activity,
   Star,
   Clock,
