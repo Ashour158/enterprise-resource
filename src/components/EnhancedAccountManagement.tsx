@@ -1164,6 +1164,89 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
     toast.info(`Viewing: ${entry.title}`)
   }
 
+  // Interactive element handlers
+  const handleContactNameClick = (contactName: string, contactId?: string) => {
+    toast.success(`Opening contact profile: ${contactName}`)
+    // In a real app: navigate to contact profile with relationship mapping
+  }
+
+  const handleDealValueClick = (dealId: string, dealName: string, value: number) => {
+    toast.success(`Opening deal: ${dealName} (${value.toLocaleString()})`)
+    // In a real app: open deal details with progression history
+  }
+
+  const handleQuoteNumberClick = (quoteId: string, quoteNumber: string) => {
+    toast.success(`Opening quote: ${quoteNumber}`)
+    // In a real app: open quote with customer interaction tracking
+  }
+
+  const handleMeetingTitleClick = (meetingId: string, title: string) => {
+    const meeting = meetings.find(m => m.id === meetingId)
+    if (meeting) {
+      setSelectedMeeting(meeting)
+      setActiveTab('meetings')
+      toast.success(`Opening meeting: ${title}`)
+    }
+  }
+
+  const handleEmailSubjectClick = (threadId: string, subject: string) => {
+    const thread = emailThreads.find(t => t.id === threadId)
+    if (thread) {
+      setSelectedEmailThread(thread)
+      setActiveTab('emails')
+      toast.success(`Opening email thread: ${subject}`)
+    }
+  }
+
+  const handleSupportTicketClick = (ticketId: string, ticketNumber: string) => {
+    toast.success(`Opening support ticket: ${ticketNumber}`)
+    setActiveTab('support')
+    // In a real app: open ticket details with resolution timeline
+  }
+
+  const handleDocumentClick = (docId: string, docName: string) => {
+    // Update view count
+    setDocuments(current => 
+      current.map(doc => 
+        doc.id === docId 
+          ? { ...doc, viewCount: doc.viewCount + 1, lastAccessed: new Date().toISOString() }
+          : doc
+      )
+    )
+    toast.success(`Accessing document: ${docName}`)
+    // In a real app: preview/download with access tracking
+  }
+
+  const handleFinancialAmountClick = (transactionId: string, amount: number, description: string) => {
+    toast.success(`Viewing transaction details: $${amount.toLocaleString()} - ${description}`)
+    // In a real app: open transaction details and payment history
+  }
+
+  const handlePhoneClick = (phone: string) => {
+    toast.info(`Initiating call to ${phone}`)
+    // In a real app: integrate with phone system
+  }
+
+  const handleEmailClick = (email: string) => {
+    toast.info(`Composing email to ${email}`)
+    // In a real app: open email composer
+  }
+
+  const handleAddressClick = (address: any) => {
+    toast.info(`Opening map for ${address.city}, ${address.state}`)
+    // In a real app: open maps application
+  }
+
+  const handleWebsiteClick = (website: string) => {
+    window.open(website, '_blank')
+    toast.info(`Opening website: ${website}`)
+  }
+
+  const handleTagClick = (tag: string) => {
+    setSearchQuery(tag)
+    toast.info(`Filtering by tag: ${tag}`)
+  }
+
   const renderAccountCard = (account: Account) => (
     <Card 
       key={account.id} 
@@ -1178,8 +1261,17 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
               <AvatarFallback>{account.companyName.slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold text-lg clickable-data" data-type="company-name">
-                {account.companyName}
+              <h3 className="font-semibold text-lg">
+                <button 
+                  className="clickable-data hover:text-primary transition-colors cursor-pointer text-left" 
+                  data-type="company-name"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleContactNameClick(account.companyName, account.id)
+                  }}
+                >
+                  {account.companyName}
+                </button>
               </h3>
               <p className="text-sm text-muted-foreground">{account.industry}</p>
               <p className="text-xs text-muted-foreground">{account.accountNumber}</p>
@@ -1201,21 +1293,42 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
           <div className="space-y-2">
             <div className="flex items-center text-sm">
               <Phone className="w-4 h-4 mr-2 text-muted-foreground" />
-              <span className="clickable-data cursor-pointer hover:text-primary" data-type="phone">
+              <button 
+                className="clickable-data cursor-pointer hover:text-primary transition-colors" 
+                data-type="phone"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handlePhoneClick(account.phone)
+                }}
+              >
                 {account.phone}
-              </span>
+              </button>
             </div>
             <div className="flex items-center text-sm">
               <Mail className="w-4 h-4 mr-2 text-muted-foreground" />
-              <span className="clickable-data cursor-pointer hover:text-primary" data-type="email">
+              <button 
+                className="clickable-data cursor-pointer hover:text-primary transition-colors" 
+                data-type="email"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleEmailClick(account.email)
+                }}
+              >
                 {account.email}
-              </span>
+              </button>
             </div>
             <div className="flex items-center text-sm">
               <MapPin className="w-4 h-4 mr-2 text-muted-foreground" />
-              <span className="clickable-data cursor-pointer hover:text-primary" data-type="address">
+              <button 
+                className="clickable-data cursor-pointer hover:text-primary transition-colors" 
+                data-type="address"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleAddressClick(account.address)
+                }}
+              >
                 {account.address.city}, {account.address.state}
-              </span>
+              </button>
             </div>
           </div>
           <div className="space-y-2">
@@ -1225,9 +1338,16 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
             </div>
             <div className="flex items-center text-sm">
               <DollarSign className="w-4 h-4 mr-2 text-muted-foreground" />
-              <span className="clickable-data cursor-pointer hover:text-primary" data-type="revenue">
+              <button 
+                className="clickable-data cursor-pointer hover:text-primary transition-colors" 
+                data-type="revenue"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toast.info(`Annual Revenue: $${account.annualRevenue.toLocaleString()}`)
+                }}
+              >
                 ${(account.annualRevenue / 1000000).toFixed(1)}M revenue
-              </span>
+              </button>
             </div>
             <div className="flex items-center text-sm">
               <Building className="w-4 h-4 mr-2 text-muted-foreground" />
@@ -1265,14 +1385,17 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
 
         <div className="mt-3 flex flex-wrap gap-1">
           {account.tags.map((tag, index) => (
-            <Badge 
+            <button
               key={index} 
-              variant="outline" 
-              className="text-xs clickable-data cursor-pointer hover:bg-primary/10" 
+              className="clickable-data cursor-pointer hover:bg-primary/10 transition-colors text-xs px-2 py-1 border rounded-full" 
               data-type="tag"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleTagClick(tag)
+              }}
             >
               {tag}
-            </Badge>
+            </button>
           ))}
         </div>
       </CardContent>
@@ -1361,9 +1484,13 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Website</label>
-                      <p className="clickable-data cursor-pointer hover:text-primary" data-type="website">
+                      <button 
+                        className="clickable-data cursor-pointer hover:text-primary transition-colors block" 
+                        data-type="website"
+                        onClick={() => handleWebsiteClick(selectedAccount.website)}
+                      >
                         {selectedAccount.website}
-                      </p>
+                      </button>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Founded</label>
@@ -1375,9 +1502,13 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Annual Revenue</label>
-                      <p className="clickable-data cursor-pointer hover:text-primary" data-type="revenue">
+                      <button 
+                        className="clickable-data cursor-pointer hover:text-primary transition-colors block" 
+                        data-type="revenue"
+                        onClick={() => handleFinancialAmountClick('revenue', selectedAccount.annualRevenue, 'Annual Revenue')}
+                      >
                         ${selectedAccount.annualRevenue.toLocaleString()}
-                      </p>
+                      </button>
                     </div>
                   </div>
                   
@@ -1385,11 +1516,15 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                   
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Address</label>
-                    <p className="clickable-data cursor-pointer hover:text-primary" data-type="address">
+                    <button 
+                      className="clickable-data cursor-pointer hover:text-primary transition-colors block text-left" 
+                      data-type="address"
+                      onClick={() => handleAddressClick(selectedAccount.address)}
+                    >
                       {selectedAccount.address.street}<br />
                       {selectedAccount.address.city}, {selectedAccount.address.state} {selectedAccount.address.postalCode}<br />
                       {selectedAccount.address.country}
-                    </p>
+                    </button>
                   </div>
                   
                   <div>
@@ -1515,16 +1650,40 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-sm clickable-data" data-type="timeline-title">
-                            {entry.title}
+                          <h4 className="font-medium text-sm">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="timeline-title"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (entry.timelineType === 'meeting' && entry.relatedContactId) {
+                                  handleMeetingTitleClick(entry.relatedContactId, entry.title)
+                                } else if (entry.timelineType === 'email') {
+                                  handleEmailSubjectClick(entry.id, entry.title)
+                                } else if (entry.timelineType === 'quote' && entry.relatedQuoteId) {
+                                  handleQuoteNumberClick(entry.relatedQuoteId, entry.title)
+                                }
+                              }}
+                            >
+                              {entry.title}
+                            </button>
                           </h4>
                           <div className="flex items-center space-x-2">
                             {entry.isPinned && <PushPin className="w-4 h-4 text-yellow-500" />}
                             <Badge variant="outline" className="text-xs">
                               {entry.timelineType}
                             </Badge>
-                            <span className="text-xs text-muted-foreground clickable-data" data-type="date">
-                              {new Date(entry.timelineDate).toLocaleDateString()}
+                            <span className="text-xs text-muted-foreground">
+                              <button 
+                                className="clickable-data hover:text-primary transition-colors" 
+                                data-type="date"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  toast.info(`Timeline entry from ${new Date(entry.timelineDate).toLocaleString()}`)
+                                }}
+                              >
+                                {new Date(entry.timelineDate).toLocaleDateString()}
+                              </button>
                             </span>
                           </div>
                         </div>
@@ -1538,10 +1697,18 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                         {entry.aiExtractedInsights.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {entry.aiExtractedInsights.map((insight, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs clickable-data" data-type="ai-insight">
+                              <button
+                                key={index} 
+                                className="clickable-data hover:bg-secondary/80 transition-colors text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded-full inline-flex items-center" 
+                                data-type="ai-insight"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  toast.info(`AI Insight: ${insight}`)
+                                }}
+                              >
                                 <Brain className="w-3 h-3 mr-1" />
                                 {insight}
-                              </Badge>
+                              </button>
                             ))}
                           </div>
                         )}
@@ -1562,10 +1729,18 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                           </div>
                           <div className="flex items-center space-x-1">
                             {entry.attachments.map((attachment, index) => (
-                              <Badge key={index} variant="outline" className="text-xs clickable-data" data-type="attachment">
+                              <button
+                                key={index} 
+                                className="clickable-data hover:bg-muted/80 transition-colors text-xs px-2 py-1 border rounded-full inline-flex items-center" 
+                                data-type="attachment"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDocumentClick(`attachment-${index}`, attachment)
+                                }}
+                              >
                                 <Paperclip className="w-3 h-3 mr-1" />
                                 {attachment}
-                              </Badge>
+                              </button>
                             ))}
                           </div>
                         </div>
@@ -1643,13 +1818,25 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                       <div key={message.id} className="border-l-2 border-primary/20 pl-4 space-y-2">
                         <div className="flex items-center justify-between">
                           <div>
-                            <span className="font-medium clickable-data" data-type="email-sender">{message.from}</span>
+                            <span className="font-medium clickable-data" data-type="email-sender">
+                              <button 
+                                className="hover:text-primary transition-colors"
+                                onClick={() => handleContactNameClick(message.from, 'email-contact')}
+                              >
+                                {message.from}
+                              </button>
+                            </span>
                             <span className="text-sm text-muted-foreground ml-2">
                               to {message.to.join(', ')}
                             </span>
                           </div>
                           <span className="text-sm text-muted-foreground clickable-data" data-type="email-date">
-                            {new Date(message.sentDate).toLocaleString()}
+                            <button 
+                              className="hover:text-primary transition-colors"
+                              onClick={() => toast.info(`Email sent: ${new Date(message.sentDate).toLocaleString()}`)}
+                            >
+                              {new Date(message.sentDate).toLocaleString()}
+                            </button>
                           </span>
                         </div>
                         <div className="text-sm bg-muted/30 p-3 rounded">
@@ -1687,8 +1874,17 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
                             <EnvelopeOpen className="w-4 h-4 text-muted-foreground" />
-                            <h4 className="font-medium clickable-data" data-type="email-subject">
-                              {thread.subject}
+                            <h4 className="font-medium">
+                              <button 
+                                className="clickable-data hover:text-primary transition-colors" 
+                                data-type="email-subject"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEmailSubjectClick(thread.id, thread.subject)
+                                }}
+                              >
+                                {thread.subject}
+                              </button>
                             </h4>
                             {!thread.isRead && <div className="w-2 h-2 bg-primary rounded-full" />}
                           </div>
@@ -1698,7 +1894,15 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                           <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                             <span>{thread.messageCount} messages</span>
                             <span className="clickable-data" data-type="email-date">
-                              Last: {new Date(thread.lastMessageDate).toLocaleDateString()}
+                              <button 
+                                className="hover:text-primary transition-colors" 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  toast.info(`Last email: ${new Date(thread.lastMessageDate).toLocaleString()}`)
+                                }}
+                              >
+                                Last: {new Date(thread.lastMessageDate).toLocaleDateString()}
+                              </button>
                             </span>
                             <Badge 
                               variant="outline" 
@@ -1716,9 +1920,17 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                           <CaretRight className="w-4 h-4 text-muted-foreground" />
                           <div className="flex flex-wrap gap-1">
                             {thread.tags.map((tag, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs clickable-data" data-type="tag">
+                              <button
+                                key={index} 
+                                className="clickable-data hover:bg-secondary/80 transition-colors text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded-full" 
+                                data-type="tag"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleTagClick(tag)
+                                }}
+                              >
                                 {tag}
-                              </Badge>
+                              </button>
                             ))}
                           </div>
                         </div>
@@ -1767,7 +1979,12 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
                             <span className="clickable-data" data-type="meeting-date">
-                              {new Date(selectedMeeting.startDate).toLocaleString()}
+                              <button 
+                                className="hover:text-primary transition-colors"
+                                onClick={() => toast.info(`Meeting: ${new Date(selectedMeeting.startDate).toLocaleString()}`)}
+                              >
+                                {new Date(selectedMeeting.startDate).toLocaleString()}
+                              </button>
                             </span>
                           </div>
                           <div className="flex items-center">
@@ -1782,7 +1999,12 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                             <div className="flex items-center">
                               <LinkSimple className="w-4 h-4 mr-2 text-muted-foreground" />
                               <a href={selectedMeeting.meetingUrl} className="text-primary clickable-data" data-type="meeting-link">
-                                Join Meeting
+                                <button 
+                                  className="hover:underline transition-all"
+                                  onClick={() => toast.info(`Opening meeting link: ${selectedMeeting.meetingUrl}`)}
+                                >
+                                  Join Meeting
+                                </button>
                               </a>
                             </div>
                           )}
@@ -1794,7 +2016,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                         <div className="space-y-2">
                           {selectedMeeting.attendees.map((attendee, index) => (
                             <div key={index} className="flex items-center justify-between text-sm">
-                              <span className="clickable-data" data-type="attendee-name">{attendee.name}</span>
+                              <span className="clickable-data" data-type="attendee-name">
+                                <button 
+                                  className="hover:text-primary transition-colors"
+                                  onClick={() => handleContactNameClick(attendee.name, attendee.email)}
+                                >
+                                  {attendee.name}
+                                </button>
+                              </span>
                               <Badge variant={attendee.attended ? 'default' : 'outline'}>
                                 {attendee.attended ? 'Attended' : 'No Show'}
                               </Badge>
@@ -1838,8 +2067,22 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                             <div className="flex-1">
                               <p className="text-sm">{action.description}</p>
                               <p className="text-xs text-muted-foreground">
-                                Assigned to: <span className="clickable-data" data-type="assignee">{action.assignedTo}</span> • 
-                                Due: <span className="clickable-data" data-type="due-date">{new Date(action.dueDate).toLocaleDateString()}</span>
+                                Assigned to: <span className="clickable-data" data-type="assignee">
+                                  <button 
+                                    className="hover:text-primary transition-colors"
+                                    onClick={() => handleContactNameClick(action.assignedTo, 'action-assignee')}
+                                  >
+                                    {action.assignedTo}
+                                  </button>
+                                </span> • 
+                                Due: <span className="clickable-data" data-type="due-date">
+                                  <button 
+                                    className="hover:text-primary transition-colors"
+                                    onClick={() => toast.info(`Due date: ${new Date(action.dueDate).toLocaleString()}`)}
+                                  >
+                                    {new Date(action.dueDate).toLocaleDateString()}
+                                  </button>
+                                </span>
                               </p>
                             </div>
                             <Badge variant={
@@ -1894,8 +2137,17 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
                             <Video className="w-4 h-4 text-muted-foreground" />
-                            <h4 className="font-medium clickable-data" data-type="meeting-title">
-                              {meeting.title}
+                            <h4 className="font-medium">
+                              <button 
+                                className="clickable-data hover:text-primary transition-colors" 
+                                data-type="meeting-title"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMeetingTitleClick(meeting.id, meeting.title)
+                                }}
+                              >
+                                {meeting.title}
+                              </button>
                             </h4>
                             <Badge variant={
                               meeting.status === 'completed' ? 'default' :
@@ -1910,7 +2162,15 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                             <span className="flex items-center">
                               <Calendar className="w-3 h-3 mr-1" />
                               <span className="clickable-data" data-type="meeting-date">
-                                {new Date(meeting.startDate).toLocaleDateString()}
+                                <button 
+                                  className="hover:text-primary transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    toast.info(`Meeting date: ${new Date(meeting.startDate).toLocaleString()}`)
+                                  }}
+                                >
+                                  {new Date(meeting.startDate).toLocaleDateString()}
+                                </button>
                               </span>
                             </span>
                             <span className="flex items-center">
@@ -2064,14 +2324,26 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                          <h4 className="font-medium text-lg clickable-data" data-type="deal-name">
-                            {deal.dealName}
+                          <h4 className="font-medium text-lg">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="deal-name"
+                              onClick={() => handleDealValueClick(deal.id, deal.dealName, deal.value)}
+                            >
+                              {deal.dealName}
+                            </button>
                           </h4>
                           <p className="text-sm text-muted-foreground">{deal.description}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold clickable-data" data-type="deal-value">
-                            ${deal.value.toLocaleString()} {deal.currency}
+                          <p className="text-lg font-bold">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="deal-value"
+                              onClick={() => handleDealValueClick(deal.id, deal.dealName, deal.value)}
+                            >
+                              ${deal.value.toLocaleString()} {deal.currency}
+                            </button>
                           </p>
                           <Badge className={getDealStageColor(deal.stage)}>
                             {deal.stage}
@@ -2094,14 +2366,26 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                         </div>
                         <div>
                           <span className="text-xs text-muted-foreground">Expected Close</span>
-                          <p className="text-sm font-medium clickable-data" data-type="close-date">
-                            {new Date(deal.expectedCloseDate).toLocaleDateString()}
+                          <p className="text-sm font-medium">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="close-date"
+                              onClick={() => toast.info(`Expected close: ${new Date(deal.expectedCloseDate).toLocaleString()}`)}
+                            >
+                              {new Date(deal.expectedCloseDate).toLocaleDateString()}
+                            </button>
                           </p>
                         </div>
                         <div>
                           <span className="text-xs text-muted-foreground">Sales Rep</span>
-                          <p className="text-sm font-medium clickable-data" data-type="sales-rep">
-                            {deal.salesRep}
+                          <p className="text-sm font-medium">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="sales-rep"
+                              onClick={() => handleContactNameClick(deal.salesRep, 'sales-rep')}
+                            >
+                              {deal.salesRep}
+                            </button>
                           </p>
                         </div>
                         <div>
@@ -2168,8 +2452,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
-                            <h4 className="font-medium clickable-data" data-type="quote-title">
-                              {quote.title}
+                            <h4 className="font-medium">
+                              <button 
+                                className="clickable-data hover:text-primary transition-colors" 
+                                data-type="quote-title"
+                                onClick={() => handleQuoteNumberClick(quote.id, quote.quoteNumber)}
+                              >
+                                {quote.title}
+                              </button>
                             </h4>
                             <Badge variant="outline">{quote.quoteNumber}</Badge>
                             <Badge variant="outline">v{quote.version}</Badge>
@@ -2177,8 +2467,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                           <p className="text-sm text-muted-foreground">{quote.description}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold clickable-data" data-type="quote-amount">
-                            ${quote.totalAmount.toLocaleString()} {quote.currency}
+                          <p className="text-lg font-bold">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="quote-amount"
+                              onClick={() => handleFinancialAmountClick(quote.id, quote.totalAmount, quote.title)}
+                            >
+                              ${quote.totalAmount.toLocaleString()} {quote.currency}
+                            </button>
                           </p>
                           <Badge className={getQuoteStatusColor(quote.status)}>
                             {quote.status}
@@ -2189,14 +2485,26 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                       <div className="grid grid-cols-3 gap-4 mb-4">
                         <div>
                           <span className="text-xs text-muted-foreground">Sent Date</span>
-                          <p className="text-sm font-medium clickable-data" data-type="quote-sent-date">
-                            {quote.sentDate ? new Date(quote.sentDate).toLocaleDateString() : 'Not sent'}
+                          <p className="text-sm font-medium">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="quote-sent-date"
+                              onClick={() => toast.info(`Quote sent: ${quote.sentDate ? new Date(quote.sentDate).toLocaleString() : 'Not sent'}`)}
+                            >
+                              {quote.sentDate ? new Date(quote.sentDate).toLocaleDateString() : 'Not sent'}
+                            </button>
                           </p>
                         </div>
                         <div>
                           <span className="text-xs text-muted-foreground">Valid Until</span>
-                          <p className="text-sm font-medium clickable-data" data-type="quote-valid-date">
-                            {new Date(quote.validUntil).toLocaleDateString()}
+                          <p className="text-sm font-medium">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="quote-valid-date"
+                              onClick={() => toast.info(`Quote valid until: ${new Date(quote.validUntil).toLocaleString()}`)}
+                            >
+                              {new Date(quote.validUntil).toLocaleDateString()}
+                            </button>
                           </p>
                         </div>
                         <div>
@@ -2214,10 +2522,21 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                             {quote.items.slice(0, 3).map((item) => (
                               <div key={item.id} className="flex items-center justify-between text-sm">
                                 <span className="clickable-data" data-type="quote-item">
-                                  {item.productName} (x{item.quantity})
+                                  <button 
+                                    className="hover:text-primary transition-colors"
+                                    onClick={() => toast.info(`Quote item: ${item.productName} - Qty: ${item.quantity}`)}
+                                  >
+                                    {item.productName} (x{item.quantity})
+                                  </button>
                                 </span>
-                                <span className="font-medium clickable-data" data-type="item-price">
-                                  ${item.totalPrice.toLocaleString()}
+                                <span className="font-medium">
+                                  <button 
+                                    className="clickable-data hover:text-primary transition-colors" 
+                                    data-type="item-price"
+                                    onClick={() => handleFinancialAmountClick(item.id, item.totalPrice, item.productName)}
+                                  >
+                                    ${item.totalPrice.toLocaleString()}
+                                  </button>
                                 </span>
                               </div>
                             ))}
@@ -2234,9 +2553,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                             <span className="text-sm font-medium">Version History:</span>
                             <div className="mt-1 flex flex-wrap gap-1">
                               {quote.previousVersions.map((version, index) => (
-                                <Badge key={index} variant="outline" className="text-xs clickable-data" data-type="quote-version">
+                                <button
+                                  key={index} 
+                                  className="clickable-data hover:bg-muted/80 transition-colors text-xs px-2 py-1 border rounded-full" 
+                                  data-type="quote-version"
+                                  onClick={() => toast.info(`Quote version: ${version}`)}
+                                >
                                   {version}
-                                </Badge>
+                                </button>
                               ))}
                             </div>
                           </div>
@@ -2279,8 +2603,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h4 className="font-medium clickable-data" data-type="ticket-subject">
-                            {ticket.subject}
+                          <h4 className="font-medium">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="ticket-subject"
+                              onClick={() => handleSupportTicketClick(ticket.id, ticket.ticketNumber)}
+                            >
+                              {ticket.subject}
+                            </button>
                           </h4>
                           <Badge variant="outline">{ticket.ticketNumber}</Badge>
                         </div>
@@ -2303,8 +2633,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                     <div className="grid grid-cols-4 gap-4 mb-4">
                       <div>
                         <span className="text-xs text-muted-foreground">Created</span>
-                        <p className="text-sm font-medium clickable-data" data-type="ticket-created">
-                          {new Date(ticket.createdDate).toLocaleDateString()}
+                        <p className="text-sm font-medium">
+                          <button 
+                            className="clickable-data hover:text-primary transition-colors" 
+                            data-type="ticket-created"
+                            onClick={() => toast.info(`Ticket created: ${new Date(ticket.createdDate).toLocaleString()}`)}
+                          >
+                            {new Date(ticket.createdDate).toLocaleDateString()}
+                          </button>
                         </p>
                       </div>
                       <div>
@@ -2315,8 +2651,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                       </div>
                       <div>
                         <span className="text-xs text-muted-foreground">Assigned To</span>
-                        <p className="text-sm font-medium clickable-data" data-type="ticket-assigned">
-                          {ticket.assignedTo}
+                        <p className="text-sm font-medium">
+                          <button 
+                            className="clickable-data hover:text-primary transition-colors" 
+                            data-type="ticket-assigned"
+                            onClick={() => handleContactNameClick(ticket.assignedTo, 'support-agent')}
+                          >
+                            {ticket.assignedTo}
+                          </button>
                         </p>
                       </div>
                       <div>
@@ -2425,8 +2767,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h4 className="font-medium clickable-data" data-type="transaction-description">
-                            {transaction.description}
+                          <h4 className="font-medium">
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="transaction-description"
+                              onClick={() => handleFinancialAmountClick(transaction.id, transaction.amount, transaction.description)}
+                            >
+                              {transaction.description}
+                            </button>
                           </h4>
                           <Badge variant="outline">{transaction.referenceNumber}</Badge>
                         </div>
@@ -2435,8 +2783,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold clickable-data" data-type="transaction-amount">
-                          ${transaction.amount.toLocaleString()} {transaction.currency}
+                        <p className="text-lg font-bold">
+                          <button 
+                            className="clickable-data hover:text-primary transition-colors" 
+                            data-type="transaction-amount"
+                            onClick={() => handleFinancialAmountClick(transaction.id, transaction.amount, transaction.description)}
+                          >
+                            ${transaction.amount.toLocaleString()} {transaction.currency}
+                          </button>
                         </p>
                         <Badge className={getTransactionStatusColor(transaction.status)}>
                           {transaction.status}
@@ -2447,26 +2801,50 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                     <div className="grid grid-cols-4 gap-4">
                       <div>
                         <span className="text-xs text-muted-foreground">Transaction Date</span>
-                        <p className="text-sm font-medium clickable-data" data-type="transaction-date">
-                          {new Date(transaction.transactionDate).toLocaleDateString()}
+                        <p className="text-sm font-medium">
+                          <button 
+                            className="clickable-data hover:text-primary transition-colors" 
+                            data-type="transaction-date"
+                            onClick={() => toast.info(`Transaction date: ${new Date(transaction.transactionDate).toLocaleString()}`)}
+                          >
+                            {new Date(transaction.transactionDate).toLocaleDateString()}
+                          </button>
                         </p>
                       </div>
                       <div>
                         <span className="text-xs text-muted-foreground">Due Date</span>
-                        <p className="text-sm font-medium clickable-data" data-type="due-date">
-                          {transaction.dueDate ? new Date(transaction.dueDate).toLocaleDateString() : 'N/A'}
+                        <p className="text-sm font-medium">
+                          <button 
+                            className="clickable-data hover:text-primary transition-colors" 
+                            data-type="due-date"
+                            onClick={() => toast.info(`Due date: ${transaction.dueDate ? new Date(transaction.dueDate).toLocaleString() : 'N/A'}`)}
+                          >
+                            {transaction.dueDate ? new Date(transaction.dueDate).toLocaleDateString() : 'N/A'}
+                          </button>
                         </p>
                       </div>
                       <div>
                         <span className="text-xs text-muted-foreground">Fees</span>
-                        <p className="text-sm font-medium clickable-data" data-type="transaction-fees">
-                          ${transaction.fees.toLocaleString()}
+                        <p className="text-sm font-medium">
+                          <button 
+                            className="clickable-data hover:text-primary transition-colors" 
+                            data-type="transaction-fees"
+                            onClick={() => handleFinancialAmountClick(`${transaction.id}-fees`, transaction.fees, 'Transaction Fees')}
+                          >
+                            ${transaction.fees.toLocaleString()}
+                          </button>
                         </p>
                       </div>
                       <div>
                         <span className="text-xs text-muted-foreground">Taxes</span>
-                        <p className="text-sm font-medium clickable-data" data-type="transaction-taxes">
-                          ${transaction.taxes.toLocaleString()}
+                        <p className="text-sm font-medium">
+                          <button 
+                            className="clickable-data hover:text-primary transition-colors" 
+                            data-type="transaction-taxes"
+                            onClick={() => handleFinancialAmountClick(`${transaction.id}-taxes`, transaction.taxes, 'Transaction Taxes')}
+                          >
+                            ${transaction.taxes.toLocaleString()}
+                          </button>
                         </p>
                       </div>
                     </div>
@@ -2506,8 +2884,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                         {getFileIcon(doc.fileType)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm clickable-data truncate" data-type="document-name">
-                          {doc.documentName}
+                        <h4 className="font-medium text-sm truncate">
+                          <button 
+                            className="clickable-data hover:text-primary transition-colors truncate block w-full text-left" 
+                            data-type="document-name"
+                            onClick={() => handleDocumentClick(doc.id, doc.documentName)}
+                          >
+                            {doc.documentName}
+                          </button>
                         </h4>
                         <p className="text-xs text-muted-foreground capitalize">
                           {doc.documentType} • {doc.documentCategory}
@@ -2546,9 +2930,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                         {doc.aiKeyTopics.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {doc.aiKeyTopics.slice(0, 3).map((topic, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs clickable-data" data-type="document-topic">
+                              <button
+                                key={index} 
+                                className="clickable-data hover:bg-secondary/80 transition-colors text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded-full" 
+                                data-type="document-topic"
+                                onClick={() => toast.info(`Document topic: ${topic}`)}
+                              >
                                 {topic}
-                              </Badge>
+                              </button>
                             ))}
                           </div>
                         )}
