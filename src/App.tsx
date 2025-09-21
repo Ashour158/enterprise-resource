@@ -52,7 +52,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple, UserCirclePlus, FlowArrow, GraduationCap, Calendar, TestTube } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple, UserCirclePlus, FlowArrow, GraduationCap, Calendar, TestTube, Building } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {

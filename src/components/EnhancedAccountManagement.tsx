@@ -1088,3 +1088,5 @@ export function EnhancedAccountManagement({ companyId, userId, userRole }: Enhan
     </div>
   )
 }
+
+export default EnhancedAccountManagement
