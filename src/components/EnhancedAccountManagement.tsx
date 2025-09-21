@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
+import { FullPageAccountDashboard } from './FullPageAccountDashboard'
 import ContactRelationshipMapping from '@/components/ContactRelationshipMapping'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -474,6 +475,8 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
   const [showNewAccount, setShowNewAccount] = useState(false)
   const [emailViewMode, setEmailViewMode] = useState<'threads' | 'chronological'>('threads')
   const [showContactMapping, setShowContactMapping] = useState(false)
+  const [showFullPageDashboard, setShowFullPageDashboard] = useState(false)
+  const [selectedAccountForDashboard, setSelectedAccountForDashboard] = useState<string | null>(null)
   const [selectedContactForMapping, setSelectedContactForMapping] = useState<{
     id: string
     name: string
@@ -1196,6 +1199,12 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
     toast.success(`Opened ${account.companyName}`)
   }
 
+  const openFullPageDashboard = (accountId: string) => {
+    setSelectedAccountForDashboard(accountId)
+    setShowFullPageDashboard(true)
+    toast.success('Opening comprehensive account dashboard')
+  }
+
   const handleTimelineEntryClick = (entry: TimelineEntry) => {
     // Update view count
     setTimeline(current => 
@@ -1426,6 +1435,18 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
             </span>
           </div>
           <div className="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                openFullPageDashboard(account.id)
+              }}
+              className="h-7 px-2"
+            >
+              <Eye size={12} className="mr-1" />
+              Full View
+            </Button>
             <span className={`text-sm font-medium ${getHealthScoreColor(account.healthScore)}`}>
               {account.healthScore}% Health
             </span>
@@ -4361,6 +4382,22 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
 
   return (
     <div className="space-y-6">
+      {/* Full Page Account Dashboard */}
+      {showFullPageDashboard && selectedAccountForDashboard && (
+        <div className="fixed inset-0 bg-background z-50 overflow-y-auto">
+          <FullPageAccountDashboard
+            accountId={selectedAccountForDashboard}
+            companyId={companyId}
+            userId={userId}
+            userRole={userRole}
+            onClose={() => {
+              setShowFullPageDashboard(false)
+              setSelectedAccountForDashboard(null)
+            }}
+          />
+        </div>
+      )}
+
       {/* Contact Relationship Mapping Modal */}
       {showContactMapping && selectedContactForMapping && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
@@ -4394,13 +4431,22 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
 
       {selectedAccount ? (
         <div className="space-y-4">
-          <Button 
-            variant="outline" 
-            onClick={() => setSelectedAccount(null)}
-            className="mb-4"
-          >
-            ← Back to Accounts
-          </Button>
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => setSelectedAccount(null)}
+              className="mb-4"
+            >
+              ← Back to Accounts
+            </Button>
+            <Button 
+              onClick={() => openFullPageDashboard(selectedAccount.id)}
+              className="mb-4"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Open Full Dashboard
+            </Button>
+          </div>
           {renderAccountDetails()}
         </div>
       ) : (
