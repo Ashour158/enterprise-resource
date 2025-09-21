@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
+import ContactRelationshipMapping from '@/components/ContactRelationshipMapping'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -470,6 +471,12 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const [showNewAccount, setShowNewAccount] = useState(false)
   const [emailViewMode, setEmailViewMode] = useState<'threads' | 'chronological'>('threads')
+  const [showContactMapping, setShowContactMapping] = useState(false)
+  const [selectedContactForMapping, setSelectedContactForMapping] = useState<{
+    id: string
+    name: string
+    accountId: string
+  } | null>(null)
 
   // Initialize with sample data
   useEffect(() => {
@@ -1166,8 +1173,14 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
 
   // Interactive element handlers
   const handleContactNameClick = (contactName: string, contactId?: string) => {
-    toast.success(`Opening contact profile: ${contactName}`)
-    // In a real app: navigate to contact profile with relationship mapping
+    const mappingData = {
+      id: contactId || `contact-${contactName.replace(' ', '-').toLowerCase()}`,
+      name: contactName,
+      accountId: selectedAccount?.id || 'unknown'
+    }
+    setSelectedContactForMapping(mappingData)
+    setShowContactMapping(true)
+    toast.success(`Opening relationship mapping for ${contactName}`)
   }
 
   const handleDealValueClick = (dealId: string, dealName: string, value: number) => {
@@ -1499,6 +1512,16 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Company Size</label>
                       <p>{selectedAccount.companySize}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Account Owner</label>
+                      <button 
+                        className="clickable-data cursor-pointer hover:text-primary transition-colors block" 
+                        data-type="account-owner"
+                        onClick={() => handleContactNameClick(selectedAccount.accountOwner, 'account-owner')}
+                      >
+                        {selectedAccount.accountOwner}
+                      </button>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Annual Revenue</label>
@@ -1889,7 +1912,24 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                             {!thread.isRead && <div className="w-2 h-2 bg-primary rounded-full" />}
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            {thread.participants.join(', ')}
+                            <button 
+                              className="clickable-data hover:text-primary transition-colors" 
+                              data-type="participants"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                // Extract contact names and show them as clickable
+                                const participantNames = thread.participants
+                                  .filter(p => !p.includes('@company.com')) // Exclude our own team
+                                  .map(p => p.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase()))
+                                if (participantNames.length > 0) {
+                                  handleContactNameClick(participantNames[0], `email-participant-${participantNames[0]}`)
+                                } else {
+                                  toast.info(`Participants: ${thread.participants.join(', ')}`)
+                                }
+                              }}
+                            >
+                              {thread.participants.join(', ')}
+                            </button>
                           </p>
                           <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                             <span>{thread.messageCount} messages</span>
@@ -2179,7 +2219,17 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
                             </span>
                             <span className="flex items-center">
                               <Users className="w-3 h-3 mr-1" />
-                              {meeting.attendees.length} attendees
+                              <button 
+                                className="clickable-data hover:text-primary transition-colors" 
+                                data-type="attendee-count"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  const attendeeNames = meeting.attendees.map(a => a.name).join(', ')
+                                  toast.info(`Attendees: ${attendeeNames}`)
+                                }}
+                              >
+                                {meeting.attendees.length} attendees
+                              </button>
                             </span>
                             {meeting.recordingUrl && (
                               <span className="flex items-center text-green-600">
@@ -3180,6 +3230,24 @@ function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAcco
 
   return (
     <div className="space-y-6">
+      {/* Contact Relationship Mapping Modal */}
+      {showContactMapping && selectedContactForMapping && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-7xl bg-background border rounded-lg shadow-lg my-8">
+            <ContactRelationshipMapping
+              contactId={selectedContactForMapping.id}
+              contactName={selectedContactForMapping.name}
+              accountId={selectedContactForMapping.accountId}
+              companyId={companyId}
+              onClose={() => {
+                setShowContactMapping(false)
+                setSelectedContactForMapping(null)
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Enhanced Account Management</h2>
