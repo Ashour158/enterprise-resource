@@ -3,969 +3,636 @@ import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Switch } from '@/components/ui/switch'
-import { Slider } from '@/components/ui/slider'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Bell, 
+  AlertTriangle, 
   TrendDown, 
-  TrendUp, 
-  Clock, 
-  Eye, 
-  Download, 
-  Users, 
+  Monitor, 
   FileText, 
-  Calendar,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Settings,
-  Brain,
-  BarChart3,
   Activity,
-  UserCheck,
-  Timer,
-  Target,
+  CheckCircle,
+  Clock,
+  User,
   Mail,
-  Zap
+  Phone,
+  Calendar,
+  Target,
+  Settings,
+  Plus,
+  Filter,
+  Eye,
+  X,
+  ArrowRight,
+  Brain,
+  Lightbulb,
+  Warning,
+  Info
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-
-interface EngagementAlert {
-  id: string
-  customerId: string
-  customerName: string
-  alertType: 'low_activity' | 'document_stagnation' | 'login_decline' | 'usage_drop' | 'risk_churn' | 'expansion_opportunity'
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  title: string
-  description: string
-  metrics: {
-    current: number
-    previous: number
-    change: number
-    threshold: number
-  }
-  recommendations: string[]
-  triggerDate: Date
-  isRead: boolean
-  isResolved: boolean
-  assignedTo?: string
-  dueDate?: Date
-}
-
-interface AlertRule {
-  id: string
-  name: string
-  type: 'portal_activity' | 'document_interaction' | 'login_frequency' | 'feature_usage'
-  isActive: boolean
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  conditions: {
-    metric: string
-    operator: 'less_than' | 'greater_than' | 'equals' | 'not_equals'
-    value: number
-    timeframe: number // days
-  }[]
-  actions: {
-    sendEmail: boolean
-    createTask: boolean
-    assignTo?: string
-    customMessage?: string
-  }
-  createdAt: Date
-  lastTriggered?: Date
-}
-
-interface EngagementMetrics {
-  customerId: string
-  customerName: string
-  portalLogins: {
-    thisWeek: number
-    lastWeek: number
-    thisMonth: number
-    lastMonth: number
-  }
-  documentInteractions: {
-    views: number
-    downloads: number
-    timeSpent: number // minutes
-    uniqueDocuments: number
-  }
-  featureUsage: {
-    [feature: string]: {
-      uses: number
-      lastUsed: Date
-    }
-  }
-  engagementScore: number
-  churnRisk: number
-  lastActivity: Date
-}
+import { CustomerEngagementAlert } from '@/types/crm'
 
 interface CustomerEngagementAlertsProps {
   companyId: string
   userId: string
+  customerId?: string // Optional - if provided, show alerts for specific customer
 }
 
-export function CustomerEngagementAlerts({ companyId, userId }: CustomerEngagementAlertsProps) {
-  const [alerts, setAlerts] = useKV<EngagementAlert[]>(`engagement-alerts-${companyId}`, [])
-  const [alertRules, setAlertRules] = useKV<AlertRule[]>(`alert-rules-${companyId}`, [])
-  const [engagementMetrics, setEngagementMetrics] = useKV<EngagementMetrics[]>(`engagement-metrics-${companyId}`, [])
-  
-  const [selectedAlert, setSelectedAlert] = useState<EngagementAlert | null>(null)
-  const [showRuleEditor, setShowRuleEditor] = useState(false)
-  const [editingRule, setEditingRule] = useState<AlertRule | null>(null)
-  const [activeView, setActiveView] = useState('alerts')
+const CustomerEngagementAlerts: React.FC<CustomerEngagementAlertsProps> = ({
+  companyId,
+  userId,
+  customerId
+}) => {
+  const [alerts, setAlerts] = useKV<CustomerEngagementAlert[]>('engagement-alerts', [])
+  const [selectedAlert, setSelectedAlert] = useState<CustomerEngagementAlert | null>(null)
+  const [activeTab, setActiveTab] = useState('active')
+  const [filterSeverity, setFilterSeverity] = useState('all')
 
-  // Initialize with sample data
+  // Initialize with comprehensive mock data
   useEffect(() => {
     if (alerts.length === 0) {
-      generateSampleAlerts()
+      const mockAlerts: CustomerEngagementAlert[] = [
+        {
+          id: 'alert-001',
+          customerId: 'acc-001',
+          alertType: 'portal_inactivity',
+          severity: 'medium',
+          message: 'Portal activity decreased by 40%',
+          description: 'Acme Corporation has shown reduced portal engagement over the past week. Previous average of 8 sessions/week dropped to 5 sessions/week.',
+          triggeredBy: 'ai_analysis',
+          triggerConditions: { 
+            portal_sessions: 'decreased', 
+            threshold: 40,
+            previous_average: 8,
+            current_average: 5
+          },
+          status: 'active',
+          acknowledgedBy: undefined,
+          acknowledgedAt: undefined,
+          resolvedBy: undefined,
+          resolvedAt: undefined,
+          recommendedActions: [
+            'Send personalized engagement email',
+            'Schedule check-in call with key stakeholder',
+            'Offer training session on new features',
+            'Review user access permissions'
+          ],
+          assignedTo: userId,
+          dueDate: '2024-01-17T17:00:00Z',
+          createdAt: '2024-01-15T09:00:00Z',
+          updatedAt: '2024-01-15T09:00:00Z'
+        },
+        {
+          id: 'alert-002',
+          customerId: 'acc-001',
+          alertType: 'document_interaction',
+          severity: 'low',
+          message: 'Document downloads increased significantly',
+          description: 'Customer has downloaded 8 documents in the past 3 days, indicating high engagement or potential expansion research.',
+          triggeredBy: 'system',
+          triggerConditions: { 
+            document_downloads: 'increased', 
+            threshold: 300,
+            timeframe: '3_days',
+            download_count: 8
+          },
+          status: 'active',
+          recommendedActions: [
+            'Reach out to understand information needs',
+            'Offer guided demo of related features',
+            'Schedule expansion conversation',
+            'Provide additional resources'
+          ],
+          assignedTo: userId,
+          dueDate: '2024-01-18T12:00:00Z',
+          createdAt: '2024-01-14T16:30:00Z',
+          updatedAt: '2024-01-14T16:30:00Z'
+        },
+        {
+          id: 'alert-003',
+          customerId: 'acc-002',
+          alertType: 'health_score_decline',
+          severity: 'high',
+          message: 'Customer health score dropped to 73%',
+          description: 'TechFlow Solutions health score decreased from 82% to 73% over the past month. Decline attributed to reduced support response satisfaction.',
+          triggeredBy: 'ai_analysis',
+          triggerConditions: { 
+            health_score: 'decreased', 
+            previous_score: 82,
+            current_score: 73,
+            threshold: 10
+          },
+          status: 'active',
+          recommendedActions: [
+            'Schedule immediate health check call',
+            'Review recent support interactions',
+            'Escalate to customer success manager',
+            'Implement proactive support plan'
+          ],
+          assignedTo: userId,
+          dueDate: '2024-01-16T14:00:00Z',
+          createdAt: '2024-01-15T11:15:00Z',
+          updatedAt: '2024-01-15T11:15:00Z'
+        },
+        {
+          id: 'alert-004',
+          customerId: 'acc-002',
+          alertType: 'churn_risk',
+          severity: 'critical',
+          message: 'Churn risk elevated to high',
+          description: 'AI analysis indicates 78% probability of churn based on reduced engagement, delayed payments, and support ticket escalations.',
+          triggeredBy: 'ai_analysis',
+          triggerConditions: { 
+            churn_probability: 0.78,
+            risk_factors: ['engagement_decline', 'payment_delays', 'support_escalations'],
+            confidence: 0.92
+          },
+          status: 'active',
+          recommendedActions: [
+            'Executive escalation required',
+            'Schedule emergency retention call',
+            'Prepare retention offer',
+            'Assign dedicated success manager',
+            'Review contract terms and pricing'
+          ],
+          assignedTo: userId,
+          dueDate: '2024-01-16T09:00:00Z',
+          createdAt: '2024-01-15T14:45:00Z',
+          updatedAt: '2024-01-15T14:45:00Z'
+        },
+        {
+          id: 'alert-005',
+          customerId: 'acc-001',
+          alertType: 'engagement_drop',
+          severity: 'medium',
+          message: 'Email engagement rates declining',
+          description: 'Email open rates dropped from 68% to 45% and click-through rates from 12% to 7% over the past two weeks.',
+          triggeredBy: 'system',
+          triggerConditions: { 
+            email_opens: 'decreased',
+            open_rate_previous: 0.68,
+            open_rate_current: 0.45,
+            ctr_previous: 0.12,
+            ctr_current: 0.07
+          },
+          status: 'acknowledged',
+          acknowledgedBy: userId,
+          acknowledgedAt: '2024-01-15T10:30:00Z',
+          recommendedActions: [
+            'Refresh email content strategy',
+            'A/B test subject lines',
+            'Segment email campaigns',
+            'Review email frequency'
+          ],
+          assignedTo: userId,
+          dueDate: '2024-01-20T16:00:00Z',
+          createdAt: '2024-01-13T13:20:00Z',
+          updatedAt: '2024-01-15T10:30:00Z'
+        }
+      ]
+      setAlerts(mockAlerts)
     }
-    if (alertRules.length === 0) {
-      initializeDefaultRules()
-    }
-    if (engagementMetrics.length === 0) {
-      generateSampleMetrics()
-    }
-  }, [])
+  }, [alerts, setAlerts, userId])
 
-  const generateSampleAlerts = () => {
-    const sampleAlerts: EngagementAlert[] = [
-      {
-        id: 'alert-001',
-        customerId: 'cust-001',
-        customerName: 'Acme Corporation',
-        alertType: 'low_activity',
-        severity: 'high',
-        title: 'Significant Drop in Portal Activity',
-        description: 'Portal logins decreased by 75% over the past 2 weeks',
-        metrics: {
-          current: 3,
-          previous: 12,
-          change: -75,
-          threshold: 8
-        },
-        recommendations: [
-          'Schedule a check-in call with the customer',
-          'Send personalized engagement email with product updates',
-          'Offer training session or product demo'
-        ],
-        triggerDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        isRead: false,
-        isResolved: false,
-        assignedTo: 'John Smith',
-        dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-      },
-      {
-        id: 'alert-002',
-        customerId: 'cust-002',
-        customerName: 'Tech Solutions Inc',
-        alertType: 'document_stagnation',
-        severity: 'medium',
-        title: 'Key Documents Not Accessed',
-        description: 'Important implementation guides haven\'t been viewed in 10 days',
-        metrics: {
-          current: 0,
-          previous: 5,
-          change: -100,
-          threshold: 2
-        },
-        recommendations: [
-          'Send reminder about important documentation',
-          'Create guided tour of key resources',
-          'Schedule implementation review meeting'
-        ],
-        triggerDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-        isRead: true,
-        isResolved: false,
-        assignedTo: 'Sarah Johnson'
-      },
-      {
-        id: 'alert-003',
-        customerId: 'cust-003',
-        customerName: 'Global Enterprises',
-        alertType: 'expansion_opportunity',
-        severity: 'low',
-        title: 'High Engagement Indicates Expansion Readiness',
-        description: 'Customer showing increased usage patterns and exploring advanced features',
-        metrics: {
-          current: 95,
-          previous: 70,
-          change: 36,
-          threshold: 85
-        },
-        recommendations: [
-          'Present additional module options',
-          'Schedule expansion discussion',
-          'Prepare custom pricing proposal'
-        ],
-        triggerDate: new Date(Date.now() - 3 * 60 * 60 * 1000),
-        isRead: false,
-        isResolved: false
-      }
-    ]
-    setAlerts(sampleAlerts)
-  }
-
-  const initializeDefaultRules = () => {
-    const defaultRules: AlertRule[] = [
-      {
-        id: 'rule-001',
-        name: 'Low Portal Activity',
-        type: 'portal_activity',
-        isActive: true,
-        severity: 'high',
-        conditions: [
-          {
-            metric: 'weekly_logins',
-            operator: 'less_than',
-            value: 3,
-            timeframe: 7
-          }
-        ],
-        actions: {
-          sendEmail: true,
-          createTask: true,
-          assignTo: 'Account Manager',
-          customMessage: 'Customer showing decreased portal engagement'
-        },
-        createdAt: new Date()
-      },
-      {
-        id: 'rule-002',
-        name: 'Document Stagnation',
-        type: 'document_interaction',
-        isActive: true,
-        severity: 'medium',
-        conditions: [
-          {
-            metric: 'document_views',
-            operator: 'less_than',
-            value: 1,
-            timeframe: 7
-          }
-        ],
-        actions: {
-          sendEmail: true,
-          createTask: false,
-          customMessage: 'Important documents not being accessed'
-        },
-        createdAt: new Date()
-      },
-      {
-        id: 'rule-003',
-        name: 'High Engagement - Expansion Opportunity',
-        type: 'feature_usage',
-        isActive: true,
-        severity: 'low',
-        conditions: [
-          {
-            metric: 'engagement_score',
-            operator: 'greater_than',
-            value: 85,
-            timeframe: 14
-          }
-        ],
-        actions: {
-          sendEmail: false,
-          createTask: true,
-          assignTo: 'Sales Team',
-          customMessage: 'Customer showing high engagement - potential expansion opportunity'
-        },
-        createdAt: new Date()
-      }
-    ]
-    setAlertRules(defaultRules)
-  }
-
-  const generateSampleMetrics = () => {
-    const sampleMetrics: EngagementMetrics[] = [
-      {
-        customerId: 'cust-001',
-        customerName: 'Acme Corporation',
-        portalLogins: {
-          thisWeek: 3,
-          lastWeek: 12,
-          thisMonth: 15,
-          lastMonth: 45
-        },
-        documentInteractions: {
-          views: 8,
-          downloads: 2,
-          timeSpent: 45,
-          uniqueDocuments: 4
-        },
-        featureUsage: {
-          'dashboard': { uses: 15, lastUsed: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
-          'reports': { uses: 3, lastUsed: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
-          'settings': { uses: 1, lastUsed: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) }
-        },
-        engagementScore: 35,
-        churnRisk: 75,
-        lastActivity: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-      },
-      {
-        customerId: 'cust-002',
-        customerName: 'Tech Solutions Inc',
-        portalLogins: {
-          thisWeek: 8,
-          lastWeek: 9,
-          thisMonth: 32,
-          lastMonth: 35
-        },
-        documentInteractions: {
-          views: 25,
-          downloads: 8,
-          timeSpent: 120,
-          uniqueDocuments: 12
-        },
-        featureUsage: {
-          'dashboard': { uses: 32, lastUsed: new Date(Date.now() - 1 * 60 * 60 * 1000) },
-          'reports': { uses: 15, lastUsed: new Date(Date.now() - 3 * 60 * 60 * 1000) },
-          'settings': { uses: 5, lastUsed: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) }
-        },
-        engagementScore: 78,
-        churnRisk: 15,
-        lastActivity: new Date(Date.now() - 1 * 60 * 60 * 1000)
-      },
-      {
-        customerId: 'cust-003',
-        customerName: 'Global Enterprises',
-        portalLogins: {
-          thisWeek: 15,
-          lastWeek: 12,
-          thisMonth: 58,
-          lastMonth: 42
-        },
-        documentInteractions: {
-          views: 45,
-          downloads: 18,
-          timeSpent: 320,
-          uniqueDocuments: 25
-        },
-        featureUsage: {
-          'dashboard': { uses: 58, lastUsed: new Date(Date.now() - 30 * 60 * 1000) },
-          'reports': { uses: 28, lastUsed: new Date(Date.now() - 2 * 60 * 60 * 1000) },
-          'settings': { uses: 12, lastUsed: new Date(Date.now() - 4 * 60 * 60 * 1000) },
-          'advanced_analytics': { uses: 8, lastUsed: new Date(Date.now() - 1 * 60 * 60 * 1000) }
-        },
-        engagementScore: 95,
-        churnRisk: 5,
-        lastActivity: new Date(Date.now() - 30 * 60 * 1000)
-      }
-    ]
-    setEngagementMetrics(sampleMetrics)
-  }
+  // Filter alerts based on current view and customer
+  const filteredAlerts = alerts.filter(alert => {
+    if (customerId && alert.customerId !== customerId) return false
+    
+    const statusMatch = activeTab === 'all' || 
+                       (activeTab === 'active' && alert.status === 'active') ||
+                       (activeTab === 'acknowledged' && alert.status === 'acknowledged') ||
+                       (activeTab === 'resolved' && alert.status === 'resolved')
+    
+    const severityMatch = filterSeverity === 'all' || alert.severity === filterSeverity
+    
+    return statusMatch && severityMatch
+  })
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'destructive'
-      case 'high': return 'destructive'
-      case 'medium': return 'secondary'
-      case 'low': return 'outline'
-      default: return 'outline'
+      case 'critical':
+        return 'bg-red-50 border-red-200 text-red-800'
+      case 'high':
+        return 'bg-orange-50 border-orange-200 text-orange-800'
+      case 'medium':
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800'
+      case 'low':
+        return 'bg-blue-50 border-blue-200 text-blue-800'
+      default:
+        return 'bg-gray-50 border-gray-200 text-gray-800'
     }
   }
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
-      case 'critical': return <XCircle size={16} className="text-red-500" />
-      case 'high': return <AlertTriangle size={16} className="text-orange-500" />
-      case 'medium': return <Clock size={16} className="text-yellow-500" />
-      case 'low': return <CheckCircle size={16} className="text-blue-500" />
-      default: return <Bell size={16} />
+      case 'critical':
+        return <AlertTriangle className="w-5 h-5 text-red-600" />
+      case 'high':
+        return <Warning className="w-5 h-5 text-orange-600" />
+      case 'medium':
+        return <Info className="w-5 h-5 text-yellow-600" />
+      case 'low':
+        return <Info className="w-5 h-5 text-blue-600" />
+      default:
+        return <Bell className="w-5 h-5 text-gray-600" />
     }
   }
 
   const getAlertTypeIcon = (type: string) => {
     switch (type) {
-      case 'low_activity': return <TrendDown size={16} />
-      case 'document_stagnation': return <FileText size={16} />
-      case 'login_decline': return <UserCheck size={16} />
-      case 'usage_drop': return <BarChart3 size={16} />
-      case 'risk_churn': return <AlertTriangle size={16} />
-      case 'expansion_opportunity': return <TrendUp size={16} />
-      default: return <Bell size={16} />
+      case 'portal_inactivity':
+        return <Monitor className="w-4 h-4" />
+      case 'document_interaction':
+        return <FileText className="w-4 h-4" />
+      case 'health_score_decline':
+        return <TrendDown className="w-4 h-4" />
+      case 'churn_risk':
+        return <AlertTriangle className="w-4 h-4" />
+      case 'engagement_drop':
+        return <Activity className="w-4 h-4" />
+      default:
+        return <Bell className="w-4 h-4" />
     }
   }
 
-  const markAlertAsRead = (alertId: string) => {
+  const handleAcknowledgeAlert = (alertId: string) => {
     setAlerts(prev => prev.map(alert => 
-      alert.id === alertId ? { ...alert, isRead: true } : alert
+      alert.id === alertId 
+        ? { 
+            ...alert, 
+            status: 'acknowledged',
+            acknowledgedBy: userId,
+            acknowledgedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        : alert
     ))
+    toast.success('Alert acknowledged')
   }
 
-  const resolveAlert = (alertId: string) => {
+  const handleResolveAlert = (alertId: string) => {
     setAlerts(prev => prev.map(alert => 
-      alert.id === alertId ? { ...alert, isResolved: true } : alert
+      alert.id === alertId 
+        ? { 
+            ...alert, 
+            status: 'resolved',
+            resolvedBy: userId,
+            resolvedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        : alert
     ))
-    toast.success('Alert marked as resolved')
+    toast.success('Alert resolved')
   }
 
-  const snoozeAlert = (alertId: string, hours: number) => {
-    // In a real implementation, this would hide the alert for the specified time
-    toast.success(`Alert snoozed for ${hours} hours`)
+  const handleDismissAlert = (alertId: string) => {
+    setAlerts(prev => prev.map(alert => 
+      alert.id === alertId 
+        ? { 
+            ...alert, 
+            status: 'dismissed',
+            updatedAt: new Date().toISOString()
+          }
+        : alert
+    ))
+    toast.success('Alert dismissed')
   }
 
-  const createNewRule = () => {
-    const newRule: AlertRule = {
-      id: `rule-${Date.now()}`,
-      name: 'New Alert Rule',
-      type: 'portal_activity',
-      isActive: true,
-      severity: 'medium',
-      conditions: [{
-        metric: 'weekly_logins',
-        operator: 'less_than',
-        value: 5,
-        timeframe: 7
-      }],
-      actions: {
-        sendEmail: true,
-        createTask: false
-      },
-      createdAt: new Date()
-    }
-    setEditingRule(newRule)
-    setShowRuleEditor(true)
+  const handleTakeAction = (action: string, alertId: string) => {
+    toast.info(`Taking action: ${action}`)
+    // Here you would implement the actual action logic
   }
-
-  const saveRule = () => {
-    if (!editingRule) return
-    
-    setAlertRules(prev => {
-      const existing = prev.find(r => r.id === editingRule.id)
-      if (existing) {
-        return prev.map(r => r.id === editingRule.id ? editingRule : r)
-      } else {
-        return [...prev, editingRule]
-      }
-    })
-    
-    setShowRuleEditor(false)
-    setEditingRule(null)
-    toast.success('Alert rule saved successfully')
-  }
-
-  const deleteRule = (ruleId: string) => {
-    setAlertRules(prev => prev.filter(r => r.id !== ruleId))
-    toast.success('Alert rule deleted')
-  }
-
-  const unreadCount = alerts.filter(a => !a.isRead && !a.isResolved).length
-  const highPriorityCount = alerts.filter(a => !a.isResolved && (a.severity === 'high' || a.severity === 'critical')).length
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Customer Engagement Alerts</h2>
-          <p className="text-muted-foreground">
-            Automated monitoring of customer portal activity and document interaction patterns
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Badge variant="outline" className="flex items-center gap-2">
-            <Bell size={12} />
-            {unreadCount} Unread
-          </Badge>
-          <Badge variant="destructive" className="flex items-center gap-2">
-            <AlertTriangle size={12} />
-            {highPriorityCount} High Priority
-          </Badge>
-        </div>
-      </div>
-
-      <Tabs value={activeView} onValueChange={setActiveView}>
-        <TabsList>
-          <TabsTrigger value="alerts" className="flex items-center gap-2">
-            <Bell size={16} />
-            Active Alerts
-          </TabsTrigger>
-          <TabsTrigger value="metrics" className="flex items-center gap-2">
-            <BarChart3 size={16} />
-            Engagement Metrics
-          </TabsTrigger>
-          <TabsTrigger value="rules" className="flex items-center gap-2">
-            <Settings size={16} />
-            Alert Rules
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="alerts" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity size={20} />
-                    Active Engagement Alerts
-                  </CardTitle>
-                  <CardDescription>
-                    Real-time alerts based on customer portal activity patterns
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {alerts.filter(a => !a.isResolved).map((alert) => (
-                    <div
-                      key={alert.id}
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        !alert.isRead ? 'bg-accent/10 border-accent' : 'hover:bg-muted/50'
-                      } ${selectedAlert?.id === alert.id ? 'ring-2 ring-primary' : ''}`}
-                      onClick={() => {
-                        setSelectedAlert(alert)
-                        if (!alert.isRead) markAlertAsRead(alert.id)
-                      }}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3 flex-1">
-                          <div className="flex items-center gap-2">
-                            {getSeverityIcon(alert.severity)}
-                            {getAlertTypeIcon(alert.alertType)}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-medium">{alert.title}</h4>
-                              <Badge variant={getSeverityColor(alert.severity)}>
-                                {alert.severity}
-                              </Badge>
-                              {!alert.isRead && (
-                                <div className="w-2 h-2 bg-primary rounded-full" />
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {alert.customerName} • {alert.description}
-                            </p>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Calendar size={12} />
-                                {new Date(alert.triggerDate).toLocaleDateString()}
-                              </span>
-                              {alert.assignedTo && (
-                                <span className="flex items-center gap-1">
-                                  <Users size={12} />
-                                  {alert.assignedTo}
-                                </span>
-                              )}
-                              {alert.dueDate && (
-                                <span className="flex items-center gap-1">
-                                  <Timer size={12} />
-                                  Due {new Date(alert.dueDate).toLocaleDateString()}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className={`text-sm font-medium ${
-                            alert.metrics.change > 0 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {alert.metrics.change > 0 ? '+' : ''}{alert.metrics.change}%
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center">
+                <Bell className="w-5 h-5 mr-2" />
+                Customer Engagement Alerts
+                {filteredAlerts.length > 0 && (
+                  <Badge variant="destructive" className="ml-2">
+                    {filteredAlerts.filter(a => a.status === 'active').length}
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                AI-powered alerts for customer engagement patterns, portal activity, and churn risk indicators
+              </CardDescription>
             </div>
-
-            <div className="space-y-6">
-              {selectedAlert && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Target size={20} />
-                      Alert Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Customer</span>
-                        <span className="text-sm">{selectedAlert.customerName}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Severity</span>
-                        <Badge variant={getSeverityColor(selectedAlert.severity)}>
-                          {selectedAlert.severity}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Current Value</span>
-                        <span className="text-sm">{selectedAlert.metrics.current}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Previous Value</span>
-                        <span className="text-sm">{selectedAlert.metrics.previous}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Threshold</span>
-                        <span className="text-sm">{selectedAlert.metrics.threshold}</span>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-2">
-                      <h4 className="font-medium">AI Recommendations</h4>
-                      <ul className="space-y-1">
-                        {selectedAlert.recommendations.map((rec, index) => (
-                          <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                            <Brain size={12} className="mt-0.5 text-primary" />
-                            {rec}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex flex-col gap-2">
-                      <Button 
-                        onClick={() => resolveAlert(selectedAlert.id)}
-                        className="w-full"
-                      >
-                        <CheckCircle size={16} className="mr-2" />
-                        Mark as Resolved
-                      </Button>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => snoozeAlert(selectedAlert.id, 24)}
-                        >
-                          <Timer size={16} className="mr-2" />
-                          Snooze 24h
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          onClick={() => snoozeAlert(selectedAlert.id, 72)}
-                        >
-                          <Timer size={16} className="mr-2" />
-                          Snooze 3d
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap size={20} />
-                    Quick Actions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Mail size={16} className="mr-2" />
-                    Send Engagement Email
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Calendar size={16} className="mr-2" />
-                    Schedule Check-in Call
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <FileText size={16} className="mr-2" />
-                    Create Follow-up Task
-                  </Button>
-                </CardContent>
-              </Card>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm">
+                <Settings className="w-4 h-4 mr-2" />
+                Configure
+              </Button>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                New Alert
+              </Button>
             </div>
           </div>
+        </CardHeader>
+      </Card>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="active">
+              Active ({alerts.filter(a => a.status === 'active').length})
+            </TabsTrigger>
+            <TabsTrigger value="acknowledged">
+              Acknowledged ({alerts.filter(a => a.status === 'acknowledged').length})
+            </TabsTrigger>
+            <TabsTrigger value="resolved">
+              Resolved ({alerts.filter(a => a.status === 'resolved').length})
+            </TabsTrigger>
+            <TabsTrigger value="all">All ({alerts.length})</TabsTrigger>
+          </TabsList>
+
+          <div className="flex items-center space-x-2">
+            <select
+              value={filterSeverity}
+              onChange={(e) => setFilterSeverity(e.target.value)}
+              className="text-sm border border-border rounded px-2 py-1"
+            >
+              <option value="all">All Severities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+            <Button variant="outline" size="sm">
+              <Filter className="w-4 h-4 mr-2" />
+              Filter
+            </Button>
+          </div>
+        </div>
+
+        <TabsContent value={activeTab} className="space-y-4">
+          {filteredAlerts.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <CheckCircle className="w-12 h-12 text-green-500 mb-4" />
+                <h3 className="text-lg font-medium mb-2">No alerts in this category</h3>
+                <p className="text-sm text-muted-foreground text-center">
+                  {activeTab === 'active' 
+                    ? 'All customer engagement alerts are addressed. Your customers are healthy!'
+                    : `No ${activeTab} alerts found.`
+                  }
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {filteredAlerts.map((alert) => (
+                <Card 
+                  key={alert.id} 
+                  className={`${getSeverityColor(alert.severity)} border-l-4 hover:shadow-md transition-shadow cursor-pointer`}
+                  onClick={() => setSelectedAlert(alert)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          {getSeverityIcon(alert.severity)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-1">
+                            {getAlertTypeIcon(alert.alertType)}
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${alert.severity === 'critical' ? 'border-red-300' : 
+                                        alert.severity === 'high' ? 'border-orange-300' :
+                                        alert.severity === 'medium' ? 'border-yellow-300' : 'border-blue-300'}`}
+                            >
+                              {alert.severity.toUpperCase()}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(alert.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <h4 className="font-medium text-sm line-clamp-1">{alert.message}</h4>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            {alert.description}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        {alert.status === 'active' && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleAcknowledgeAlert(alert.id)
+                              }}
+                              className="h-6 px-2 text-xs"
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              Ack
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleResolveAlert(alert.id)
+                              }}
+                              className="h-6 px-2 text-xs"
+                            >
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Resolve
+                            </Button>
+                          </>
+                        )}
+                        {alert.status === 'acknowledged' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleResolveAlert(alert.id)
+                            }}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Resolve
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <User className="w-3 h-3 mr-1" />
+                        <span>Customer: {alert.customerId}</span>
+                      </div>
+                      {alert.dueDate && (
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3 mr-1" />
+                          <span>Due: {new Date(alert.dueDate).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {alert.recommendedActions && alert.recommendedActions.length > 0 && (
+                      <div className="mt-3">
+                        <div className="flex flex-wrap gap-1">
+                          {alert.recommendedActions.slice(0, 2).map((action, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80">
+                              {action}
+                            </Badge>
+                          ))}
+                          {alert.recommendedActions.length > 2 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{alert.recommendedActions.length - 2} more
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
+      </Tabs>
 
-        <TabsContent value="metrics" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {engagementMetrics.map((metric) => (
-              <Card key={metric.customerId}>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Users size={20} />
-                      {metric.customerName}
-                    </span>
-                    <Badge 
-                      variant={metric.engagementScore > 70 ? 'default' : metric.engagementScore > 40 ? 'secondary' : 'destructive'}
-                    >
-                      {metric.engagementScore}% Engaged
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-1">
-                      <span className="text-muted-foreground">Portal Logins</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{metric.portalLogins.thisWeek}</span>
-                        <span className="text-xs text-muted-foreground">this week</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-muted-foreground">Document Views</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{metric.documentInteractions.views}</span>
-                        <span className="text-xs text-muted-foreground">total</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-muted-foreground">Time Spent</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{metric.documentInteractions.timeSpent}m</span>
-                        <span className="text-xs text-muted-foreground">reading</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-muted-foreground">Churn Risk</span>
-                      <div className="flex items-center gap-2">
-                        <span className={`font-medium ${
-                          metric.churnRisk > 70 ? 'text-red-600' : 
-                          metric.churnRisk > 40 ? 'text-yellow-600' : 'text-green-600'
-                        }`}>
-                          {metric.churnRisk}%
-                        </span>
-                      </div>
-                    </div>
+      {/* Alert Detail Modal/Sidebar */}
+      {selectedAlert && (
+        <Card className="fixed top-4 right-4 w-96 max-h-[80vh] z-50 shadow-xl">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Alert Details</CardTitle>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setSelectedAlert(null)}
+                className="h-6 w-6 p-0"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <ScrollArea className="max-h-96">
+            <CardContent>
+              <div className="space-y-4">
+                <div className={`p-3 rounded border ${getSeverityColor(selectedAlert.severity)}`}>
+                  <div className="flex items-center space-x-2 mb-2">
+                    {getSeverityIcon(selectedAlert.severity)}
+                    <span className="font-medium">{selectedAlert.message}</span>
                   </div>
+                  <p className="text-sm">{selectedAlert.description}</p>
+                </div>
 
-                  <Separator />
+                <div>
+                  <h4 className="font-medium mb-2">Alert Information</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Type:</span>
+                      <span className="capitalize">{selectedAlert.alertType.replace('_', ' ')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Severity:</span>
+                      <Badge variant="outline" className="text-xs">
+                        {selectedAlert.severity.toUpperCase()}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Status:</span>
+                      <Badge variant="outline" className="text-xs">
+                        {selectedAlert.status.toUpperCase()}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Triggered by:</span>
+                      <span className="capitalize">{selectedAlert.triggeredBy.replace('_', ' ')}</span>
+                    </div>
+                    {selectedAlert.dueDate && (
+                      <div className="flex justify-between">
+                        <span>Due date:</span>
+                        <span>{new Date(selectedAlert.dueDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <span className="text-sm font-medium">Feature Usage</span>
-                    <div className="space-y-1">
-                      {Object.entries(metric.featureUsage).map(([feature, usage]) => (
-                        <div key={feature} className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground capitalize">{feature}</span>
-                          <span className="font-medium">{usage.uses} uses</span>
+                {selectedAlert.recommendedActions && selectedAlert.recommendedActions.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-2">Recommended Actions</h4>
+                    <div className="space-y-2">
+                      {selectedAlert.recommendedActions.map((action, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                          <span className="text-sm">{action}</span>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleTakeAction(action, selectedAlert.id)}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <ArrowRight className="w-3 h-3" />
+                          </Button>
                         </div>
                       ))}
                     </div>
                   </div>
+                )}
 
-                  <div className="text-xs text-muted-foreground">
-                    Last activity: {new Date(metric.lastActivity).toLocaleString()}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="rules" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium">Alert Rules</h3>
-              <p className="text-sm text-muted-foreground">
-                Configure automated alerts based on customer engagement patterns
-              </p>
-            </div>
-            <Button onClick={createNewRule}>
-              <Bell size={16} className="mr-2" />
-              Create New Rule
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {alertRules.map((rule) => (
-              <Card key={rule.id}>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Settings size={20} />
-                      {rule.name}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Switch 
-                        checked={rule.isActive}
-                        onCheckedChange={(checked) => {
-                          setAlertRules(prev => prev.map(r => 
-                            r.id === rule.id ? { ...r, isActive: checked } : r
-                          ))
+                <div className="flex space-x-2">
+                  {selectedAlert.status === 'active' && (
+                    <>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          handleAcknowledgeAlert(selectedAlert.id)
+                          setSelectedAlert(null)
                         }}
-                      />
-                      <Badge variant={getSeverityColor(rule.severity)}>
-                        {rule.severity}
-                      </Badge>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <span className="text-sm font-medium">Conditions</span>
-                    {rule.conditions.map((condition, index) => (
-                      <div key={index} className="text-sm text-muted-foreground">
-                        {condition.metric} {condition.operator.replace('_', ' ')} {condition.value} 
-                        (over {condition.timeframe} days)
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="space-y-2">
-                    <span className="text-sm font-medium">Actions</span>
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      {rule.actions.sendEmail && <div>• Send email notification</div>}
-                      {rule.actions.createTask && <div>• Create follow-up task</div>}
-                      {rule.actions.assignTo && <div>• Assign to: {rule.actions.assignTo}</div>}
-                    </div>
-                  </div>
-
-                  {rule.lastTriggered && (
-                    <div className="text-xs text-muted-foreground">
-                      Last triggered: {new Date(rule.lastTriggered).toLocaleString()}
-                    </div>
+                        className="flex-1"
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Acknowledge
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          handleResolveAlert(selectedAlert.id)
+                          setSelectedAlert(null)
+                        }}
+                        className="flex-1"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Resolve
+                      </Button>
+                    </>
                   )}
-
-                  <div className="flex gap-2">
+                  {selectedAlert.status === 'acknowledged' && (
                     <Button 
-                      variant="outline" 
                       size="sm"
                       onClick={() => {
-                        setEditingRule(rule)
-                        setShowRuleEditor(true)
+                        handleResolveAlert(selectedAlert.id)
+                        setSelectedAlert(null)
                       }}
+                      className="w-full"
                     >
-                      Edit
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Resolve
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => deleteRule(rule.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      {showRuleEditor && editingRule && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle>
-                {alertRules.find(r => r.id === editingRule.id) ? 'Edit Alert Rule' : 'Create New Alert Rule'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="rule-name">Rule Name</Label>
-                <Input
-                  id="rule-name"
-                  value={editingRule.name}
-                  onChange={(e) => setEditingRule(prev => prev ? { ...prev, name: e.target.value } : null)}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="rule-type">Type</Label>
-                  <Select 
-                    value={editingRule.type}
-                    onValueChange={(value: any) => setEditingRule(prev => prev ? { ...prev, type: value } : null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="portal_activity">Portal Activity</SelectItem>
-                      <SelectItem value="document_interaction">Document Interaction</SelectItem>
-                      <SelectItem value="login_frequency">Login Frequency</SelectItem>
-                      <SelectItem value="feature_usage">Feature Usage</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  )}
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="rule-severity">Severity</Label>
-                  <Select 
-                    value={editingRule.severity}
-                    onValueChange={(value: any) => setEditingRule(prev => prev ? { ...prev, severity: value } : null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Actions</Label>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={editingRule.actions.sendEmail}
-                      onCheckedChange={(checked) => 
-                        setEditingRule(prev => prev ? {
-                          ...prev,
-                          actions: { ...prev.actions, sendEmail: checked }
-                        } : null)
-                      }
-                    />
-                    <Label>Send email notification</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={editingRule.actions.createTask}
-                      onCheckedChange={(checked) => 
-                        setEditingRule(prev => prev ? {
-                          ...prev,
-                          actions: { ...prev.actions, createTask: checked }
-                        } : null)
-                      }
-                    />
-                    <Label>Create follow-up task</Label>
-                  </div>
-                </div>
-              </div>
-
-              {editingRule.actions.customMessage !== undefined && (
-                <div className="space-y-2">
-                  <Label htmlFor="custom-message">Custom Message</Label>
-                  <Textarea
-                    id="custom-message"
-                    value={editingRule.actions.customMessage}
-                    onChange={(e) => setEditingRule(prev => prev ? {
-                      ...prev,
-                      actions: { ...prev.actions, customMessage: e.target.value }
-                    } : null)}
-                  />
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2">
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    setShowRuleEditor(false)
-                    setEditingRule(null)
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={saveRule}>
-                  Save Rule
-                </Button>
               </div>
             </CardContent>
-          </Card>
-        </div>
+          </ScrollArea>
+        </Card>
       )}
     </div>
   )
 }
+
+export default CustomerEngagementAlerts

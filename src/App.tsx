@@ -35,9 +35,9 @@ import { CRMWorkflowDemo } from '@/components/CRMWorkflowDemo'
 import { ClickableDataTestReport } from '@/components/ClickableDataTestReport'
 import { CRMProductivitySummary } from '@/components/CRMProductivitySummary'
 import { SystemTestingSuite } from '@/components/SystemTestingSuite'
-import { ClickableDataShowcase } from '@/components/shared/ClickableDataShowcase'
+import EnhancedAccountTestSuite from '@/components/EnhancedAccountTestSuite'
 import { CRMApiDocumentation } from '@/components/CRMApiDocumentation'
-import EnhancedAccountManagement from '@/components/EnhancedAccountManagementSimple'
+import EnhancedAccountManagement from '@/components/EnhancedAccountManagement'
 import RealTimeSystemStatus from '@/components/RealTimeSystemStatus'
 import ContactInteractionDemo from '@/components/ContactInteractionDemo'
 import CRMCalendarIntegration from '@/components/CRMCalendarIntegration'
@@ -285,6 +285,8 @@ function App() {
                   ? 'Interactive contact relationship mapping with comprehensive profiles, interaction history, and AI-powered insights for enhanced business relationships'
                   : activeView === 'crm-calendar'
                   ? 'Automated meeting scheduling, intelligent reminder notifications, and AI-powered calendar optimization for CRM activities and sales workflows'
+                  : activeView === 'enhanced-account-test'
+                  ? 'Comprehensive test suite for enhanced account management with AI intelligence, portal integration, and engagement monitoring'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -380,9 +382,9 @@ function App() {
                   <Network size={16} />
                   Contact Relationships
                 </TabsTrigger>
-                <TabsTrigger value="crm-calendar" className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  CRM Calendar
+                <TabsTrigger value="enhanced-account-test" className="flex items-center gap-2">
+                  <TestTube size={16} />
+                  Account Tests
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -734,11 +736,10 @@ function App() {
             />
           </TabsContent>
 
-          <TabsContent value="crm-calendar" className="space-y-6">
-            <CRMCalendarIntegration 
+          <TabsContent value="enhanced-account-test" className="space-y-6">
+            <EnhancedAccountTestSuite 
               companyId={currentCompany.id}
               userId={mockUser.id}
-              userRole="company_admin"
             />
           </TabsContent>
         </Tabs>

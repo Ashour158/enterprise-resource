@@ -529,6 +529,46 @@ export interface Account {
   totalRevenue: number
   lastActivityDate?: string
   nextReviewDate?: string
+  
+  // Enhanced AI Intelligence
+  aiEngagementTrend: 'increasing' | 'stable' | 'decreasing' | 'critical'
+  aiSatisfactionTrend: 'improving' | 'stable' | 'declining'
+  aiExpansionReadiness: number // 0-100 score for upsell/cross-sell readiness
+  aiRetentionProbability: number // 0-1 probability of retention
+  aiAdvocacyPotential: number // 0-100 potential to become advocate/reference
+  
+  // Customer Portal Integration
+  portalAccessEnabled: boolean
+  portalLastLogin?: string
+  portalLoginCount: number
+  
+  // Complete Historical Tracking
+  totalEmailCount: number
+  totalMeetingCount: number
+  totalCallCount: number
+  totalQuoteCount: number
+  totalDealCount: number
+  totalSupportTickets: number
+  totalDocumentsShared: number
+  
+  // Real-time Engagement Metrics
+  lastEmailDate?: string
+  lastMeetingDate?: string
+  lastCallDate?: string
+  lastQuoteDate?: string
+  lastSupportTicketDate?: string
+  
+  // Social Media Monitoring
+  socialMentionsCount: number
+  socialSentimentScore: number // -1 to 1 sentiment score
+  lastSocialMention?: string
+  
+  // Enhanced Analytics
+  customerHealthScore: number // 0-100 overall health score
+  engagementScore: number // 0-100 engagement level
+  satisfactionScore: number // 0-100 satisfaction level
+  churnRisk: 'low' | 'medium' | 'high' | 'critical'
+  expansionOpportunities: string[]
 }
 
 export interface Deal {
@@ -804,6 +844,244 @@ export interface PipelineMetrics {
     averageTimeInStage: number
     conversionRate: number
   }[]
+}
+
+// Enhanced Account Management Types
+export interface CustomerUnifiedTimeline {
+  id: string
+  customerId: string
+  timelineType: 'email' | 'call' | 'meeting' | 'quote' | 'deal' | 'support' | 'payment' | 'document' | 'social' | 'website'
+  timelineSubtype: string // email_sent, email_received, meeting_scheduled, quote_sent, deal_won, etc.
+  title: string
+  description: string
+  summary?: string // AI-generated summary for complex entries
+  
+  // Related Records
+  relatedContactId?: string
+  relatedDealId?: string
+  relatedQuoteId?: string
+  relatedSupportTicketId?: string
+  relatedDocumentId?: string
+  
+  // External System References
+  externalSystem?: string // gmail, outlook, zoom, teams, support_system
+  externalId?: string
+  externalUrl?: string // link to external system
+  
+  // Timeline Metadata
+  timelineDate: string
+  durationMinutes?: number
+  participants: string[] // internal and external participants
+  attachments: CRMFile[]
+  
+  // AI Analysis
+  aiImportanceScore: number // 0-100 AI-calculated importance
+  aiSentimentScore: number // -1 to 1 AI sentiment analysis
+  aiImpactOnRelationship: number // -1 to 1 impact on customer relationship
+  aiExtractedInsights: string[] // AI-extracted key insights
+  
+  // Visibility and Access
+  isPublic: boolean // visible to all team members
+  visibleToRoles: string[] // specific roles that can see this
+  createdBy: string
+  
+  // Real-time Features
+  isPinned: boolean // pinned to top of timeline
+  viewCount: number
+  lastViewed?: string
+  
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AccountEcosystemMap {
+  id: string
+  primaryAccountId: string
+  
+  // Relationship Details
+  relatedEntityType: 'account' | 'contact' | 'vendor' | 'partner' | 'competitor'
+  relatedEntityId: string
+  relationshipNature: 'parent' | 'subsidiary' | 'partner' | 'vendor' | 'customer' | 'competitor'
+  
+  // Relationship Strength and Influence
+  relationshipStrength: number // 0-100 strength
+  influenceLevel: number // 0-100 influence on decisions
+  collaborationFrequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'rarely'
+  
+  // Business Impact
+  revenueImpact: number // financial impact of this relationship
+  strategicImportance: 'critical' | 'high' | 'medium' | 'low'
+  
+  // AI Analysis
+  aiRelationshipHealth: number // 0-100 AI-assessed relationship health
+  aiGrowthPotential: number // 0-100 potential for relationship growth
+  aiRiskFactors: string[] // AI-identified risks
+  
+  // Tracking
+  relationshipStartDate?: string
+  lastInteractionDate?: string
+  interactionFrequencyScore: number
+  
+  isActive: boolean
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CustomerSuccessMetrics {
+  id: string
+  customerId: string
+  measurementDate: string
+  
+  // Usage and Adoption Metrics
+  productUsageScore: number // 0-100 product usage
+  featureAdoptionRate: number // 0-1 percentage of features adopted
+  userActivityScore: number // 0-100 activity level score
+  loginFrequencyScore: number // 0-100 login frequency health
+  
+  // Satisfaction Metrics
+  npsScore?: number // Net Promoter Score (-100 to 100)
+  csatScore?: number // Customer Satisfaction (0-100)
+  cesScore?: number // Customer Effort Score (0-100)
+  
+  // Support and Success Metrics
+  supportTicketVolume: number
+  averageResolutionTimeHours: number
+  escalationRate: number // 0-1
+  firstContactResolutionRate: number // 0-1
+  
+  // Financial Health Metrics
+  paymentTimelinessScore: number // 0-100 payment behavior
+  contractUtilizationRate: number // 0-1 percentage of contract used
+  expansionRevenue: number // additional revenue this period
+  
+  // Engagement Metrics
+  emailEngagementScore: number // 0-100 email open/click rates
+  meetingAttendanceRate: number // 0-1 meeting attendance
+  responseTimeScore: number // 0-100 how quickly they respond
+  
+  // AI Calculated Composite Scores
+  aiOverallHealthScore: number // 0-100 AI-weighted overall health
+  aiChurnRiskScore: number // 0-1 AI-calculated churn risk
+  aiExpansionReadiness: number // 0-100 readiness for expansion
+  aiAdvocacyPotential: number // 0-100 potential to become advocate
+  
+  // Benchmarking
+  industryBenchmarkComparison: Record<string, number> // comparison to industry
+  peerComparison: Record<string, number> // comparison to similar customers
+  
+  createdBy: string
+  createdAt: string
+}
+
+export interface CustomerDocumentLibrary {
+  id: string
+  customerId: string
+  
+  // Document Details
+  documentName: string
+  documentType: 'contract' | 'proposal' | 'presentation' | 'manual' | 'report' | 'invoice'
+  documentCategory: 'sales' | 'legal' | 'technical' | 'financial' | 'marketing'
+  
+  // File Information
+  fileUrl: string
+  fileType: string // pdf, docx, pptx, xlsx, etc.
+  fileSize: number // in bytes
+  thumbnailUrl?: string
+  
+  // Document Metadata
+  documentVersion: string
+  isLatestVersion: boolean
+  parentDocumentId?: string
+  
+  // Access and Sharing
+  isSharedWithCustomer: boolean
+  customerAccessLevel: 'view' | 'download' | 'comment'
+  internalAccessLevel: 'view' | 'edit' | 'admin'
+  
+  // Tracking
+  viewCount: number
+  downloadCount: number
+  lastAccessed?: string
+  lastModified?: string
+  
+  // AI Analysis
+  aiDocumentSummary?: string // AI-generated summary
+  aiKeyTopics: string[] // AI-extracted topics
+  aiSentimentAnalysis: Record<string, number> // AI sentiment of document
+  aiImportanceScore: number // 0-100 AI-calculated importance
+  
+  // Collaboration
+  commentsEnabled: boolean
+  versionHistory: Array<{
+    version: string
+    changes: string
+    changedBy: string
+    changedAt: string
+  }>
+  
+  createdBy: string
+  sharedBy?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CustomerPortalActivity {
+  id: string
+  customerId: string
+  contactId?: string
+  
+  // Activity Details
+  activityType: 'login' | 'document_view' | 'document_download' | 'support_ticket' | 'payment' | 'profile_update'
+  activityDescription: string
+  
+  // Session Information
+  sessionId: string
+  ipAddress: string
+  userAgent: string
+  deviceType: 'desktop' | 'mobile' | 'tablet'
+  browser: string
+  
+  // Activity Metadata
+  pageVisited: string
+  timeSpentSeconds: number
+  actionsTaken: string[]
+  
+  // AI Analysis
+  aiEngagementScore: number // 0-100 AI-calculated engagement
+  aiIntentAnalysis: string // AI-detected intent
+  aiSatisfactionIndicators: string[] // AI-detected satisfaction signals
+  
+  activityTimestamp: string
+  createdAt: string
+}
+
+export interface CustomerEngagementAlert {
+  id: string
+  customerId: string
+  alertType: 'engagement_drop' | 'portal_inactivity' | 'document_interaction' | 'health_score_decline' | 'churn_risk'
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  message: string
+  description: string
+  
+  // Alert Triggers
+  triggeredBy: string // system | user | ai_analysis
+  triggerConditions: Record<string, any>
+  
+  // Alert Status
+  status: 'active' | 'acknowledged' | 'resolved' | 'dismissed'
+  acknowledgedBy?: string
+  acknowledgedAt?: string
+  resolvedBy?: string
+  resolvedAt?: string
+  
+  // Recommended Actions
+  recommendedActions: string[]
+  assignedTo?: string
+  dueDate?: string
+  
+  createdAt: string
+  updatedAt: string
 }
 
 export interface CRMSettings {
