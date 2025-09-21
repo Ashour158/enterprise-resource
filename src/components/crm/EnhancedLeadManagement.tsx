@@ -835,7 +835,7 @@ export function EnhancedLeadManagement({ companyId, userId, userRole, onLeadSele
                           >
                             <div>
                               <p className="font-medium text-sm">{lead.firstName} {lead.lastName}</p>
-                              <p className="text-xs text-muted-foreground">{lead.company} • {lead.email}</p>
+                              <p className="text-xs text-muted-foreground">{lead.accountName || getAccountName(lead.accountId)} • {lead.email}</p>
                             </div>
                             <Button size="sm" variant="outline">
                               View Timeline

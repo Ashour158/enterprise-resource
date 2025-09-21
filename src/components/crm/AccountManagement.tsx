@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Account, CRMFile } from '@/types/crm'
+import { mockAccounts } from '@/data/crmMockData'
 import { 
   Plus, 
   MagnifyingGlass as Search, 
@@ -35,73 +36,6 @@ interface AccountManagementProps {
   userId: string
   userRole: string
 }
-
-const mockAccounts: Account[] = [
-  {
-    id: 'acc-001',
-    companyId: 'comp-001',
-    name: 'Tech Solutions Inc',
-    website: 'https://techsolutions.com',
-    industry: 'Technology',
-    size: 'medium',
-    revenue: 5000000,
-    employees: 150,
-    address: {
-      street: '123 Tech Street',
-      city: 'San Francisco',
-      state: 'CA',
-      country: 'USA',
-      zipCode: '94105'
-    },
-    phone: '+1-555-0123',
-    description: 'Leading technology solutions provider',
-    accountType: 'customer',
-    status: 'active',
-    owner: 'user-001',
-    tags: ['enterprise', 'technology'],
-    customFields: {
-      vertical: 'SaaS',
-      priority: 'high'
-    },
-    createdAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-20T15:30:00Z',
-    totalRevenue: 250000,
-    lastActivityDate: '2024-01-18T14:20:00Z',
-    nextReviewDate: '2024-02-15T10:00:00Z'
-  },
-  {
-    id: 'acc-002',
-    companyId: 'comp-001',
-    name: 'Marketing Pro Agency',
-    website: 'https://marketingpro.com',
-    industry: 'Marketing',
-    size: 'small',
-    revenue: 1200000,
-    employees: 25,
-    address: {
-      street: '456 Marketing Ave',
-      city: 'New York',
-      state: 'NY',
-      country: 'USA',
-      zipCode: '10001'
-    },
-    phone: '+1-555-0456',
-    description: 'Full-service marketing agency',
-    accountType: 'prospect',
-    status: 'active',
-    owner: 'user-002',
-    tags: ['marketing', 'agency'],
-    customFields: {
-      vertical: 'Services',
-      priority: 'medium'
-    },
-    createdAt: '2024-01-10T08:00:00Z',
-    updatedAt: '2024-01-22T11:45:00Z',
-    totalRevenue: 75000,
-    lastActivityDate: '2024-01-20T16:30:00Z',
-    nextReviewDate: '2024-02-10T09:00:00Z'
-  }
-]
 
 export function AccountManagement({ companyId, userId, userRole }: AccountManagementProps) {
   const [accounts, setAccounts] = useKV<Account[]>(`accounts-${companyId}`, mockAccounts)
