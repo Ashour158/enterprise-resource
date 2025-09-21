@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { EnhancedAccount, CustomerTimelineEntry, AccountEngagementAlert, CustomerSuccessMetrics } from '@/types/enhanced-accounts'
+import CustomerUnifiedTimeline from '@/components/CustomerUnifiedTimeline'
 import { 
   Building, 
   Users, 
@@ -891,90 +892,14 @@ const EnhancedAccountManagement: React.FC<EnhancedAccountManagementProps> = ({
         </TabsContent>
 
         <TabsContent value="timeline" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Unified Customer Timeline</CardTitle>
-              <CardDescription>Complete history of all interactions and touchpoints</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-96">
-                <div className="space-y-4">
-                  {timelineData
-                    .filter(entry => entry.accountId === selectedAccount.id)
-                    .sort((a, b) => new Date(b.timelineDate).getTime() - new Date(a.timelineDate).getTime())
-                    .map((entry) => (
-                      <div key={entry.id} className="border-l-2 border-blue-200 pl-4 pb-4">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              {entry.timelineType === 'email' && <Mail size={16} className="text-blue-600" />}
-                              {entry.timelineType === 'meeting' && <Video size={16} className="text-green-600" />}
-                              {entry.timelineType === 'call' && <Phone size={16} className="text-orange-600" />}
-                              <span className="font-medium">{entry.title}</span>
-                              {entry.isPinned && <Star size={14} className="text-yellow-500" />}
-                            </div>
-                            <p className="text-sm text-muted-foreground">{entry.description}</p>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <span>{entry.timelineDate.toLocaleDateString()}</span>
-                              {entry.durationMinutes > 0 && (
-                                <span>{entry.durationMinutes} min</span>
-                              )}
-                              <span>AI Score: {entry.aiImportanceScore}%</span>
-                            </div>
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {entry.timelineType}
-                          </Badge>
-                        </div>
-                        
-                        {entry.participants.length > 0 && (
-                          <div className="mt-2">
-                            <p className="text-xs font-medium mb-1">Participants:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {entry.participants.map((participant) => (
-                                <Badge key={participant.id} variant="secondary" className="text-xs">
-                                  {participant.name}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {entry.aiExtractedInsights.length > 0 && (
-                          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-xs">
-                            <p className="font-medium mb-1">AI Insights:</p>
-                            <ul className="list-disc list-inside space-y-1">
-                              {entry.aiExtractedInsights.map((insight, index) => (
-                                <li key={index} className="text-blue-700 dark:text-blue-300">{insight}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {entry.attachments.length > 0 && (
-                          <div className="mt-2">
-                            <p className="text-xs font-medium mb-1">Attachments:</p>
-                            <div className="space-y-1">
-                              {entry.attachments.map((attachment) => (
-                                <div key={attachment.id} className="flex items-center gap-2 text-xs">
-                                  <FileDoc size={12} />
-                                  <a href={attachment.url} className="text-blue-600 hover:underline">
-                                    {attachment.name}
-                                  </a>
-                                  <span className="text-muted-foreground">
-                                    ({(attachment.size / 1024 / 1024).toFixed(1)} MB)
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+          <CustomerUnifiedTimeline
+            customerId={selectedAccount.id}
+            companyId={companyId}
+            userId={userId}
+            onEntryClick={(entry) => {
+              toast.info(`Viewing timeline entry: ${entry.title}`)
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="relationships" className="space-y-6">
