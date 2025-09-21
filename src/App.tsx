@@ -38,6 +38,7 @@ import { SystemTestingSuite } from '@/components/SystemTestingSuite'
 import { ClickableDataShowcase } from '@/components/shared/ClickableDataShowcase'
 import { CRMApiDocumentation } from '@/components/CRMApiDocumentation'
 import EnhancedAccountManagement from '@/components/EnhancedAccountManagement'
+import ContactInteractionDemo from '@/components/ContactInteractionDemo'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -52,7 +53,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple, UserCirclePlus, FlowArrow, GraduationCap, Calendar, TestTube, Building } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple, UserCirclePlus, FlowArrow, GraduationCap, Calendar, TestTube, Building, Network } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -278,6 +279,8 @@ function App() {
                   ? 'Complete REST API documentation with enhanced CRM endpoints, real-time updates, email integration, and AI-powered features'
                   : activeView === 'enhanced-accounts'
                   ? 'Enhanced account management with complete historical tracking, AI insights, interactive timelines, and comprehensive customer intelligence'
+                  : activeView === 'contact-interaction'
+                  ? 'Interactive contact relationship mapping with comprehensive profiles, interaction history, and AI-powered insights for enhanced business relationships'
                   : 'Manage access and switch between multiple companies'
                 }
               </p>
@@ -368,6 +371,10 @@ function App() {
                 <TabsTrigger value="enhanced-accounts" className="flex items-center gap-2">
                   <Building size={16} />
                   Enhanced Accounts
+                </TabsTrigger>
+                <TabsTrigger value="contact-interaction" className="flex items-center gap-2">
+                  <Network size={16} />
+                  Contact Relationships
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -693,6 +700,13 @@ function App() {
               companyId={currentCompany.id}
               userId={mockUser.id}
               userRole="company_admin"
+            />
+          </TabsContent>
+
+          <TabsContent value="contact-interaction" className="space-y-6">
+            <ContactInteractionDemo 
+              companyId={currentCompany.id}
+              userId={mockUser.id}
             />
           </TabsContent>
         </Tabs>
