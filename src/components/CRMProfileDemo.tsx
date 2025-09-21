@@ -19,8 +19,8 @@ import {
   Star,
   Circle
 } from '@phosphor-icons/react'
-import { LeadProfilePage } from './lead/LeadProfilePage'
-import { ContactProfilePage } from './contact/ContactProfilePage'
+import { LeadProfilePage } from './crm/lead/LeadProfilePage'
+import { ContactProfilePage } from './crm/contact/ContactProfilePage'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 
