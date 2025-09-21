@@ -189,7 +189,7 @@ interface EnhancedAccountManagementProps {
   userRole: string
 }
 
-export function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAccountManagementProps) {
+function EnhancedAccountManagement({ companyId, userId, userRole }: EnhancedAccountManagementProps) {
   const [accounts, setAccounts] = useKV<Account[]>(`accounts-${companyId}`, [])
   const [timeline, setTimeline] = useKV<TimelineEntry[]>(`account-timeline-${companyId}`, [])
   const [metrics, setMetrics] = useKV<CustomerSuccessMetric[]>(`customer-metrics-${companyId}`, [])
