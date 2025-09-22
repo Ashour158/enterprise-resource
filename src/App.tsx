@@ -42,6 +42,7 @@ import RealTimeSystemStatus from '@/components/RealTimeSystemStatus'
 import ContactInteractionDemo from '@/components/ContactInteractionDemo'
 import CRMCalendarIntegration from '@/components/CRMCalendarIntegration'
 import CustomerTimelineTest from '@/components/CustomerTimelineTest'
+import AccountEcosystemMap from '@/components/AccountEcosystemMap'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -56,7 +57,7 @@ import {
   mockSystemHealth 
 } from '@/data/mockData'
 import { Company, ERPModule, AIInsight } from '@/types/erp'
-import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple, UserCirclePlus, FlowArrow, GraduationCap, Calendar, TestTube, Building, Network } from '@phosphor-icons/react'
+import { TrendUp, Users, Package, CreditCard, Bell, X, WifiHigh, Brain, Buildings, Shield, User, ChartLine, EnvelopeSimple as Mail, TreeStructure, Fingerprint, Globe, LinkSimple, UserCirclePlus, FlowArrow, GraduationCap, Calendar, TestTube, Building, Network, Clock } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 function App() {
@@ -288,6 +289,8 @@ function App() {
                   ? 'Automated meeting scheduling, intelligent reminder notifications, and AI-powered calendar optimization for CRM activities and sales workflows'
                   : activeView === 'timeline-demo'
                   ? 'Comprehensive customer timeline system with AI-powered insights, real-time collaboration, and complete interaction history tracking'
+                  : activeView === 'ecosystem'
+                  ? 'Interactive account ecosystem mapping with relationship strength analysis, influence tracking, and strategic partnership visualization'
                   : activeView === 'enhanced-account-test'
                   ? 'Comprehensive test suite for enhanced account management with AI intelligence, portal integration, and engagement monitoring'
                   : 'Manage access and switch between multiple companies'
@@ -396,6 +399,10 @@ function App() {
                 <TabsTrigger value="timeline-demo" className="flex items-center gap-2">
                   <Clock size={16} />
                   Timeline Demo
+                </TabsTrigger>
+                <TabsTrigger value="ecosystem" className="flex items-center gap-2">
+                  <Network size={16} />
+                  Ecosystem Map
                 </TabsTrigger>
               </TabsList>
               <Badge variant="outline" className="flex items-center gap-2">
@@ -763,6 +770,13 @@ function App() {
 
           <TabsContent value="timeline-demo" className="space-y-6">
             <CustomerTimelineTest
+              companyId={currentCompany.id}
+              userId={mockUser.id}
+            />
+          </TabsContent>
+
+          <TabsContent value="ecosystem" className="space-y-6">
+            <AccountEcosystemMap
               companyId={currentCompany.id}
               userId={mockUser.id}
             />
